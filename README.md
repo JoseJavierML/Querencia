@@ -1,6 +1,8 @@
-# HabitQuest
+# Querencia
 
-Aplicación SaaS gamificada para el seguimiento de hábitos, desarrollada para la asignatura Procesos de Ingeniería del Software (Curso 2026-2027).
+SaaS de reflexión y debate musical diseñado para ir más allá de la escucha superficial. La plataforma combina un diario de escucha privado con foros de debate donde la comunidad evalúa las obras musicales utilizando "Reacciones del Alma" (acordes emocionales) en lugar de interacciones tradicionales.
+
+Desarrollado para la asignatura Procesos de Ingeniería del Software (Curso 2026-2027).
 
 ## Tecnologías Elegidas (Justificación)
 - **Backend (Node.js & Express):** Proporciona un entorno ligero y rápido para construir la API REST requerida, permitiendo mantener un ecosistema unificado en JavaScript.
