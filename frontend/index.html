@@ -3,10 +3,312 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HabitQuest</title>
+    <title>Querencia | El refugio del oyente</title>
+    <style>
+        :root {
+            --bg-color: #121418;
+            --panel-bg: #1a1c23;
+            --text-main: #f0f0f0;
+            --text-muted: #888a92;
+            --gold-light: #e6c875;
+            --gold-dark: #c59b3d;
+            --border-color: #333642;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden; 
+            position: relative;
+        }
+
+        #wavesCanvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+            pointer-events: auto;
+        }
+
+        .content-wrapper {
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            max-width: 900px;
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        .content-wrapper > * {
+            pointer-events: auto; 
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            margin-bottom: 0.5rem;
+            background: linear-gradient(to right, var(--gold-light), var(--gold-dark));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            font-weight: 700;
+            letter-spacing: -1px;
+        }
+
+        p.subtitle {
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            font-weight: 300;
+        }
+
+        .auth-panel {
+            background-color: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            display: flex;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .auth-section {
+            flex: 1;
+            padding: 3rem;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .divider {
+            width: 1px;
+            background-color: var(--border-color);
+            margin: 2rem 0;
+        }
+
+        .auth-section h2 {
+            font-size: 1.4rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-weight: 600;
+        }
+
+        .auth-section h2 svg {
+            width: 20px;
+            height: 20px;
+            fill: none;
+            stroke: currentColor;
+            stroke-width: 2;
+            stroke-linecap: round;
+            stroke-linejoin: round;
+        }
+
+        form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+            height: 100%;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        input {
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 0.8rem 0;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
+        }
+
+        input:focus {
+            outline: none;
+            border-bottom-color: var(--gold-light);
+        }
+
+        input::placeholder {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .forgot-link {
+            align-self: flex-end;
+            color: var(--text-muted);
+            text-decoration: none;
+            font-size: 0.8rem;
+            margin-top: -1rem;
+            transition: color 0.3s;
+        }
+
+        .forgot-link:hover {
+            color: var(--text-main);
+        }
+
+        .btn-spacer {
+            flex-grow: 1;
+        }
+
+        button {
+            background: linear-gradient(to right, var(--gold-light), var(--gold-dark));
+            color: #121212;
+            border: none;
+            padding: 1rem;
+            border-radius: 30px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s ease, box-shadow 0.2s ease;
+            box-shadow: 0 4px 15px rgba(230, 200, 117, 0.15);
+            margin-top: 1rem;
+        }
+
+        button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(230, 200, 117, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .auth-panel { flex-direction: column; }
+            .divider { width: 100%; height: 1px; margin: 0; }
+            .auth-section { padding: 2rem; }
+        }
+    </style>
 </head>
 <body>
-    <h1>Bienvenido a HabitQuest</h1>
-    <p>Aplicación SaaS en construcción (Hito 1).</p>
+
+    <canvas id="wavesCanvas"></canvas>
+
+    <div class="content-wrapper">
+        <header>
+            <h1>Querencia</h1>
+            <p class="subtitle">No escuches música. Siéntela, piénsala, compártela.</p>
+        </header>
+
+        <div class="auth-panel">
+            <div class="auth-section">
+                <h2>Entrar al Tablao 
+                    <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
+                </h2>
+                <form id="login-form">
+                    <div class="input-group">
+                        <input type="email" id="login-email" placeholder="Tu correo electrónico" required>
+                    </div>
+                    <div class="input-group">
+                        <input type="password" id="login-password" placeholder="Contraseña" required>
+                    </div>
+                    <a href="#" class="forgot-link">Olvidé mi contraseña</a>
+                    <div class="btn-spacer"></div>
+                    <button type="submit">Iniciar Sesión</button>
+                </form>
+            </div>
+
+            <div class="divider"></div>
+
+            <div class="auth-section">
+                <h2>Crear cuenta 
+                    <svg viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="8.5" cy="7" r="4"></circle><line x1="20" y1="8" x2="20" y2="14"></line><line x1="23" y1="11" x2="17" y2="11"></line></svg>
+                </h2>
+                <form id="register-form">
+                    <div class="input-group">
+                        <input type="email" id="reg-email" placeholder="Correo electrónico" required>
+                    </div>
+                    <div class="input-group">
+                        <input type="password" id="reg-password" placeholder="Crea una contraseña" required>
+                    </div>
+                    <div class="btn-spacer"></div>
+                    <button type="submit">Registrarse</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('wavesCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height;
+        let mouse = { x: -1000, y: -1000 }; 
+        let time = 0;
+
+        const waves = [
+            { amplitude: 40, length: 0.003, speed: 0.015, color: 'rgba(230, 200, 117, 0.1)', width: 1 },
+            { amplitude: 60, length: 0.002, speed: 0.01, color: 'rgba(197, 155, 61, 0.15)', width: 2 },
+            { amplitude: 30, length: 0.005, speed: 0.02, color: 'rgba(255, 255, 255, 0.05)', width: 1.5 }
+        ];
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        window.addEventListener('mousemove', (e) => {
+            mouse.x = e.clientX;
+            mouse.y = e.clientY;
+        });
+
+        window.addEventListener('mouseout', () => {
+            mouse.x = -1000;
+            mouse.y = -1000;
+        });
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            time += 1;
+
+            waves.forEach(wave => {
+                ctx.beginPath();
+                ctx.moveTo(0, height / 2);
+
+                for (let x = 0; x < width; x += 3) {
+                    let distToMouse = Math.abs(x - mouse.x);
+                    let influence = Math.max(0, 300 - distToMouse) / 300; 
+                    
+                    let dynamicAmplitude = wave.amplitude + (influence * 100);
+                    
+                    let y = Math.sin((x * wave.length) + (time * wave.speed)) * dynamicAmplitude;
+                    
+                    ctx.lineTo(x, (height / 2) + y + 50); 
+                }
+
+                ctx.strokeStyle = wave.color;
+                ctx.lineWidth = wave.width;
+                ctx.stroke();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
 </body>
 </html>
