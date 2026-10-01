@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diario Íntimo | Querencia</title>
+    <!-- Importando tipografías con alma -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-base: #060608;
+            --glass-bg: rgba(10, 10, 12, 0.6); 
+            --text-main: #f4f4f5;
+            --text-muted: #8b8f9e;
+            --gold-light: #eaddb3;
+            --gold-dark: #b89345;
+            --crimson-dark: #3a0a0a;
+            --border-color: rgba(184, 147, 69, 0.15);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            position: relative;
+            overflow: hidden;
+            /* Textura de grano (ruido) para darle un toque analógico/vinilo */
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+        }
+
+        /* --- Humo/Fuego de fondo --- */
+        #soulCanvas {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        /* --- Navegación --- */
+        nav {
+            padding: 2rem 4rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        }
+
+        .brand {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            font-style: italic;
+            color: var(--gold-light);
+            text-decoration: none;
+            letter-spacing: 1px;
+            text-shadow: 0 0 20px rgba(234, 221, 179, 0.2);
+        }
+
+        .nav-actions { display: flex; gap: 2rem; align-items: center; }
+
+        .now-playing {
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+            background: linear-gradient(90deg, rgba(58, 10, 10, 0.3) 0%, transparent 100%);
+            padding: 0.5rem 1.5rem;
+            border-left: 2px solid var(--crimson-dark);
+            border-radius: 4px;
+        }
+
+        .now-playing-text {
+            font-family: 'Lora', serif;
+            font-size: 0.9rem;
+            color: var(--gold-light);
+            font-style: italic;
+        }
+
+        .now-playing-icon {
+            width: 15px; height: 15px;
+            fill: var(--crimson-dark);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 0.7; }
+            50% { transform: scale(1.2); opacity: 1; }
+            100% { transform: scale(1); opacity: 0.7; }
+        }
+
+        .logout-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 1.2rem;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            font-family: inherit;
+        }
+        .logout-btn:hover {
+            border-color: var(--gold-dark);
+            color: var(--gold-light);
+        }
+
+        /* --- Layout --- */
+        main {
+            padding: 0 4rem;
+            max-width: 1400px;
+            margin: 2rem auto 0;
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            gap: 4rem;
+            height: calc(100vh - 200px);
+        }
+
+        /* --- Sidebar (Memoria) --- */
+        aside {
+            display: flex;
+            flex-direction: column;
+            border-right: 1px solid rgba(255, 255, 255, 0.03);
+            padding-right: 2rem;
+        }
+
+        h2.sidebar-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.1rem;
+            color: var(--text-muted);
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        h2.sidebar-title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px; left: 0;
+            width: 30px; height: 1px;
+            background-color: var(--gold-dark);
+        }
+
+        .entries-list { list-style: none; overflow-y: auto; }
+        .entries-list::-webkit-scrollbar { display: none; }
+
+        .entry-item {
+            font-family: 'Lora', serif;
+            padding: 1.2rem 0;
+            color: rgba(255, 255, 255, 0.4);
+            font-size: 1.05rem;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+        }
+
+        .entry-item:hover {
+            color: var(--gold-light);
+            padding-left: 10px;
+            border-bottom-color: rgba(184, 147, 69, 0.3);
+        }
+
+        /* --- Editor Principal (El Lienzo) --- */
+        .editor-area {
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            padding-left: 2rem;
+        }
+
+        .editor-header {
+            margin-bottom: 2rem;
+            animation: fadeIn 2s ease;
+        }
+
+        .date-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.5rem;
+            color: var(--text-main);
+            font-weight: 400;
+            margin-bottom: 0.5rem;
+        }
+
+        .poetic-prompt {
+            font-family: 'Lora', serif;
+            font-style: italic;
+            color: var(--gold-dark);
+            font-size: 1.2rem;
+            opacity: 0.8;
+        }
+
+        /* El área de escritura */
+        textarea {
+            flex-grow: 1;
+            background: transparent;
+            border: none;
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 1.35rem; /* Letra más grande y legible */
+            line-height: 2; /* Mucho respiro entre líneas */
+            resize: none;
+            font-family: 'Lora', serif; /* Fuente de libro clásico */
+            font-weight: 400;
+            padding-top: 1rem;
+        }
+
+        textarea:focus { outline: none; }
+        textarea::placeholder {
+            color: rgba(255, 255, 255, 0.1);
+        }
+        
+        /* Cursor personalizado dorado */
+        textarea { caret-color: var(--gold-light); }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Animación de fondo: Humo y fuego lento -->
+    <canvas id="soulCanvas"></canvas>
+
+    <nav>
+        <a href="muro.html" class="brand">Querencia.</a>
+        <div class="nav-actions">
+            <!-- Widget inspiracional -->
+            <div class="now-playing">
+                <svg class="now-playing-icon" viewBox="0 0 24 24"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                <span class="now-playing-text">La Leyenda del Tiempo</span>
+            </div>
+            <button class="logout-btn">Cerrar sesión</button>
+        </div>
+    </nav>
+
+    <main>
+        <aside>
+            <h2 class="sidebar-title">Tus Ecos</h2>
+            <ul class="entries-list">
+                <li class="entry-item">Ayer, en la madrugada</li>
+                <li class="entry-item">12 de Octubre</li>
+                <li class="entry-item">9 de Octubre</li>
+                <li class="entry-item">6 de Octubre</li>
+                <li class="entry-item">Septiembre</li>
+            </ul>
+        </aside>
+
+        <section class="editor-area">
+            <div class="editor-header">
+                <h1 class="date-title">Hoy.</h1>
+                <p class="poetic-prompt">"El sueño va sobre el tiempo, flotando como un velero..."</p>
+            </div>
+            <textarea placeholder="Deja que sangre el alma aquí..."></textarea>
+        </section>
+    </main>
+
+    <script>
+        const canvas = document.getElementById('soulCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height;
+        let time = 0;
+
+        // Ondas que simulan humo y calor: carmesí, oro viejo y sombras
+        const waves = [
+            { amplitude: 180, length: 0.001, speed: 0.001, color: 'rgba(58, 10, 10, 0.15)', width: 60, offset: 0 },
+            { amplitude: 120, length: 0.0015, speed: 0.0015, color: 'rgba(184, 147, 69, 0.05)', width: 40, offset: 100 },
+            { amplitude: 80, length: 0.002, speed: 0.002, color: 'rgba(234, 221, 179, 0.02)', width: 20, offset: -50 }
+        ];
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            time += 1;
+
+            // Difuminado extremo para que parezca humo/aura
+            ctx.filter = 'blur(20px)';
+
+            waves.forEach(wave => {
+                ctx.beginPath();
+                // Iniciamos la onda desde abajo, para que parezca que sube
+                ctx.moveTo(0, height * 0.7 + wave.offset);
+
+                for (let x = 0; x < width; x += 20) {
+                    // Movimiento orgánico y caótico
+                    let y = Math.sin((x * wave.length) + (time * wave.speed)) * wave.amplitude;
+                    let y2 = Math.cos((x * wave.length * 0.5) + (time * wave.speed * 0.8)) * (wave.amplitude * 0.5);
+                    
+                    ctx.lineTo(x, (height * 0.7) + y + y2 + wave.offset);
+                }
+
+                ctx.strokeStyle = wave.color;
+                ctx.lineWidth = wave.width;
+                ctx.stroke();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
