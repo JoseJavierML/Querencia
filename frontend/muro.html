@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Muro de Debates | Querencia</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-base: #060608;
+            --card-bg: rgba(12, 12, 15, 0.7); 
+            --text-main: #f4f4f5;
+            --text-muted: #8b8f9e;
+            --gold-light: #eaddb3;
+            --gold-dark: #b89345;
+            --crimson-dark: #3a0a0a;
+            --border-color: rgba(184, 147, 69, 0.15);
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+        }
+
+        #soulCanvas {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            opacity: 0.8;
+        }
+
+        /* --- Navegación --- */
+        nav {
+            padding: 2rem 4rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+        }
+
+        .brand {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            font-style: italic;
+            color: var(--gold-light);
+            text-decoration: none;
+            letter-spacing: 1px;
+            text-shadow: 0 0 20px rgba(234, 221, 179, 0.2);
+        }
+
+        .nav-actions { display: flex; gap: 2rem; align-items: center; }
+
+        .user-greeting {
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            font-weight: 300;
+            letter-spacing: 1px;
+        }
+
+        .logout-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 1.2rem;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            font-family: inherit;
+        }
+        
+        .logout-btn:hover {
+            border-color: var(--gold-dark);
+            color: var(--gold-light);
+        }
+
+        /* --- Contenedor Principal --- */
+        main {
+            padding: 4rem 4rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+        .page-header {
+            margin-bottom: 4rem;
+            text-align: center;
+        }
+
+        h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.8rem;
+            color: var(--text-main);
+            font-weight: 400;
+            margin-bottom: 1rem;
+            letter-spacing: 1px;
+        }
+
+        .subtitle {
+            font-family: 'Lora', serif;
+            color: var(--gold-dark);
+            font-style: italic;
+            font-size: 1.1rem;
+            opacity: 0.8;
+        }
+
+        /* --- Grid de Debates Editorial --- */
+        .debate-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+            gap: 3rem;
+        }
+
+        /* --- Tarjetas con estilo "Revista Literaria" --- */
+        .debate-card {
+            background: linear-gradient(to bottom, rgba(15, 15, 18, 0.8), rgba(10, 10, 12, 0.95));
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-top: 1px solid var(--border-color);
+            padding: 2rem;
+            display: flex;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
+            transition: transform 0.4s ease, box-shadow 0.4s ease;
+            border-radius: 4px;
+        }
+
+        .debate-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(234, 221, 179, 0.4);
+            border-top: 1px solid var(--gold-light);
+        }
+
+        /* --- Contenedor de la Imagen del Álbum/Obra --- */
+        .album-cover-wrapper {
+            width: 100%;
+            height: 220px;
+            border-radius: 2px;
+            overflow: hidden;
+            margin-bottom: 1.5rem;
+            border: 1px solid rgba(255,255,255,0.05);
+            position: relative;
+        }
+
+        .album-cover {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.7s ease, filter 0.5s ease;
+            /* Filtro inicial para que parezca antiguo/oscuro */
+            filter: grayscale(40%) contrast(120%) brightness(0.8);
+        }
+
+        /* Al pasar el ratón por la tarjeta, la imagen cobra vida */
+        .debate-card:hover .album-cover {
+            transform: scale(1.05);
+            filter: grayscale(0%) contrast(100%) brightness(1);
+        }
+
+        .debate-meta {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.75rem;
+            color: var(--gold-dark);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .debate-meta::before {
+            content: '';
+            display: block;
+            width: 20px;
+            height: 1px;
+            background-color: var(--gold-dark);
+        }
+
+        .debate-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.6rem;
+            color: var(--text-main);
+            margin-bottom: 1.2rem;
+            font-weight: 600;
+            line-height: 1.3;
+        }
+
+        .debate-text {
+            font-family: 'Lora', serif;
+            color: rgba(244, 244, 245, 0.75);
+            font-size: 1.05rem;
+            line-height: 1.7;
+            margin-bottom: 2rem;
+            flex-grow: 1;
+        }
+
+        /* --- Reacciones del Alma --- */
+        .reactions-container {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .reaction-tag {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.4rem 1rem;
+            border-radius: 30px;
+            font-family: 'Lora', serif;
+            font-size: 0.9rem;
+            font-style: italic;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .reaction-tag span.count {
+            font-family: -apple-system, sans-serif;
+            font-style: normal;
+            font-size: 0.75rem;
+            color: rgba(255, 255, 255, 0.3);
+            transition: color 0.3s;
+        }
+
+        .reaction-tag:hover, .reaction-tag.active {
+            border-color: var(--gold-dark);
+            color: var(--gold-light);
+            background-color: rgba(184, 147, 69, 0.05);
+        }
+
+        .reaction-tag:hover span.count, .reaction-tag.active span.count {
+            color: var(--gold-dark);
+        }
+
+        @media (max-width: 768px) {
+            nav { padding: 1.5rem 2rem; }
+            main { padding: 2rem; }
+            .debate-grid { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="soulCanvas"></canvas>
+
+    <nav>
+        <a href="diario.html" class="brand">Querencia.</a>
+        <div class="nav-actions">
+            <span class="user-greeting">Refugio de Oyente</span>
+            <button class="logout-btn">Cerrar sesión</button>
+        </div>
+    </nav>
+
+    <main>
+        <div class="page-header">
+            <h1>Ecos de la Comunidad</h1>
+            <p class="subtitle">Lee, siente y reacciona con el alma.</p>
+        </div>
+
+        <div class="debate-grid">
+            <article class="debate-card">
+                <!-- Imagen de maqueta: Guitarra flamenca abstracta -->
+                <div class="album-cover-wrapper">
+                    <img src="https://images.unsplash.com/photo-1533174000243-772719a778c1?auto=format&fit=crop&q=80&w=600" alt="Omega" class="album-cover">
+                </div>
+                <div class="debate-meta">Abierto por Editor_01 • Hace 2 horas</div>
+                <h2 class="debate-title">La ruptura temporal en 'Omega'</h2>
+                <p class="debate-text">
+                    Enrique Morente y Lagartija Nick no solo fusionaron flamenco y rock. Destruyeron el compás tradicional para construir una nueva forma de entender el tiempo en la música. ¿Es el ruido una nueva forma de silencio? ¿O es el grito desesperado de un Lorca contemporáneo?
+                </p>
+                <div class="reactions-container">
+                    <button class="reaction-tag active">Rompe esquemas <span class="count">19</span></button>
+                    <button class="reaction-tag">Profundo <span class="count">27</span></button>
+                </div>
+            </article>
+
+            <article class="debate-card">
+                <!-- Imagen de maqueta: Trompeta jazz en sombras -->
+                <div class="album-cover-wrapper">
+                    <img src="https://images.unsplash.com/photo-1511192336575-5a79af67a629?auto=format&fit=crop&q=80&w=600" alt="Kind of Blue" class="album-cover">
+                </div>
+                <div class="debate-meta">Abierto por Editor_02 • Ayer</div>
+                <h2 class="debate-title">El silencio de Miles Davis</h2>
+                <p class="debate-text">
+                    "La música es el espacio entre las notas". Esta frase cobra sentido absoluto en Kind of Blue. No es lo que toca, es lo que decide callar lo que te rompe el alma. Un análisis de la melancolía a través de la trompeta y la ausencia deliberada de sonido.
+                </p>
+                <div class="reactions-container">
+                    <button class="reaction-tag">Melancólico <span class="count">45</span></button>
+                    <button class="reaction-tag active">Íntimo <span class="count">12</span></button>
+                </div>
+            </article>
+
+            <article class="debate-card">
+                <!-- Imagen de maqueta: Abstracto/Tecnológico -->
+                <div class="album-cover-wrapper">
+                    <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=600" alt="IA y Música" class="album-cover">
+                </div>
+                <div class="debate-meta">Abierto por Editor_03 • 28 de Septiembre</div>
+                <h2 class="debate-title">La artificialidad del dolor</h2>
+                <p class="debate-text">
+                    Exploramos cómo la inteligencia artificial está redefiniendo la creatividad. Desde melodías algorítmicas hasta la síntesis de voz, ¿puede una máquina replicar el desgarro de un cante jondo? Debatimos el límite ético entre la técnica pura y la vivencia humana.
+                </p>
+                <div class="reactions-container">
+                    <button class="reaction-tag">Inquietante <span class="count">51</span></button>
+                    <button class="reaction-tag">Tecnológico <span class="count">18</span></button>
+                </div>
+            </article>
+        </div>
+    </main>
+
+    <script>
+        const canvas = document.getElementById('soulCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height;
+        let time = 0;
+
+        const waves = [
+            { amplitude: 180, length: 0.001, speed: 0.001, color: 'rgba(58, 10, 10, 0.15)', width: 60, offset: 0 },
+            { amplitude: 120, length: 0.0015, speed: 0.0015, color: 'rgba(184, 147, 69, 0.05)', width: 40, offset: 100 },
+            { amplitude: 80, length: 0.002, speed: 0.002, color: 'rgba(234, 221, 179, 0.02)', width: 20, offset: -50 }
+        ];
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            time += 1;
+
+            ctx.filter = 'blur(20px)';
+
+            waves.forEach(wave => {
+                ctx.beginPath();
+                ctx.moveTo(0, height * 0.7 + wave.offset);
+
+                for (let x = 0; x < width; x += 20) {
+                    let y = Math.sin((x * wave.length) + (time * wave.speed)) * wave.amplitude;
+                    let y2 = Math.cos((x * wave.length * 0.5) + (time * wave.speed * 0.8)) * (wave.amplitude * 0.5);
+                    ctx.lineTo(x, (height * 0.7) + y + y2 + wave.offset);
+                }
+
+                ctx.strokeStyle = wave.color;
+                ctx.lineWidth = wave.width;
+                ctx.stroke();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+    </script>
+</body>
+</html>
