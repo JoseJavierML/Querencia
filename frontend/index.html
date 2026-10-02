@@ -341,5 +341,45 @@
 
         animate();
     </script>
+   //Autentificacion y registro de usuarios
+    <script type="module">
+        import { api } from './js/api.js';
+
+        const loginForm = document.getElementById('login-form');
+        const registerForm = document.getElementById('register-form');
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault(); // Evita que la página recargue bruscamente
+            
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+
+            try {
+                const respuesta = await api.login(email, password);
+                console.log('Login exitoso:', respuesta);
+
+                window.location.href = 'diario.html';
+            } catch (error) {
+                alert('Fallo de acceso al tablao: ' + error.message);
+            }
+        });
+
+        registerForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const email = document.getElementById('reg-email').value;
+            const password = document.getElementById('reg-password').value;
+
+            try {
+                const respuesta = await api.registro(email, password);
+                console.log('Registro exitoso:', respuesta);
+                alert('¡Bienvenido! Tu cuenta ha sido creada. Ya puedes iniciar sesión.');
+                
+                registerForm.reset();
+            } catch (error) {
+                alert('Error al crear la cuenta: ' + error.message);
+            }
+        });
+    </script>
 </body>
 </html>
