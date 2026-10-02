@@ -4,26 +4,27 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Querencia | El refugio del oyente</title>
+    <!-- Tipografías literarias con alma -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            --bg-color: #121418;
-            --panel-bg: #1a1c23;
-            --text-main: #f0f0f0;
-            --text-muted: #888a92;
-            --gold-light: #e6c875;
-            --gold-dark: #c59b3d;
-            --border-color: #333642;
+            --bg-base: #060608;
+            --glass-bg: rgba(10, 10, 12, 0.65); 
+            --text-main: #f4f4f5;
+            --text-muted: #8b8f9e;
+            --gold-light: #eaddb3;
+            --gold-dark: #b89345;
+            --crimson-dark: #3a0a0a;
+            --border-color: rgba(184, 147, 69, 0.15);
         }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-            background-color: var(--bg-color);
+            background-color: var(--bg-base);
             color: var(--text-main);
             min-height: 100vh;
             display: flex;
@@ -32,16 +33,17 @@
             justify-content: center;
             overflow: hidden; 
             position: relative;
+            /* Textura de grano/ruido analógico */
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
         }
 
-        #wavesCanvas {
+        /* --- Lienzo de Humo Interactivo y Destacado --- */
+        #soulCanvas {
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
+            top: 0; left: 0; width: 100%; height: 100%;
             z-index: 0;
-            pointer-events: auto;
+            pointer-events: auto; /* Permite capturar el movimiento del ratón */
+            opacity: 1;
         }
 
         .content-wrapper {
@@ -53,99 +55,104 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            pointer-events: none;
+            pointer-events: none; /* Deja pasar el ratón al canvas en las zonas vacías */
         }
 
         .content-wrapper > * {
-            pointer-events: auto; 
+            pointer-events: auto; /* Reactiva los clics en los formularios */
         }
 
         header {
             text-align: center;
             margin-bottom: 3rem;
+            animation: fadeIn 2s ease;
         }
 
         h1 {
-            font-size: 3.5rem;
+            font-family: 'Playfair Display', serif;
+            font-size: 4.5rem;
             margin-bottom: 0.5rem;
-            background: linear-gradient(to right, var(--gold-light), var(--gold-dark));
-            -webkit-background-clip: text;
-            background-clip: text;
-            color: transparent;
+            color: var(--gold-light);
             font-weight: 700;
-            letter-spacing: -1px;
+            font-style: italic;
+            letter-spacing: 2px;
+            text-shadow: 0 0 30px rgba(234, 221, 179, 0.25);
         }
 
         p.subtitle {
-            font-size: 1.1rem;
-            color: var(--text-muted);
-            font-weight: 300;
+            font-family: 'Lora', serif;
+            font-size: 1.2rem;
+            color: rgba(244, 244, 245, 0.8);
+            font-style: italic;
+            letter-spacing: 1px;
         }
 
+        /* --- Panel de Cristal (Glassmorphism) --- */
         .auth-panel {
-            background-color: var(--panel-bg);
+            background-color: var(--glass-bg);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
             border: 1px solid var(--border-color);
-            border-radius: 16px;
+            border-radius: 4px;
             display: flex;
             width: 100%;
-            max-width: 800px;
-            box-shadow: 0 20px 40px rgba(0,0,0,0.6);
+            max-width: 850px;
+            box-shadow: inset 0 0 40px rgba(0,0,0,0.4), 0 20px 50px rgba(0,0,0,0.7);
             overflow: hidden;
-            backdrop-filter: blur(10px);
+            animation: fadeInUp 1.5s ease 0.5s both;
         }
 
         .auth-section {
             flex: 1;
-            padding: 3rem;
+            padding: 3.5rem;
             display: flex;
             flex-direction: column;
         }
 
         .divider {
             width: 1px;
-            background-color: var(--border-color);
-            margin: 2rem 0;
+            background: linear-gradient(to bottom, transparent, rgba(184, 147, 69, 0.3), transparent);
         }
 
         .auth-section h2 {
-            font-size: 1.4rem;
-            margin-bottom: 2rem;
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            margin-bottom: 2.5rem;
+            color: var(--text-main);
+            font-weight: 400;
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            font-weight: 600;
+            gap: 0.8rem;
         }
 
         .auth-section h2 svg {
-            width: 20px;
-            height: 20px;
-            fill: none;
-            stroke: currentColor;
-            stroke-width: 2;
-            stroke-linecap: round;
-            stroke-linejoin: round;
+            width: 20px; height: 20px;
+            fill: none; stroke: var(--gold-dark);
+            stroke-width: 1.5; stroke-linecap: round; stroke-linejoin: round;
         }
 
         form {
             display: flex;
             flex-direction: column;
-            gap: 1.5rem;
+            gap: 2rem;
             height: 100%;
         }
 
         .input-group {
             display: flex;
             flex-direction: column;
+            position: relative;
         }
 
         input {
             background: transparent;
             border: none;
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
             color: var(--text-main);
             padding: 0.8rem 0;
-            font-size: 1rem;
-            transition: border-color 0.3s ease;
+            font-size: 1.1rem;
+            font-family: 'Lora', serif;
+            transition: border-color 0.4s ease;
         }
 
         input:focus {
@@ -154,60 +161,77 @@
         }
 
         input::placeholder {
-            color: var(--text-muted);
-            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.3);
+            font-style: italic;
+        }
+
+        input:-webkit-autofill {
+            -webkit-box-shadow: 0 0 0 30px #0a0a0c inset !important;
+            -webkit-text-fill-color: var(--text-main) !important;
         }
 
         .forgot-link {
             align-self: flex-end;
+            font-family: 'Lora', serif;
             color: var(--text-muted);
             text-decoration: none;
-            font-size: 0.8rem;
-            margin-top: -1rem;
+            font-size: 0.85rem;
+            font-style: italic;
+            margin-top: -1.2rem;
             transition: color 0.3s;
         }
 
-        .forgot-link:hover {
-            color: var(--text-main);
-        }
+        .forgot-link:hover { color: var(--gold-light); }
 
-        .btn-spacer {
-            flex-grow: 1;
-        }
+        .btn-spacer { flex-grow: 1; }
 
         button {
-            background: linear-gradient(to right, var(--gold-light), var(--gold-dark));
-            color: #121212;
-            border: none;
+            background: transparent;
+            color: var(--gold-light);
+            border: 1px solid var(--gold-dark);
             padding: 1rem;
             border-radius: 30px;
-            font-weight: 600;
-            font-size: 1rem;
+            font-family: 'Lora', serif;
+            font-size: 1.1rem;
             cursor: pointer;
-            transition: transform 0.2s ease, box-shadow 0.2s ease;
-            box-shadow: 0 4px 15px rgba(230, 200, 117, 0.15);
+            transition: all 0.4s ease;
             margin-top: 1rem;
+            position: relative;
+            overflow: hidden;
         }
 
         button:hover {
+            background: rgba(184, 147, 69, 0.15);
+            box-shadow: 0 0 25px rgba(184, 147, 69, 0.25);
             transform: translateY(-2px);
-            box-shadow: 0 6px 20px rgba(230, 200, 117, 0.3);
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
         }
 
         @media (max-width: 768px) {
             .auth-panel { flex-direction: column; }
-            .divider { width: 100%; height: 1px; margin: 0; }
-            .auth-section { padding: 2rem; }
+            .divider { width: 100%; height: 1px; background: linear-gradient(to right, transparent, rgba(184, 147, 69, 0.3), transparent); }
+            .auth-section { padding: 2.5rem; }
+            h1 { font-size: 3.5rem; }
         }
     </style>
 </head>
 <body>
 
-    <canvas id="wavesCanvas"></canvas>
+    <!-- Lienzo de ondas interactivas llamativas -->
+    <canvas id="soulCanvas"></canvas>
 
     <div class="content-wrapper">
         <header>
-            <h1>Querencia</h1>
+            <h1>Querencia.</h1>
             <p class="subtitle">No escuches música. Siéntela, piénsala, compártela.</p>
         </header>
 
@@ -218,7 +242,7 @@
                 </h2>
                 <form id="login-form">
                     <div class="input-group">
-                        <input type="email" id="login-email" placeholder="Tu correo electrónico" required>
+                        <input type="email" id="login-email" placeholder="Correo electrónico" required>
                     </div>
                     <div class="input-group">
                         <input type="password" id="login-password" placeholder="Contraseña" required>
@@ -249,18 +273,21 @@
         </div>
     </div>
 
+    <!-- Script de ondas dinámicas con alta respuesta al ratón -->
     <script>
-        const canvas = document.getElementById('wavesCanvas');
+        const canvas = document.getElementById('soulCanvas');
         const ctx = canvas.getContext('2d');
         
         let width, height;
-        let mouse = { x: -1000, y: -1000 }; 
         let time = 0;
+        let mouseX = -1000;
+        let mouseY = -1000;
 
+        // Ondas más definidas, con colores más vivos y mayor amplitud
         const waves = [
-            { amplitude: 40, length: 0.003, speed: 0.015, color: 'rgba(230, 200, 117, 0.1)', width: 1 },
-            { amplitude: 60, length: 0.002, speed: 0.01, color: 'rgba(197, 155, 61, 0.15)', width: 2 },
-            { amplitude: 30, length: 0.005, speed: 0.02, color: 'rgba(255, 255, 255, 0.05)', width: 1.5 }
+            { amplitude: 220, length: 0.0012, speed: 0.0012, color: 'rgba(75, 12, 12, 0.35)', width: 90, offset: 40 },
+            { amplitude: 160, length: 0.0018, speed: 0.0018, color: 'rgba(212, 168, 79, 0.15)', width: 55, offset: 130 },
+            { amplitude: 100, length: 0.0025, speed: 0.0025, color: 'rgba(255, 238, 190, 0.08)', width: 25, offset: -30 }
         ];
 
         function resize() {
@@ -271,33 +298,41 @@
         window.addEventListener('resize', resize);
         resize();
 
+        // Rastrear el ratón por toda la pantalla
         window.addEventListener('mousemove', (e) => {
-            mouse.x = e.clientX;
-            mouse.y = e.clientY;
+            mouseX = e.clientX;
+            mouseY = e.clientY;
         });
 
         window.addEventListener('mouseout', () => {
-            mouse.x = -1000;
-            mouse.y = -1000;
+            mouseX = -1000;
+            mouseY = -1000;
         });
 
         function animate() {
             ctx.clearRect(0, 0, width, height);
             time += 1;
 
+            // Menos blur para que el humo resalte con fuerza y se vea nítido
+            ctx.filter = 'blur(16px)';
+
             waves.forEach(wave => {
                 ctx.beginPath();
-                ctx.moveTo(0, height / 2);
+                ctx.moveTo(0, height * 0.75 + wave.offset);
 
-                for (let x = 0; x < width; x += 3) {
-                    let distToMouse = Math.abs(x - mouse.x);
-                    let influence = Math.max(0, 300 - distToMouse) / 300; 
+                for (let x = 0; x < width; x += 20) {
+                    let distToMouse = Math.abs(x - mouseX);
+                    let influence = Math.max(0, 400 - distToMouse) / 400; // Mayor radio de atracción (400px)
                     
-                    let dynamicAmplitude = wave.amplitude + (influence * 100);
+                    // Reacción mucho más marcada y viva al acercar el cursor
+                    let dynamicAmplitude = wave.amplitude + (influence * 120);
                     
                     let y = Math.sin((x * wave.length) + (time * wave.speed)) * dynamicAmplitude;
+                    let y2 = Math.cos((x * wave.length * 0.4) + (time * wave.speed * 0.7)) * (dynamicAmplitude * 0.4);
                     
-                    ctx.lineTo(x, (height / 2) + y + 50); 
+                    let verticalPull = (mouseY - (height * 0.75)) * influence * 0.15;
+
+                    ctx.lineTo(x, (height * 0.75) + y + y2 + wave.offset + verticalPull);
                 }
 
                 ctx.strokeStyle = wave.color;
