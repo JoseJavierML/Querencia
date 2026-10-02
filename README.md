@@ -30,6 +30,6 @@ npm test
 
 ## Estado Actual (Sprint 1)
 - [x] **Hito 1:** Esqueleto, backend (lógica en memoria), API, pruebas automatizadas, pipeline de Integración Continua (CI) y Despliegue Continuo (CD).
-- [ ] **Hito 2:** Interfaz frontend, registro e inicio de sesión, mantenimiento de sesión.
+- [x] **Hito 2:** Interfaz frontend, registro e inicio de sesión, mantenimiento de sesión.
 - [ ] **Hito 3:** Persistencia real en base de datos y validación de roles.
 - [ ] **Hito 4:** Autenticación OAuth externa y confirmación por correo.
