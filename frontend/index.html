@@ -273,7 +273,6 @@
         </div>
     </div>
 
-    <!-- Script de ondas dinámicas con alta respuesta al ratón -->
     <script>
         const canvas = document.getElementById('soulCanvas');
         const ctx = canvas.getContext('2d');
@@ -283,7 +282,6 @@
         let mouseX = -1000;
         let mouseY = -1000;
 
-        // Ondas más definidas, con colores más vivos y mayor amplitud
         const waves = [
             { amplitude: 220, length: 0.0012, speed: 0.0012, color: 'rgba(75, 12, 12, 0.35)', width: 90, offset: 40 },
             { amplitude: 160, length: 0.0018, speed: 0.0018, color: 'rgba(212, 168, 79, 0.15)', width: 55, offset: 130 },
@@ -313,7 +311,6 @@
             ctx.clearRect(0, 0, width, height);
             time += 1;
 
-            // Menos blur para que el humo resalte con fuerza y se vea nítido
             ctx.filter = 'blur(16px)';
 
             waves.forEach(wave => {
@@ -322,9 +319,8 @@
 
                 for (let x = 0; x < width; x += 20) {
                     let distToMouse = Math.abs(x - mouseX);
-                    let influence = Math.max(0, 400 - distToMouse) / 400; // Mayor radio de atracción (400px)
+                    let influence = Math.max(0, 400 - distToMouse) / 400; 
                     
-                    // Reacción mucho más marcada y viva al acercar el cursor
                     let dynamicAmplitude = wave.amplitude + (influence * 120);
                     
                     let y = Math.sin((x * wave.length) + (time * wave.speed)) * dynamicAmplitude;

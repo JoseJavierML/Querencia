@@ -121,7 +121,6 @@
             gap: 3rem;
         }
 
-        /* --- Tarjetas con Luz de Seguimiento de Ratón --- */
         .debate-card {
             --mouse-x: 50%;
             --mouse-y: 50%;
@@ -365,13 +364,11 @@
         ];
 
         cards.forEach(card => {
-            // 1. Asignar color aleatorio al entrar a la tarjeta
             card.addEventListener('mouseenter', () => {
                 const randomAura = auras[Math.floor(Math.random() * auras.length)];
                 card.style.setProperty('--aura-color', randomAura);
             });
-            
-            // 2. Rastrear posición del ratón para mover el centro de la máscara
+
             card.addEventListener('mousemove', (e) => {
                 const rect = card.getBoundingClientRect();
                 const x = e.clientX - rect.left;
@@ -384,7 +381,6 @@
         });
     </script>
 
-    <!-- Script de ondas estáticas del fondo -->
     <script>
         const canvas = document.getElementById('soulCanvas');
         const ctx = canvas.getContext('2d');
