@@ -426,5 +426,25 @@
 
         animate();
     </script>
+
+    <script type="module">
+        import { api } from './js/api.js'; 
+
+        document.addEventListener('DOMContentLoaded', async () => {
+            const tieneSesion = await api.checkSession();
+            
+            if (!tieneSesion) {
+                alert('Debes iniciar sesión para acceder al Muro de Debates.');
+                window.location.href = 'index.html'; 
+            }
+        });
+
+        const btnLogout = document.querySelector('.logout-btn');
+        if (btnLogout) {
+            btnLogout.addEventListener('click', async () => {
+                await api.logout();
+            });
+        }
+    </script>
 </body>
 </html>
