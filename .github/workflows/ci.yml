@@ -25,6 +25,8 @@ jobs:
         npm ci
 
     - name: Ejecutar pruebas automatizadas
+      env:
+        MONGO_URI: ${{ secrets.MONGO_URI }}
       run: |
         cd backend
-        npm test
+        npm tests
