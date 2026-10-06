@@ -1,10 +1,24 @@
+const mongoose = require('mongoose');
+require('dotenv').config();
 const UserModel = require('./userModel');
 
-beforeEach(() => {
-    UserModel.reset();
+beforeAll(async () => {
+    const testUri = process.env.MONGO_URI 
+        ? process.env.MONGO_URI.replace('/querencia?', '/querencia_test?') 
+        : 'mongodb://127.0.0.1:27017/querencia_test';
+        
+    await mongoose.connect(testUri);
 });
 
-describe('Gestión de Usuarios (Lógica en memoria con Bcrypt)', () => {
+beforeEach(async () => {
+    await UserModel.reset();
+});
+
+afterAll(async () => {
+    await mongoose.connection.close();
+});
+
+describe('Gestión de Usuarios (Persistencia en MongoDB con Bcrypt)', () => {
     
     test('1. Permite registrar un usuario nuevo', async () => {
         const user = await UserModel.create('test@correo.com', 'clave123', 'usuario', 'pendiente');
@@ -25,7 +39,7 @@ describe('Gestión de Usuarios (Lógica en memoria con Bcrypt)', () => {
     test('3. Permite listar a los usuarios registrados', async () => {
         await UserModel.create('lista@correo.com', 'clave123', 'usuario', 'pendiente');
         
-        const users = UserModel.getAll();
+        const users = await UserModel.getAll();
         expect(users.length).toBeGreaterThan(0);
     });
 
@@ -33,8 +47,8 @@ describe('Gestión de Usuarios (Lógica en memoria con Bcrypt)', () => {
         await UserModel.create('activo@correo.com', 'clave123', 'usuario', 'activo');
         await UserModel.create('pendiente@correo.com', 'clave123', 'usuario', 'pendiente');
         
-        const esActivo = UserModel.isActive('activo@correo.com');
-        const esPendiente = UserModel.isActive('pendiente@correo.com'); 
+        const esActivo = await UserModel.isActive('activo@correo.com'); 
+        const esPendiente = await UserModel.isActive('pendiente@correo.com'); 
         
         expect(esActivo).toBe(true);
         expect(esPendiente).toBe(false);
@@ -43,12 +57,12 @@ describe('Gestión de Usuarios (Lógica en memoria con Bcrypt)', () => {
     test('5. Permite eliminar un usuario y lanza error si no existe', async () => {
         await UserModel.create('activo@correo.com', 'clave123', 'usuario', 'activo');
         
-        const resultado = UserModel.delete('activo@correo.com');
+        const resultado = await UserModel.delete('activo@correo.com'); 
         expect(resultado).toBe(true);
         
-        expect(() => {
-            UserModel.delete('activo@correo.com');
-        }).toThrow('Usuario no encontrado');
+        await expect(
+            UserModel.delete('activo@correo.com')
+        ).rejects.toThrow('Usuario no encontrado'); 
     });
 
     test('6. Verifica el login comprobando el hash de Bcrypt', async () => {
