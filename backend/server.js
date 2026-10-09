@@ -13,7 +13,8 @@ connectDB();
 
 app.use(cors());
 app.use(express.json());
-
+const path = require('path');
+app.use(express.static(path.join(__dirname, '../frontend')));
 app.post('/api/registro', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -79,7 +80,7 @@ app.get('/api/admin/dashboard', authMiddleware, isAdminMiddleware, (req, res) =>
 app.delete('/api/users/:email', authMiddleware, isAdminMiddleware, async (req, res) => {
     try {
         const { email } = req.params;
-        await userModel.deleteUser(email);
+        await userModel.delete(email); // Cambiado a userModel.delete
         res.status(200).json({ message: `Usuario ${email} eliminado correctamente por el administrador` });
     } catch (error) {
         res.status(400).json({ message: error.message });
@@ -88,7 +89,7 @@ app.delete('/api/users/:email', authMiddleware, isAdminMiddleware, async (req, r
 
 app.get('/api/users', authMiddleware, isAdminMiddleware, async (req, res) => {
     try {
-        const users = await userModel.getUsers();
+        const users = await userModel.getAll(); // Cambiado a userModel.getAll
         res.status(200).json(users);
     } catch (error) {
         res.status(500).json({ message: error.message });
