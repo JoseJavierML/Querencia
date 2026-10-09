@@ -86,6 +86,15 @@ app.delete('/api/users/:email', authMiddleware, isAdminMiddleware, async (req, r
     }
 });
 
+app.get('/api/users', authMiddleware, isAdminMiddleware, async (req, res) => {
+    try {
+        const users = await userModel.getUsers();
+        res.status(200).json(users);
+    } catch (error) {
+        res.status(500).json({ message: error.message });
+    }
+});
+
 app.listen(PORT, () => {
     console.log(`🚀 Servidor de Querencia corriendo en http://localhost:${PORT}`);
 });
