@@ -1,0 +1,35 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Querencia - Panel de Administración</title>
+    <link rel="stylesheet" href="style.css"> <!-- Usa tu CSS o estilos globales -->
+</head>
+<body>
+    <header>
+        <h1>Panel de Administración</h1>
+        <button id="logoutBtn">Cerrar Sesión</button>
+    </header>
+
+    <main>
+        <h2>Gestión de Usuarios</h2>
+        <p id="errorMessage" style="color: red;"></p>
+        
+        <table border="1" id="usersTable">
+            <thead>
+                <tr>
+                    <th>Email</th>
+                    <th>Rol</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody id="usersTableBody">
+                <!-- Se rellena dinámicamente -->
+            </tbody>
+        </table>
+    </main>
+
+    <script src="js/admin.js"></script>
+</body>
+</html>
