@@ -3,6 +3,7 @@ const express = require('express');
 const cors = require('cors');
 const userModel = require('./userModel');
 const { authMiddleware, generateToken, deleteToken } = require('./authMiddleware');
+const isAdminMiddleware = require('./adminMiddleware');
 const connectDB = require('./database.js');
 
 const app = express();
@@ -68,6 +69,21 @@ app.post('/api/logout', (req, res) => {
         deleteToken(token);
     }
     res.status(200).json({ message: 'Sesión cerrada correctamente' });
+});
+
+
+app.get('/api/admin/dashboard', authMiddleware, isAdminMiddleware, (req, res) => {
+    res.status(200).json({ message: 'Bienvenido al panel de administración', user: req.user });
+});
+
+app.delete('/api/users/:email', authMiddleware, isAdminMiddleware, async (req, res) => {
+    try {
+        const { email } = req.params;
+        await userModel.deleteUser(email);
+        res.status(200).json({ message: `Usuario ${email} eliminado correctamente por el administrador` });
+    } catch (error) {
+        res.status(400).json({ message: error.message });
+    }
 });
 
 app.listen(PORT, () => {
