@@ -1,0 +1,5 @@
+[2026-10-09 23:46:03] INFO: 🚀 Servidor de Querencia corriendo en http://localhost:3000
+[2026-10-09 23:46:24] INFO: [0mPOST /api/login [32m200[0m 344.281 ms - 134[0m
+[2026-10-09 23:46:24] INFO: [0mGET /api/session [32m200[0m 4.365 ms - 76[0m
+[2026-10-09 23:46:27] INFO: [0mGET /api/session [36m304[0m 0.516 ms - -[0m
+[2026-10-09 23:46:29] INFO: [0mGET /api/session [36m304[0m 0.953 ms - -[0m
