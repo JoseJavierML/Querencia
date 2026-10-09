@@ -1,4 +1,6 @@
 require('dotenv').config();
+const morgan = require('morgan');
+const logger = require('./logger');
 const express = require('express');
 const cors = require('cors');
 const userModel = require('./userModel');
@@ -33,7 +35,9 @@ app.post('/api/registro', async (req, res) => {
         res.status(400).json({ message: error.message });
     }
 });
-
+app.use(morgan('dev', {
+    stream: { write: message => logger.info(message.trim()) }
+}));
 app.post('/api/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -97,5 +101,5 @@ app.get('/api/users', authMiddleware, isAdminMiddleware, async (req, res) => {
 });
 
 app.listen(PORT, () => {
-    console.log(`🚀 Servidor de Querencia corriendo en http://localhost:${PORT}`);
+    logger.info(`🚀 Servidor de Querencia corriendo en http://localhost:${PORT}`);
 });
