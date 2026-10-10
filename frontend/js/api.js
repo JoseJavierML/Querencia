@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:3000/api'; 
+const BASE_URL = '/api'; 
 
 async function fetchAPI(endpoint, options = {}) {
     try {
@@ -26,7 +26,6 @@ async function fetchAPI(endpoint, options = {}) {
         throw error;
     }
 }
-
 
 export const api = {
     registro: async (email, password) => {
