@@ -9,7 +9,8 @@ const isAdminMiddleware = require('./adminMiddleware');
 const connectDB = require('./database.js');
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
-
+const crypto = require('crypto');
+const { sendVerificationEmail } = require('./mailer');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -49,14 +50,32 @@ app.post('/api/registro', async (req, res) => {
             return res.status(400).json({ message: 'El correo y la contraseña son obligatorios' });
         }
 
-        const nuevoUsuario = await userModel.create(email, password);
-        
+        const verificationToken = crypto.randomBytes(20).toString('hex');
+
+        const nuevoUsuario = await userModel.create(email, password, verificationToken);
+
+        sendVerificationEmail(email, verificationToken);
+
         res.status(201).json({ 
-            message: 'Usuario registrado con éxito', 
+            message: 'Usuario registrado. Revisa tu correo para verificar la cuenta.', 
             user: { email: nuevoUsuario.email, role: nuevoUsuario.role } 
         });
     } catch (error) {
         res.status(400).json({ message: error.message });
+    }
+});
+
+app.get('/api/auth/verify/:token', async (req, res) => {
+    try {
+        await userModel.verifyUser(req.params.token);
+        res.send(`
+            <script>
+                alert('¡Cuenta verificada con éxito en el tablao! Ya puedes iniciar sesión.');
+                window.location.href = '/index.html';
+            </script>
+        `);
+    } catch (error) {
+        res.status(400).send(`<h2 style="color:red; text-align:center; margin-top:50px;">Error: ${error.message}</h2>`);
     }
 });
 
@@ -69,7 +88,6 @@ app.post('/api/login', async (req, res) => {
         }
 
         const usuario = await userModel.login(email, password);
-        
         const token = generateToken({ email: usuario.email, role: usuario.role });
 
         res.status(200).json({ 
@@ -81,34 +99,6 @@ app.post('/api/login', async (req, res) => {
         res.status(401).json({ message: error.message });
     }
 });
-
-app.get('/api/auth/google',
-    passport.authenticate('google', { scope: ['profile', 'email'], session: false })
-);
-
-app.get('/api/auth/google/callback', 
-    passport.authenticate('google', { failureRedirect: '/index.html', session: false }),
-    (req, res) => {
-        const token = generateToken({ email: req.user.email, role: req.user.role });
-        
-        res.send(`
-            <script>
-                localStorage.setItem('querencia_token', '${token}');
-                localStorage.setItem('querencia_user', JSON.stringify({ email: '${req.user.email}', role: '${req.user.role}' }));
-                window.location.href = '/diario.html';
-            </script>
-        `);
-    }
-);
-
-
-app.get('/api/session', authMiddleware, (req, res) => {
-    res.status(200).json({
-        authenticated: true,
-        user: req.user
-    });
-});
-
 app.post('/api/logout', (req, res) => {
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -125,7 +115,7 @@ app.get('/api/admin/dashboard', authMiddleware, isAdminMiddleware, (req, res) =>
 app.delete('/api/users/:email', authMiddleware, isAdminMiddleware, async (req, res) => {
     try {
         const { email } = req.params;
-        await userModel.delete(email); // Cambiado a userModel.delete
+        await userModel.delete(email); 
         res.status(200).json({ message: `Usuario ${email} eliminado correctamente por el administrador` });
     } catch (error) {
         res.status(400).json({ message: error.message });
@@ -134,7 +124,7 @@ app.delete('/api/users/:email', authMiddleware, isAdminMiddleware, async (req, r
 
 app.get('/api/users', authMiddleware, isAdminMiddleware, async (req, res) => {
     try {
-        const users = await userModel.getAll(); // Cambiado a userModel.getAll
+        const users = await userModel.getAll(); 
         res.status(200).json(users);
     } catch (error) {
         res.status(500).json({ message: error.message });
