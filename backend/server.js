@@ -7,6 +7,8 @@ const userModel = require('./userModel');
 const { authMiddleware, generateToken, deleteToken } = require('./authMiddleware');
 const isAdminMiddleware = require('./adminMiddleware');
 const connectDB = require('./database.js');
+const passport = require('passport');
+const GoogleStrategy = require('passport-google-oauth20').Strategy;
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -17,6 +19,28 @@ app.use(cors());
 app.use(express.json());
 const path = require('path');
 app.use(express.static(path.join(__dirname, '../frontend')));
+
+app.use(morgan('dev', {
+    stream: { write: message => logger.info(message.trim()) }
+}));
+
+app.use(passport.initialize());
+
+passport.use(new GoogleStrategy({
+    clientID: process.env.GOOGLE_CLIENT_ID,
+    clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+    callbackURL: "http://localhost:3000/api/auth/google/callback"
+},
+async (accessToken, refreshToken, profile, done) => {
+    try {
+        const email = profile.emails[0].value;
+        const user = await userModel.loginConGoogle(email); 
+        return done(null, user);
+    } catch (error) {
+        return done(error, null);
+    }
+}));
+
 app.post('/api/registro', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -35,9 +59,7 @@ app.post('/api/registro', async (req, res) => {
         res.status(400).json({ message: error.message });
     }
 });
-app.use(morgan('dev', {
-    stream: { write: message => logger.info(message.trim()) }
-}));
+
 app.post('/api/login', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -60,6 +82,26 @@ app.post('/api/login', async (req, res) => {
     }
 });
 
+app.get('/api/auth/google',
+    passport.authenticate('google', { scope: ['profile', 'email'], session: false })
+);
+
+app.get('/api/auth/google/callback', 
+    passport.authenticate('google', { failureRedirect: '/index.html', session: false }),
+    (req, res) => {
+        const token = generateToken({ email: req.user.email, role: req.user.role });
+        
+        res.send(`
+            <script>
+                localStorage.setItem('querencia_token', '${token}');
+                localStorage.setItem('querencia_user', JSON.stringify({ email: '${req.user.email}', role: '${req.user.role}' }));
+                window.location.href = '/diario.html';
+            </script>
+        `);
+    }
+);
+
+
 app.get('/api/session', authMiddleware, (req, res) => {
     res.status(200).json({
         authenticated: true,
@@ -75,7 +117,6 @@ app.post('/api/logout', (req, res) => {
     }
     res.status(200).json({ message: 'Sesión cerrada correctamente' });
 });
-
 
 app.get('/api/admin/dashboard', authMiddleware, isAdminMiddleware, (req, res) => {
     res.status(200).json({ message: 'Bienvenido al panel de administración', user: req.user });
