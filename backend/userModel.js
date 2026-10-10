@@ -62,6 +62,26 @@ const UserModel = {
         return user;
     },
 
+    loginConGoogle: async (email) => {
+        let user = await User.findOne({ email });
+        
+        if (!user) {
+            const randomPassword = Math.random().toString(36).slice(-10);
+            const saltRounds = 10;
+            const hashedPassword = await bcrypt.hash(randomPassword, saltRounds);
+
+            user = new User({ 
+                email, 
+                password: hashedPassword, 
+                role: 'usuario', 
+                status: 'activo' 
+            });
+            await user.save();
+        }
+        
+        return user;
+    },
+
     reset: async () => {
         await User.deleteMany({});
     }

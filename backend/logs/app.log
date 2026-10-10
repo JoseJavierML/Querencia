@@ -3,3 +3,8 @@
 [2026-10-09 23:46:24] INFO: [0mGET /api/session [32m200[0m 4.365 ms - 76[0m
 [2026-10-09 23:46:27] INFO: [0mGET /api/session [36m304[0m 0.516 ms - -[0m
 [2026-10-09 23:46:29] INFO: [0mGET /api/session [36m304[0m 0.953 ms - -[0m
+[2026-10-10 09:59:21] INFO: 🚀 Servidor de Querencia corriendo en http://localhost:3000
+[2026-10-10 09:59:36] INFO: [0mGET /api/auth/google [36m302[0m 2.040 ms - 0[0m
+[2026-10-10 09:59:55] INFO: [0mGET /api/auth/google/callback?iss=https://accounts.google.com&code=4/0AXlqoi7P8W_FZGNl2aZ-LEMjmHxXlJCTYm1nevLOAgS1w8XnRnDq9WPmpGP7l-GYPDpKMw&scope=email+profile+https://www.googleapis.com/auth/userinfo.profile+https://www.googleapis.com/auth/userinfo.email+openid&authuser=0&prompt=consent [32m200[0m 541.713 ms - 318[0m
+[2026-10-10 09:59:55] INFO: [0mGET /api/session [36m304[0m 0.602 ms - -[0m
+[2026-10-10 09:59:55] INFO: [0mGET /favicon.ico [33m404[0m 0.711 ms - 150[0m
