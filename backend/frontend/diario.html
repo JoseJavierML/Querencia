@@ -1,13 +1,11 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
+<!DOCTYPE html><html lang="es"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Diario Íntimo | Querencia</title>
     <!-- Tipografías literarias con alma -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400&amp;family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;display=swap" rel="stylesheet">
     
     <style>
         :root {
@@ -42,11 +40,23 @@
 
         /* --- Navegación --- */
         nav {
-            padding: 2rem 4rem;
+            padding: 1.5rem 4rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            background: rgba(6, 6, 8, 0.85);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
         }
 
         .brand {
@@ -58,63 +68,82 @@
             text-decoration: none;
             letter-spacing: 1px;
             text-shadow: 0 0 20px rgba(234, 221, 179, 0.2);
+            transition: opacity 0.3s ease;
         }
 
-        .nav-actions { display: flex; gap: 2rem; align-items: center; }
+        .brand:hover {
+            opacity: 0.9;
+        }
 
-        .now-playing {
+        .nav-links {
             display: flex;
             align-items: center;
-            gap: 0.8rem;
-            background: linear-gradient(90deg, rgba(58, 10, 10, 0.4) 0%, transparent 100%);
-            padding: 0.5rem 1.5rem;
-            border-left: 2px solid var(--crimson-dark);
-            border-radius: 4px;
+            gap: 2.5rem;
         }
 
-        .now-playing-text {
+        .nav-link {
             font-family: 'Lora', serif;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: all 0.3s ease;
+            position: relative;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-link:hover {
             color: var(--gold-light);
-            font-style: italic;
         }
 
-        .now-playing-icon {
-            width: 15px; height: 15px;
-            fill: var(--crimson-dark);
-            animation: pulse 2s infinite;
+        .nav-link.active {
+            color: var(--gold-light);
+            font-weight: 500;
         }
 
-        @keyframes pulse {
-            0% { transform: scale(1); opacity: 0.7; }
-            50% { transform: scale(1.2); opacity: 1; }
-            100% { transform: scale(1); opacity: 0.7; }
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold-dark), transparent);
+        }
+
+        .nav-actions { 
+            display: flex; 
+            gap: 1.5rem; 
+            align-items: center; 
         }
 
         .logout-btn {
             background: transparent;
             color: var(--text-muted);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 0.5rem 1.2rem;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 0.45rem 1.2rem;
             border-radius: 30px;
             cursor: pointer;
             transition: all 0.4s ease;
             font-family: inherit;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
         }
+        
         .logout-btn:hover {
             border-color: var(--gold-dark);
             color: var(--gold-light);
+            background: rgba(184, 147, 69, 0.08);
         }
 
         /* --- Layout Abierto (Sin cajas ni cuadrados) --- */
         main {
             padding: 0 4rem;
             max-width: 1400px;
-            margin: 1.5rem auto 0;
+            margin: 2rem auto 0;
             display: grid;
             grid-template-columns: 280px 1fr;
             gap: 5rem;
-            height: calc(100vh - 180px);
+            height: calc(100vh - 150px);
         }
 
         /* --- Sidebar (Memoria) --- */
@@ -216,10 +245,13 @@
         }
 
         @media (max-width: 900px) {
+            nav { padding: 1.2rem 1.5rem; flex-wrap: wrap; gap: 1rem; }
+            .nav-links { gap: 1.5rem; order: 3; width: 100%; justify-content: center; }
             main {
                 grid-template-columns: 1fr;
                 height: auto;
                 gap: 2rem;
+                padding: 0 1.5rem;
             }
             body { overflow: auto; }
         }
@@ -227,12 +259,20 @@
 </head>
 <body>
 
-    <canvas id="soulCanvas"></canvas>
+    <canvas id="soulCanvas" width="1280" height="993"></canvas>
 
     <nav>
-        <a href="muro.html" class="brand">Querencia.</a>
+        <div class="brand-container">
+            <a href="muro.html" class="brand">Querencia.</a>
+        </div>
+        
+        <div class="nav-links">
+            <a href="muro.html" class="nav-link">Muro de Debates</a>
+            <a href="diario.html" class="nav-link active">Diario Íntimo</a>
+        </div>
+
         <div class="nav-actions">
-            <button class="logout-btn">Cerrar sesión</button>
+            <div id="userProfileBadge" class="user-badge" style="display: inline-flex; align-items: center; gap: 0.6rem; padding: 0.3rem 0.8rem 0.3rem 0.35rem; border-radius: 9999px; background: rgba(184, 147, 69, 0.05); border: 1px solid rgba(184, 147, 69, 0.25); box-shadow: rgba(184, 147, 69, 0.06) 0px 0px 12px;"><span style="display: inline-flex; align-items: center; justify-content: center; width: 1.65rem; height: 1.65rem; border-radius: 50%; background: linear-gradient(135deg, rgba(234, 221, 179, 0.2), rgba(184, 147, 69, 0.15)); border: 1px solid rgba(234, 221, 179, 0.35); font-family: 'Playfair Display', serif; font-size: 0.75rem; font-style: italic; font-weight: 600; color: var(--gold-light);" class="">O</span><span id="userAccountBadge" class="user-badge-email" style="font-family: 'Lora', serif; font-size: 0.82rem; color: var(--text-muted); letter-spacing: 0.3px; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">oyente@querencia.es</span></div><button id="logoutBtn" class="logout-btn" type="button">Cerrar sesión</button>
         </div>
     </nav>
 
@@ -309,20 +349,43 @@
         import { api } from './js/api.js';
 
         document.addEventListener('DOMContentLoaded', async () => {
-            const tieneSesion = await api.checkSession();
-            
-            if (!tieneSesion) {
-                alert('Debes iniciar sesión para acceder a tu diario.');
-                window.location.href = 'index.html'; 
+            try {
+                if (api && api.checkSession) {
+                    const tieneSesion = await api.checkSession();
+                    if (!tieneSesion) {
+                        window.location.href = 'index.html'; 
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.warn('Verificación de sesión:', err);
             }
         });
 
-        const btnLogout = document.querySelector('.logout-btn');
+        async function ejecutarLogout() {
+            try {
+                if (api && api.logout) {
+                    await api.logout();
+                } else {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = 'index.html';
+                }
+            } catch (error) {
+                console.error('Error al cerrar sesión:', error);
+                window.location.href = 'index.html';
+            }
+        }
+
+        const btnLogout = document.getElementById('logoutBtn') || document.querySelector('.logout-btn');
         if (btnLogout) {
-            btnLogout.addEventListener('click', async () => {
-                await api.logout();
+            btnLogout.addEventListener('click', async (e) => {
+                e.preventDefault();
+                await ejecutarLogout();
             });
         }
     </script>
-</body>
-</html>
+
+
+
+</body></html>

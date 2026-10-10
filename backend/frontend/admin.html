@@ -1,12 +1,11 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
+<!DOCTYPE html><html lang="es"><head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Querencia — Gobierno del Refugio</title>
+    <!-- Tipografías literarias con alma idénticas a muro, diario e index -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400;1,500&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400;1,500&amp;family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;display=swap" rel="stylesheet">
     
     <style>
         :root {
@@ -40,6 +39,7 @@
             background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
         }
 
+        /* --- Lienzo de Ondas y Humo Vivo --- */
         #soulCanvas {
             position: fixed;
             top: 0;
@@ -51,6 +51,7 @@
             opacity: 0.9;
         }
 
+        /* --- Barra de Navegación --- */
         nav {
             padding: 2rem 4rem;
             display: flex;
@@ -160,13 +161,14 @@
             box-shadow: 0 0 15px rgba(184, 147, 69, 0.15);
         }
 
+        /* --- Contenedor Principal --- */
         main {
             padding: 3.5rem 4rem 6rem;
             max-width: 1400px;
             margin: 0 auto;
         }
 
-
+        /* --- Encabezado de Página --- */
         .page-header {
             margin-bottom: 3.5rem;
             display: flex;
@@ -218,6 +220,7 @@
             margin-top: 0.2rem;
         }
 
+        /* --- Mensaje de Error (compatibilidad id="errorMessage") --- */
         #errorMessage {
             color: #ff6b6b;
             font-family: 'Lora', serif;
@@ -235,6 +238,7 @@
             display: block;
         }
 
+        /* --- Barra de Filtros y Búsqueda --- */
         .table-toolbar {
             display: flex;
             justify-content: space-between;
@@ -294,6 +298,7 @@
             font-style: italic;
         }
 
+        /* --- Tarjeta Contenedora de la Tabla --- */
         .table-card {
             background: linear-gradient(to bottom, rgba(15, 15, 18, 0.85), rgba(10, 10, 12, 0.95));
             border: 1px solid rgba(255, 255, 255, 0.03);
@@ -305,6 +310,7 @@
             position: relative;
         }
 
+        /* Resplandor decorativo sutil en la tarjeta */
         .table-card::before {
             content: '';
             position: absolute;
@@ -317,6 +323,7 @@
             pointer-events: none;
         }
 
+        /* --- Tabla Estilizada (Conserva id="usersTable") --- */
         table#usersTable {
             width: 100%;
             border-collapse: collapse;
@@ -361,6 +368,7 @@
             vertical-align: middle;
         }
 
+        /* Email Column */
         table#usersTable td:first-child {
             font-family: 'Lora', serif;
             color: var(--text-main);
@@ -385,6 +393,7 @@
             flex-shrink: 0;
         }
 
+        /* Rol Badges */
         .role-badge {
             display: inline-block;
             padding: 0.3rem 0.8rem;
@@ -414,6 +423,7 @@
             border: 1px solid rgba(255, 255, 255, 0.08);
         }
 
+        /* Acciones */
         table#usersTable td:last-child {
             text-align: right;
             padding-right: 2.5rem;
@@ -455,6 +465,7 @@
             background: rgba(107, 20, 20, 0.25);
         }
 
+        /* Select personalizado para rol */
         select.role-select {
             background: rgba(10, 10, 12, 0.8);
             border: 1px solid rgba(184, 147, 69, 0.25);
@@ -479,6 +490,7 @@
             color: var(--text-main);
         }
 
+        /* Pie de la tabla */
         .table-footer {
             padding: 1.2rem 2rem;
             display: flex;
@@ -504,7 +516,8 @@
 </head>
 <body>
 
-    <canvas id="soulCanvas"></canvas>
+    <!-- Lienzo de ondas interactivo idéntico al estilo general -->
+    <canvas id="soulCanvas" width="1280" height="609"></canvas>
 
     <header>
         <nav>
@@ -519,10 +532,7 @@
             </div>
 
             <div class="nav-actions">
-                <span class="user-greeting">
-                    <span class="status-dot"></span>
-                    Administrador
-                </span>
+                <span class="user-greeting"><span class="status-dot"></span><span style="display: inline-flex; align-items: center; gap: 0.55rem; background: rgba(184, 147, 69, 0.08); border: 1px solid rgba(184, 147, 69, 0.25); border-radius: 30px; padding: 0.25rem 0.75rem 0.25rem 0.35rem; font-family: -apple-system, BlinkMacSystemFont, sans-serif;" class=""><span style="width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg, rgba(184, 147, 69, 0.4), rgba(58, 10, 10, 0.6)); border: 1px solid rgba(184, 147, 69, 0.4); display: inline-flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 0.75rem; color: var(--gold-light); font-weight: 600;" class="">A</span><span id="currentAccountEmail" style="color: var(--text-main); font-family: 'Lora', serif; font-size: 0.82rem; font-style: italic; letter-spacing: 0.3px;" class="">admin@querencia.es</span><span style="font-size: 0.65rem; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gold-dark); background: rgba(184, 147, 69, 0.15); padding: 0.15rem 0.45rem; border-radius: 12px; font-weight: 600;" class="">Admin</span></span></span>
                 <button id="logoutBtn" class="logout-btn">Cerrar Sesión</button>
             </div>
         </nav>
@@ -531,7 +541,7 @@
     <main>
         <div class="page-header">
             <div class="header-titles">
-                <h1>Gobierno y Almas del Refugio</h1>
+                <h1 class="">Gobierno y Almas del Refugio</h1>
                 <p class="subtitle">Gestión soberana de oyentes, privilegios y accesos a Querencia.</p>
             </div>
             <div class="header-metrics">
@@ -560,22 +570,24 @@
             <table id="usersTable">
                 <thead>
                     <tr>
-                        <th>Email / Alma</th>
-                        <th>Rol Asignado</th>
-                        <th>Acciones</th>
+                        <th class="">Email / Alma</th>
+                        <th class="">Rol Asignado</th>
+                        <th class="">Acciones</th>
                     </tr>
                 </thead>
                 <tbody id="usersTableBody">
+                    <!-- Se rellena dinámicamente mediante admin.js -->
                 </tbody>
             </table>
             
             <div class="table-footer">
-                <span id="tableStatusText">Cargando oyentes desde el refugio...</span>
-                <span>Querencia &copy; 2025</span>
+                <span id="tableStatusText" class="">Cargando oyentes desde el refugio...</span>
+                <span class="">Querencia © 2025</span>
             </div>
         </div>
     </main>
 
+    <!-- Lienzo dinámico de humo y olas vivas (mismo algoritmo y matices que index/muro) -->
     <script>
         const canvas = document.getElementById('soulCanvas');
         const ctx = canvas.getContext('2d');
@@ -681,6 +693,9 @@
         }
     </script>
 
+    <!-- Enlace a tu script original -->
     <script src="js/admin.js"></script>
-</body>
-</html>
+
+
+
+</body></html>

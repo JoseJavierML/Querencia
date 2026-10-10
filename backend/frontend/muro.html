@@ -1,15 +1,12 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Muro de Debates | Querencia</title>
-    <!-- Tipografías literarias con alma -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
-    
-    <style>
+<!DOCTYPE html><html lang="es"><head>
+<meta charset="utf-8">
+<meta content="width=device-width, initial-scale=1.0" name="viewport">
+<title>Muro de Debates | Querencia</title>
+<!-- Tipografías literarias con alma -->
+<link href="https://fonts.googleapis.com" rel="preconnect">
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect">
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400&amp;family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;display=swap" rel="stylesheet">
+<style>
         :root {
             --bg-base: #060608;
             --card-bg: rgba(12, 12, 15, 0.7); 
@@ -43,12 +40,23 @@
         }
 
         nav {
-            padding: 2rem 4rem;
+            padding: 1.5rem 4rem;
             display: flex;
             justify-content: space-between;
             align-items: center;
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.02);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+            background: rgba(6, 6, 8, 0.85);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .brand-container {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
         }
 
         .brand {
@@ -60,31 +68,71 @@
             text-decoration: none;
             letter-spacing: 1px;
             text-shadow: 0 0 20px rgba(234, 221, 179, 0.2);
+            transition: opacity 0.3s ease;
         }
 
-        .nav-actions { display: flex; gap: 2rem; align-items: center; }
+        .brand:hover {
+            opacity: 0.9;
+        }
 
-        .user-greeting {
+        .nav-links {
+            display: flex;
+            align-items: center;
+            gap: 2.5rem;
+        }
+
+        .nav-link {
+            font-family: 'Lora', serif;
+            font-size: 0.95rem;
             color: var(--text-muted);
-            font-size: 0.9rem;
-            font-weight: 300;
-            letter-spacing: 1px;
+            text-decoration: none;
+            transition: all 0.3s ease;
+            position: relative;
+            letter-spacing: 0.5px;
+        }
+
+        .nav-link:hover {
+            color: var(--gold-light);
+        }
+
+        .nav-link.active {
+            color: var(--gold-light);
+            font-weight: 500;
+        }
+
+        .nav-link.active::after {
+            content: '';
+            position: absolute;
+            bottom: -6px;
+            left: 0;
+            width: 100%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold-dark), transparent);
+        }
+
+        .nav-actions { 
+            display: flex; 
+            gap: 1.5rem; 
+            align-items: center; 
         }
 
         .logout-btn {
             background: transparent;
             color: var(--text-muted);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 0.5rem 1.2rem;
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            padding: 0.45rem 1.2rem;
             border-radius: 30px;
             cursor: pointer;
             transition: all 0.4s ease;
             font-family: inherit;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
         }
         
         .logout-btn:hover {
             border-color: var(--gold-dark);
             color: var(--gold-light);
+            background: rgba(184, 147, 69, 0.08);
         }
 
         main {
@@ -124,7 +172,7 @@
         .debate-card {
             --mouse-x: 50%;
             --mouse-y: 50%;
-            --aura-color: rgba(184, 147, 69, 0.5); /* Color inicial por defecto */
+            --aura-color: rgba(184, 147, 69, 0.5);
             
             background: linear-gradient(to bottom, rgba(15, 15, 18, 0.8), rgba(10, 10, 12, 0.95));
             border: 1px solid rgba(255, 255, 255, 0.03);
@@ -134,7 +182,7 @@
             flex-direction: column;
             backdrop-filter: blur(15px);
             border-radius: 6px;
-            position: relative; /* Necesario para la capa de luz interior */
+            position: relative;
             transition: transform 0.4s ease, border-top-color 0.4s ease;
         }
 
@@ -144,19 +192,15 @@
             box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
         }
 
-        /* Esta es la capa mágica: Una luz en el borde interior que solo se ve donde está el ratón */
         .debate-card::after {
             content: '';
             position: absolute;
             top: 0; left: 0; right: 0; bottom: 0;
             border-radius: inherit;
-            pointer-events: none; /* Que no bloquee los clics */
+            pointer-events: none;
             z-index: 10;
             
-            /* Creamos un borde interior iluminado con el color aleatorio */
             box-shadow: inset 0 0 30px var(--aura-color), inset 0 0 0 1px var(--aura-color);
-            
-            /* Usamos una máscara para Ocultar toda la luz EXCEPTO un círculo alrededor del ratón */
             -webkit-mask-image: radial-gradient(circle at var(--mouse-x) var(--mouse-y), black 0%, transparent 200px);
             mask-image: radial-gradient(circle at var(--mouse-x) var(--mouse-y), black 0%, transparent 200px);
             
@@ -165,7 +209,7 @@
         }
 
         .debate-card:hover::after {
-            opacity: 1; /* Se enciende la luz al entrar */
+            opacity: 1;
         }
 
         .album-cover-wrapper {
@@ -280,87 +324,83 @@
         }
 
         @media (max-width: 768px) {
-            nav { padding: 1.5rem 2rem; }
-            main { padding: 2rem; }
+            nav { padding: 1.2rem 1.5rem; flex-wrap: wrap; gap: 1rem; }
+            .nav-links { gap: 1.5rem; order: 3; width: 100%; justify-content: center; }
+            main { padding: 2rem 1.5rem; }
             .debate-grid { grid-template-columns: 1fr; }
         }
     </style>
 </head>
 <body>
-
-    <canvas id="soulCanvas"></canvas>
-
-    <nav>
-        <a href="diario.html" class="brand">Querencia.</a>
-        <div class="nav-actions">
-            <span class="user-greeting">Refugio de Oyente</span>
-            <button class="logout-btn">Cerrar sesión</button>
-        </div>
-    </nav>
-
-    <main>
-        <div class="page-header">
-            <h1>Ecos de la Comunidad</h1>
-            <p class="subtitle">Lee, siente y reacciona con el alma.</p>
-        </div>
-
-        <div class="debate-grid">
-            <article class="debate-card">
-                <div class="album-cover-wrapper">
-                    <img src="https://images.unsplash.com/photo-1533174000243-772719a778c1?auto=format&fit=crop&q=80&w=600" alt="Omega" class="album-cover">
-                </div>
-                <div class="debate-meta">Abierto por Editor_01 • Hace 2 horas</div>
-                <h2 class="debate-title">La ruptura temporal en 'Omega'</h2>
-                <p class="debate-text">
+<canvas id="soulCanvas" width="1280" height="1675"></canvas>
+<nav>
+<div class="brand-container">
+<a class="brand" href="muro.html">Querencia.</a>
+</div>
+<div class="nav-links">
+<a class="nav-link active" href="muro.html">Muro de Debates</a>
+<a class="nav-link" href="diario.html">Diario Íntimo</a>
+</div>
+<div class="nav-actions">
+<div id="userProfileBadge" style="display: inline-flex; align-items: center; gap: 0.65rem; padding: 0.3rem 0.85rem 0.3rem 0.4rem; border-radius: 9999px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(184, 147, 69, 0.2); backdrop-filter: blur(8px);"><div style="width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg, rgba(184, 147, 69, 0.25), rgba(58, 10, 10, 0.6)); border: 1px solid rgba(234, 221, 179, 0.4); display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 0.8rem; font-weight: 600; color: var(--gold-light); text-shadow: 0 0 8px rgba(234, 221, 179, 0.4);" class="">O</div><div style="display: flex; flex-direction: column; text-align: left; line-height: 1.15;"><span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: var(--gold-dark); font-family: -apple-system, sans-serif;" class="">Oyente</span><span id="currentUserEmail" style="font-family: 'Lora', serif; font-size: 0.82rem; color: var(--gold-light); font-style: italic; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" class="">oyente@querencia.es</span></div></div><button class="logout-btn" id="logoutBtn" type="button">Cerrar sesión</button>
+</div>
+</nav>
+<main>
+<div class="page-header">
+<h1 class="">Ecos de la Comunidad</h1>
+<p class="subtitle">Lee, siente y reacciona con el alma.</p>
+</div>
+<div class="debate-grid">
+<article class="debate-card">
+<div class="album-cover-wrapper">
+<img alt="Omega" class="album-cover" src="https://www.gstatic.com/labs-code/stitch/stitch-placeholder-300x300.svg">
+</div>
+<div class="debate-meta">Abierto por Editor_01 • Hace 2 horas</div>
+<h2 class="debate-title">La ruptura temporal en 'Omega'</h2>
+<p class="debate-text">
                     Enrique Morente y Lagartija Nick no solo fusionaron flamenco y rock. Destruyeron el compás tradicional para construir una nueva forma de entender el tiempo en la música. ¿Es el ruido una nueva forma de silencio?
                 </p>
-                <div class="reactions-container">
-                    <button class="reaction-tag active">Rompe esquemas <span class="count">19</span></button>
-                    <button class="reaction-tag">Profundo <span class="count">27</span></button>
-                </div>
-            </article>
-
-            <article class="debate-card">
-                <div class="album-cover-wrapper">
-                    <img src="https://images.unsplash.com/photo-1511192336575-5a79af67a629?auto=format&fit=crop&q=80&w=600" alt="Kind of Blue" class="album-cover">
-                </div>
-                <div class="debate-meta">Abierto por Editor_02 • Ayer</div>
-                <h2 class="debate-title">El silencio de Miles Davis</h2>
-                <p class="debate-text">
+<div class="reactions-container">
+<button class="reaction-tag active">Rompe esquemas <span class="count">19</span></button>
+<button class="reaction-tag">Profundo <span class="count">27</span></button>
+</div>
+</article>
+<article class="debate-card">
+<div class="album-cover-wrapper">
+<img alt="Kind of Blue" class="album-cover" src="https://www.gstatic.com/labs-code/stitch/stitch-placeholder-300x300.svg">
+</div>
+<div class="debate-meta">Abierto por Editor_02 • Ayer</div>
+<h2 class="debate-title">El silencio de Miles Davis</h2>
+<p class="debate-text">
                     "La música es el espacio entre las notas". Esta frase cobra sentido absoluto en Kind of Blue. No es lo que toca, es lo que decide callar lo que te rompe el alma. Un análisis de la melancolía a través de la trompeta y la ausencia deliberada de sonido.
                 </p>
-                <div class="reactions-container">
-                    <button class="reaction-tag">Melancólico <span class="count">45</span></button>
-                    <button class="reaction-tag active">Íntimo <span class="count">12</span></button>
-                </div>
-            </article>
-
-            <article class="debate-card">
-                <div class="album-cover-wrapper">
-                    <img src="https://images.unsplash.com/photo-1618005182384-a83a8bd57fbe?auto=format&fit=crop&q=80&w=600" alt="IA y Música" class="album-cover">
-                </div>
-                <div class="debate-meta">Abierto por Editor_03 • 28 de Septiembre</div>
-                <h2 class="debate-title">La artificialidad del dolor</h2>
-                <p class="debate-text">
+<div class="reactions-container">
+<button class="reaction-tag">Melancólico <span class="count">45</span></button>
+<button class="reaction-tag active">Íntimo <span class="count">12</span></button>
+</div>
+</article>
+<article class="debate-card">
+<div class="album-cover-wrapper">
+<img alt="IA y Música" class="album-cover" src="https://www.gstatic.com/labs-code/stitch/stitch-placeholder-300x300.svg">
+</div>
+<div class="debate-meta">Abierto por Editor_03 • 28 de Septiembre</div>
+<h2 class="debate-title">La artificialidad del dolor</h2>
+<p class="debate-text">
                     Exploramos cómo la inteligencia artificial está redefiniendo la creatividad. Desde melodías algorítmicas hasta la síntesis de voz, ¿puede una máquina replicar el desgarro de un cante jondo? Debatimos el límite ético entre la técnica pura y la vivencia humana.
                 </p>
-                <div class="reactions-container">
-                    <button class="reaction-tag">Inquietante <span class="count">51</span></button>
-                    <button class="reaction-tag">Tecnológico <span class="count">18</span></button>
-                </div>
-            </article>
-        </div>
-    </main>
-
-    <!-- Script del foco de luz del ratón (Spotlight Effect) -->
-    <script>
+<div class="reactions-container">
+<button class="reaction-tag">Inquietante <span class="count">51</span></button>
+<button class="reaction-tag">Tecnológico <span class="count">18</span></button>
+</div>
+</article>
+</div>
+</main>
+<script>
         const cards = document.querySelectorAll('.debate-card');
-        
-        // Colores de la luz interior
         const auras = [
-            'rgba(184, 147, 69, 0.55)', // Dorado Jondo
-            'rgba(138, 22, 22, 0.45)',  // Carmesí Sangre
-            'rgba(234, 221, 179, 0.35)' // Oro Claro
+            'rgba(184, 147, 69, 0.55)',
+            'rgba(138, 22, 22, 0.45)',
+            'rgba(234, 221, 179, 0.35)'
         ];
 
         cards.forEach(card => {
@@ -373,15 +413,12 @@
                 const rect = card.getBoundingClientRect();
                 const x = e.clientX - rect.left;
                 const y = e.clientY - rect.top;
-                
-                // Actualiza las variables CSS con la posición exacta del ratón
                 card.style.setProperty('--mouse-x', `${x}px`);
                 card.style.setProperty('--mouse-y', `${y}px`);
             });
         });
     </script>
-
-    <script>
+<script>
         const canvas = document.getElementById('soulCanvas');
         const ctx = canvas.getContext('2d');
         
@@ -426,25 +463,47 @@
 
         animate();
     </script>
-
-    <script type="module">
+<script type="module">
         import { api } from './js/api.js'; 
 
         document.addEventListener('DOMContentLoaded', async () => {
-            const tieneSesion = await api.checkSession();
-            
-            if (!tieneSesion) {
-                alert('Debes iniciar sesión para acceder al Muro de Debates.');
-                window.location.href = 'index.html'; 
+            try {
+                if (api && api.checkSession) {
+                    const tieneSesion = await api.checkSession();
+                    if (!tieneSesion) {
+                        window.location.href = 'index.html'; 
+                        return;
+                    }
+                }
+            } catch (err) {
+                console.warn('Verificación de sesión:', err);
             }
         });
 
-        const btnLogout = document.querySelector('.logout-btn');
+        async function ejecutarLogout() {
+            try {
+                if (api && api.logout) {
+                    await api.logout();
+                } else {
+                    localStorage.clear();
+                    sessionStorage.clear();
+                    window.location.href = 'index.html';
+                }
+            } catch (error) {
+                console.error('Error al cerrar sesión:', error);
+                window.location.href = 'index.html';
+            }
+        }
+
+        const btnLogout = document.getElementById('logoutBtn') || document.querySelector('.logout-btn');
         if (btnLogout) {
-            btnLogout.addEventListener('click', async () => {
-                await api.logout();
+            btnLogout.addEventListener('click', async (e) => {
+                e.preventDefault();
+                await ejecutarLogout();
             });
         }
     </script>
-</body>
-</html>
+
+
+
+</body></html>
