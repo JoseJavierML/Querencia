@@ -1,23 +1,24 @@
-name: Integracion Continua (CI)
+name: CI/CD Pipeline - Querencia
 
 on:
   push:
     branches: [ "main" ]
-  pull_request:
+  pull_request: # Ejecuta pruebas en los PR, pero no despliega
     branches: [ "main" ]
 
 jobs:
   test:
+    name: Pruebas y Validación (CI)
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout del codigo
+    - name: Checkout del código
       uses: actions/checkout@v3
 
     - name: Configurar Node.js
       uses: actions/setup-node@v3
       with:
-        node-version: '20'
+        node-version: '22' 
 
     - name: Instalar dependencias del backend
       run: |
@@ -30,3 +31,39 @@ jobs:
       run: |
         cd backend
         npm test
+
+  deploy:
+    name: Despliegue en Producción (CD)
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' 
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 📥 Descargar código del repositorio
+      uses: actions/checkout@v3
+
+    - name: 🔐 Reconstruir app.yaml seguro
+      run: |
+        cd backend
+        cat <<EOF > app.yaml
+        runtime: nodejs22
+        instance_class: F1
+        env_variables:
+          PORT: "8080"
+          MONGO_URI: "${{ secrets.MONGO_URI }}"
+          GOOGLE_CLIENT_ID: "${{ secrets.GOOGLE_CLIENT_ID }}"
+          GOOGLE_CLIENT_SECRET: "${{ secrets.GOOGLE_CLIENT_SECRET }}"
+          EMAIL_USER: "pc4894396@gmail.com"
+          EMAIL_PASS: "${{ secrets.EMAIL_PASS }}"
+          BACKEND_URL: "https://querencia-511207.ew.r.appspot.com"
+        EOF
+
+    - name: ☁️ Autenticar en Google Cloud
+      uses: google-github-actions/auth@v1
+      with:
+        credentials_json: ${{ secrets.GCP_CREDENTIALS }}
+
+    - name: 🚀 Desplegar en App Engine
+      run: |
+        cd backend
+        gcloud app deploy --quiet
