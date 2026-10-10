@@ -30,7 +30,7 @@ app.use(passport.initialize());
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
     clientSecret: process.env.GOOGLE_CLIENT_SECRET,
-    callbackURL: "http://localhost:3000/api/auth/google/callback"
+    callbackURL: `${process.env.BACKEND_URL || 'http://localhost:3000'}/api/auth/google/callback`
 },
 async (accessToken, refreshToken, profile, done) => {
     try {
@@ -42,6 +42,25 @@ async (accessToken, refreshToken, profile, done) => {
     }
 }));
 
+app.get('/api/auth/google',
+    passport.authenticate('google', { scope: ['profile', 'email'], session: false })
+);
+
+app.get('/api/auth/google/callback', 
+    passport.authenticate('google', { failureRedirect: '/index.html', session: false }),
+    (req, res) => {
+        const token = generateToken({ email: req.user.email, role: req.user.role });
+        
+        res.send(`
+            <script>
+                localStorage.setItem('querencia_token', '${token}');
+                localStorage.setItem('querencia_user', JSON.stringify({ email: '${req.user.email}', role: '${req.user.role}' }));
+                window.location.href = '/diario.html';
+            </script>
+        `);
+    }
+);
+
 app.post('/api/registro', async (req, res) => {
     try {
         const { email, password } = req.body;
@@ -51,7 +70,6 @@ app.post('/api/registro', async (req, res) => {
         }
 
         const verificationToken = crypto.randomBytes(20).toString('hex');
-
         const nuevoUsuario = await userModel.create(email, password, verificationToken);
 
         sendVerificationEmail(email, verificationToken);
@@ -99,6 +117,7 @@ app.post('/api/login', async (req, res) => {
         res.status(401).json({ message: error.message });
     }
 });
+
 app.post('/api/logout', (req, res) => {
     const authHeader = req.headers.authorization;
     if (authHeader && authHeader.startsWith('Bearer ')) {
@@ -106,6 +125,13 @@ app.post('/api/logout', (req, res) => {
         deleteToken(token);
     }
     res.status(200).json({ message: 'Sesión cerrada correctamente' });
+});
+
+app.get('/api/session', authMiddleware, (req, res) => {
+    res.status(200).json({
+        authenticated: true,
+        user: req.user
+    });
 });
 
 app.get('/api/admin/dashboard', authMiddleware, isAdminMiddleware, (req, res) => {
@@ -132,5 +158,5 @@ app.get('/api/users', authMiddleware, isAdminMiddleware, async (req, res) => {
 });
 
 app.listen(PORT, () => {
-    logger.info(`🚀 Servidor de Querencia corriendo en http://localhost:${PORT}`);
+    logger.info(`Servidor corriendo en el puerto ${PORT}`);
 });

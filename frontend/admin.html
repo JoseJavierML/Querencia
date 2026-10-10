@@ -3,32 +3,683 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Querencia - Panel de Administración</title>
-    <link rel="stylesheet" href="style.css"> <!-- Usa tu CSS o estilos globales -->
+    <title>Querencia — Gobierno del Refugio</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400;1,500&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-base: #060608;
+            --card-bg: rgba(12, 12, 15, 0.7);
+            --card-surface: rgba(16, 16, 20, 0.85);
+            --text-main: #f4f4f5;
+            --text-muted: #8b8f9e;
+            --text-subtle: rgba(244, 244, 245, 0.45);
+            --gold-light: #eaddb3;
+            --gold-dark: #b89345;
+            --crimson-dark: #3a0a0a;
+            --crimson-accent: #6b1414;
+            --border-color: rgba(184, 147, 69, 0.15);
+            --border-subtle: rgba(255, 255, 255, 0.04);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--bg-base);
+            color: var(--text-main);
+            min-height: 100vh;
+            position: relative;
+            overflow-x: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
+        }
+
+        #soulCanvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            pointer-events: none;
+            opacity: 0.9;
+        }
+
+        nav {
+            padding: 2rem 4rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            background: linear-gradient(to bottom, rgba(6, 6, 8, 0.8), transparent);
+            backdrop-filter: blur(12px);
+            position: sticky;
+            top: 0;
+            z-index: 50;
+        }
+
+        .brand-group {
+            display: flex;
+            align-items: baseline;
+            gap: 1rem;
+        }
+
+        .brand {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            font-weight: 700;
+            font-style: italic;
+            color: var(--gold-light);
+            text-decoration: none;
+            letter-spacing: 1px;
+            text-shadow: 0 0 20px rgba(234, 221, 179, 0.2);
+            transition: opacity 0.3s ease;
+        }
+
+        .brand:hover {
+            opacity: 0.9;
+        }
+
+        .admin-badge {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.68rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--gold-dark);
+            border: 1px solid rgba(184, 147, 69, 0.3);
+            background: rgba(184, 147, 69, 0.05);
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 2rem;
+            align-items: center;
+        }
+
+        .nav-link {
+            font-family: 'Lora', serif;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+            text-decoration: none;
+            transition: color 0.3s;
+            font-style: italic;
+        }
+
+        .nav-link:hover {
+            color: var(--gold-light);
+        }
+
+        .nav-actions {
+            display: flex;
+            gap: 1.5rem;
+            align-items: center;
+        }
+
+        .user-greeting {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            letter-spacing: 1px;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            background-color: #2ed573;
+            box-shadow: 0 0 8px rgba(46, 213, 115, 0.6);
+        }
+
+        .logout-btn {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 0.5rem 1.3rem;
+            border-radius: 30px;
+            cursor: pointer;
+            transition: all 0.4s ease;
+            font-family: inherit;
+            font-size: 0.85rem;
+            letter-spacing: 0.5px;
+        }
+
+        .logout-btn:hover {
+            border-color: var(--gold-dark);
+            color: var(--gold-light);
+            background: rgba(184, 147, 69, 0.05);
+            box-shadow: 0 0 15px rgba(184, 147, 69, 0.15);
+        }
+
+        main {
+            padding: 3.5rem 4rem 6rem;
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+
+
+        .page-header {
+            margin-bottom: 3.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+            padding-bottom: 2rem;
+        }
+
+        .header-titles h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2.6rem;
+            color: var(--text-main);
+            font-weight: 400;
+            margin-bottom: 0.6rem;
+            letter-spacing: 1px;
+        }
+
+        .header-titles .subtitle {
+            font-family: 'Lora', serif;
+            color: var(--gold-dark);
+            font-style: italic;
+            font-size: 1.05rem;
+            opacity: 0.9;
+        }
+
+        .header-metrics {
+            display: flex;
+            gap: 2.5rem;
+        }
+
+        .metric-item {
+            text-align: right;
+        }
+
+        .metric-value {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.8rem;
+            color: var(--gold-light);
+            font-weight: 600;
+        }
+
+        .metric-label {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: var(--text-muted);
+            margin-top: 0.2rem;
+        }
+
+        #errorMessage {
+            color: #ff6b6b;
+            font-family: 'Lora', serif;
+            font-style: italic;
+            font-size: 0.95rem;
+            margin-bottom: 1.5rem;
+            padding: 0.8rem 1.2rem;
+            background: rgba(107, 20, 20, 0.2);
+            border-left: 2px solid #ff6b6b;
+            border-radius: 4px;
+            display: none;
+        }
+
+        #errorMessage:not(:empty) {
+            display: block;
+        }
+
+        .table-toolbar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 1.5rem;
+            gap: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .search-box {
+            position: relative;
+            flex: 1;
+            max-width: 420px;
+        }
+
+        .search-box svg {
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 16px;
+            height: 16px;
+            stroke: var(--text-muted);
+            stroke-width: 1.5;
+            fill: none;
+            pointer-events: none;
+        }
+
+        .search-input {
+            width: 100%;
+            background: rgba(12, 12, 15, 0.7);
+            border: 1px solid var(--border-color);
+            border-radius: 30px;
+            padding: 0.65rem 1rem 0.65rem 2.6rem;
+            color: var(--text-main);
+            font-family: 'Lora', serif;
+            font-size: 0.95rem;
+            transition: all 0.3s;
+        }
+
+        .search-input:focus {
+            outline: none;
+            border-color: var(--gold-light);
+            background: rgba(16, 16, 20, 0.95);
+            box-shadow: 0 0 20px rgba(184, 147, 69, 0.15);
+        }
+
+        .search-input::placeholder {
+            color: rgba(255, 255, 255, 0.25);
+            font-style: italic;
+        }
+
+        .table-legend {
+            font-family: 'Lora', serif;
+            font-size: 0.9rem;
+            color: var(--text-muted);
+            font-style: italic;
+        }
+
+        .table-card {
+            background: linear-gradient(to bottom, rgba(15, 15, 18, 0.85), rgba(10, 10, 12, 0.95));
+            border: 1px solid rgba(255, 255, 255, 0.03);
+            border-top: 1px solid var(--border-color);
+            border-radius: 6px;
+            backdrop-filter: blur(16px);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.6);
+            overflow: hidden;
+            position: relative;
+        }
+
+        .table-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 20%;
+            right: 20%;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, var(--gold-light), transparent);
+            opacity: 0.4;
+            pointer-events: none;
+        }
+
+        table#usersTable {
+            width: 100%;
+            border-collapse: collapse;
+            border: none;
+            text-align: left;
+        }
+
+        table#usersTable thead {
+            background: rgba(6, 6, 8, 0.6);
+            border-bottom: 1px solid rgba(184, 147, 69, 0.2);
+        }
+
+        table#usersTable th {
+            padding: 1.3rem 2rem;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.72rem;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--gold-dark);
+            font-weight: 500;
+        }
+
+        table#usersTable th:last-child {
+            text-align: right;
+            padding-right: 2.5rem;
+        }
+
+        table#usersTable tbody tr {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.025);
+            transition: all 0.25s ease;
+        }
+
+        table#usersTable tbody tr:hover {
+            background-color: rgba(184, 147, 69, 0.04);
+        }
+
+        table#usersTable td {
+            padding: 1.2rem 2rem;
+            font-family: 'Lora', serif;
+            font-size: 0.98rem;
+            color: rgba(244, 244, 245, 0.85);
+            vertical-align: middle;
+        }
+
+        table#usersTable td:first-child {
+            font-family: 'Lora', serif;
+            color: var(--text-main);
+            font-weight: 400;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .user-avatar-circle {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(184, 147, 69, 0.25), rgba(58, 10, 10, 0.4));
+            border: 1px solid rgba(184, 147, 69, 0.3);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Playfair Display', serif;
+            font-size: 0.85rem;
+            color: var(--gold-light);
+            flex-shrink: 0;
+        }
+
+        .role-badge {
+            display: inline-block;
+            padding: 0.3rem 0.8rem;
+            border-radius: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.72rem;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            font-weight: 500;
+        }
+
+        .role-admin {
+            background: rgba(184, 147, 69, 0.12);
+            color: var(--gold-light);
+            border: 1px solid rgba(184, 147, 69, 0.35);
+        }
+
+        .role-editor {
+            background: rgba(107, 20, 20, 0.2);
+            color: #fca5a5;
+            border: 1px solid rgba(107, 20, 20, 0.4);
+        }
+
+        .role-user {
+            background: rgba(255, 255, 255, 0.04);
+            color: var(--text-muted);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+
+        table#usersTable td:last-child {
+            text-align: right;
+            padding-right: 2.5rem;
+        }
+
+        .actions-group {
+            display: inline-flex;
+            gap: 0.6rem;
+            align-items: center;
+        }
+
+        .btn-action {
+            background: transparent;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: var(--text-muted);
+            padding: 0.4rem 0.85rem;
+            border-radius: 20px;
+            font-family: 'Lora', serif;
+            font-size: 0.82rem;
+            font-style: italic;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-action:hover {
+            border-color: var(--gold-dark);
+            color: var(--gold-light);
+            background: rgba(184, 147, 69, 0.05);
+        }
+
+        .btn-action.btn-danger {
+            border-color: rgba(255, 107, 107, 0.2);
+            color: rgba(255, 107, 107, 0.7);
+        }
+
+        .btn-action.btn-danger:hover {
+            border-color: #ff6b6b;
+            color: #ff6b6b;
+            background: rgba(107, 20, 20, 0.25);
+        }
+
+        select.role-select {
+            background: rgba(10, 10, 12, 0.8);
+            border: 1px solid rgba(184, 147, 69, 0.25);
+            color: var(--gold-light);
+            padding: 0.35rem 0.8rem;
+            border-radius: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.75rem;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            outline: none;
+            transition: all 0.3s;
+        }
+
+        select.role-select:focus {
+            border-color: var(--gold-light);
+            box-shadow: 0 0 10px rgba(184, 147, 69, 0.2);
+        }
+
+        select.role-select option {
+            background: #0d0d10;
+            color: var(--text-main);
+        }
+
+        .table-footer {
+            padding: 1.2rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid rgba(255, 255, 255, 0.03);
+            font-size: 0.82rem;
+            color: var(--text-muted);
+            font-family: 'Lora', serif;
+            font-style: italic;
+        }
+
+        @media (max-width: 900px) {
+            nav { padding: 1.5rem 2rem; }
+            main { padding: 2rem; }
+            .page-header { flex-direction: column; align-items: flex-start; gap: 1.5rem; }
+            .header-metrics { width: 100%; justify-content: space-between; }
+            .metric-item { text-align: left; }
+            .table-card { overflow-x: auto; }
+            table#usersTable th, table#usersTable td { padding: 1rem 1.2rem; }
+        }
+    </style>
 </head>
 <body>
+
+    <canvas id="soulCanvas"></canvas>
+
     <header>
-        <h1>Panel de Administración</h1>
-        <button id="logoutBtn">Cerrar Sesión</button>
+        <nav>
+            <div class="brand-group">
+                <a href="muro.html" class="brand">Querencia.</a>
+                <span class="admin-badge">Panel Central</span>
+            </div>
+
+            <div class="nav-links">
+                <a href="muro.html" class="nav-link">Muro de Debates</a>
+                <a href="diario.html" class="nav-link">Diario Íntimo</a>
+            </div>
+
+            <div class="nav-actions">
+                <span class="user-greeting">
+                    <span class="status-dot"></span>
+                    Administrador
+                </span>
+                <button id="logoutBtn" class="logout-btn">Cerrar Sesión</button>
+            </div>
+        </nav>
     </header>
 
     <main>
-        <h2>Gestión de Usuarios</h2>
-        <p id="errorMessage" style="color: red;"></p>
-        
-        <table border="1" id="usersTable">
-            <thead>
-                <tr>
-                    <th>Email</th>
-                    <th>Rol</th>
-                    <th>Acciones</th>
-                </tr>
-            </thead>
-            <tbody id="usersTableBody">
-                <!-- Se rellena dinámicamente -->
-            </tbody>
-        </table>
+        <div class="page-header">
+            <div class="header-titles">
+                <h1>Gobierno y Almas del Refugio</h1>
+                <p class="subtitle">Gestión soberana de oyentes, privilegios y accesos a Querencia.</p>
+            </div>
+            <div class="header-metrics">
+                <div class="metric-item">
+                    <div class="metric-value" id="totalUsersCount">--</div>
+                    <div class="metric-label">Oyentes Registrados</div>
+                </div>
+                <div class="metric-item">
+                    <div class="metric-value">Seguro</div>
+                    <div class="metric-label">Estado del Servidor</div>
+                </div>
+            </div>
+        </div>
+
+        <p id="errorMessage"></p>
+
+        <div class="table-toolbar">
+            <div class="search-box">
+                <svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" id="userSearchInput" class="search-input" placeholder="Filtrar por correo o rol..." autocomplete="off">
+            </div>
+            <span class="table-legend">Registros en tiempo real sincronizados con la API</span>
+        </div>
+
+        <div class="table-card">
+            <table id="usersTable">
+                <thead>
+                    <tr>
+                        <th>Email / Alma</th>
+                        <th>Rol Asignado</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody id="usersTableBody">
+                </tbody>
+            </table>
+            
+            <div class="table-footer">
+                <span id="tableStatusText">Cargando oyentes desde el refugio...</span>
+                <span>Querencia &copy; 2025</span>
+            </div>
+        </div>
     </main>
+
+    <script>
+        const canvas = document.getElementById('soulCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        let width, height;
+        let time = 0;
+
+        const waves = [
+            { amplitude: 180, length: 0.0011, speed: 0.0007, color: 'rgba(58, 10, 10, 0.35)', width: 85, offset: 50 },
+            { amplitude: 130, length: 0.0016, speed: 0.0011, color: 'rgba(184, 147, 69, 0.13)', width: 50, offset: 110 },
+            { amplitude: 80, length: 0.0022, speed: 0.0016, color: 'rgba(234, 221, 179, 0.07)', width: 22, offset: -20 }
+        ];
+
+        function resize() {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resize);
+        resize();
+
+        function animate() {
+            ctx.clearRect(0, 0, width, height);
+            time += 1;
+            ctx.filter = 'blur(16px)';
+
+            waves.forEach(wave => {
+                ctx.beginPath();
+                ctx.moveTo(0, height * 0.8 + wave.offset);
+
+                for (let x = 0; x < width; x += 25) {
+                    let y = Math.sin((x * wave.length) + (time * wave.speed)) * wave.amplitude;
+                    let y2 = Math.cos((x * wave.length * 0.35) + (time * wave.speed * 0.65)) * (wave.amplitude * 0.35);
+                    ctx.lineTo(x, (height * 0.8) + y + y2 + wave.offset);
+                }
+                ctx.strokeStyle = wave.color;
+                ctx.lineWidth = wave.width;
+                ctx.stroke();
+            });
+
+            requestAnimationFrame(animate);
+        }
+
+        animate();
+
+        // Filtro visual en vivo para agilizar la búsqueda sin interferir con admin.js
+        const searchInput = document.getElementById('userSearchInput');
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase();
+                const rows = document.querySelectorAll('#usersTableBody tr');
+                let visibleCount = 0;
+                rows.forEach(row => {
+                    const text = row.textContent.toLowerCase();
+                    if (text.includes(query)) {
+                        row.style.display = '';
+                        visibleCount++;
+                    } else {
+                        row.style.display = 'none';
+                    }
+                });
+                const statusText = document.getElementById('tableStatusText');
+                if (statusText && rows.length > 0) {
+                    statusText.textContent = `Mostrando ${visibleCount} de ${rows.length} almas`;
+                }
+            });
+        }
+
+        // Observer para embellecer automáticamente los elementos que renderice admin.js
+        const tbody = document.getElementById('usersTableBody');
+        if (tbody) {
+            const observer = new MutationObserver(() => {
+                const rows = tbody.querySelectorAll('tr');
+                const totalCounter = document.getElementById('totalUsersCount');
+                const statusText = document.getElementById('tableStatusText');
+                
+                if (totalCounter) totalCounter.textContent = rows.length;
+                if (statusText) statusText.textContent = `${rows.length} usuarios cargados`;
+
+                rows.forEach(row => {
+                    // Si tiene botones, añadirles la clase poética
+                    const btns = row.querySelectorAll('button');
+                    btns.forEach(btn => {
+                        if (!btn.classList.contains('btn-action')) {
+                            btn.classList.add('btn-action');
+                            if (btn.textContent.toLowerCase().includes('eliminar') || btn.textContent.toLowerCase().includes('borrar')) {
+                                btn.classList.add('btn-danger');
+                            }
+                        }
+                    });
+
+                    // Si tiene select de rol, añadir clase
+                    const selects = row.querySelectorAll('select');
+                    selects.forEach(sel => {
+                        if (!sel.classList.contains('role-select')) {
+                            sel.classList.add('role-select');
+                        }
+                    });
+                });
+            });
+
+            observer.observe(tbody, { childList: true, subtree: true });
+        }
+    </script>
 
     <script src="js/admin.js"></script>
 </body>
