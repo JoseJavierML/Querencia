@@ -72,7 +72,7 @@ app.post('/api/registro', async (req, res) => {
         const verificationToken = crypto.randomBytes(20).toString('hex');
         const nuevoUsuario = await userModel.create(email, password, verificationToken);
 
-        sendVerificationEmail(email, verificationToken);
+        await sendVerificationEmail(email, verificationToken);
 
         res.status(201).json({ 
             message: 'Usuario registrado. Revisa tu correo para verificar la cuenta.', 
