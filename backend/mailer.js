@@ -9,7 +9,8 @@ const transporter = nodemailer.createTransport({
 });
 
 const sendVerificationEmail = async (email, token) => {
-    const verificationLink = `http://localhost:3000/api/auth/verify/${token}`;
+    const backendUrl = process.env.BACKEND_URL || 'http://localhost:3000';
+    const verificationLink = `${backendUrl}/api/auth/verify/${token}`;
 
     const mailOptions = {
         from: `"Querencia" <${process.env.EMAIL_USER}>`,
@@ -28,9 +29,8 @@ const sendVerificationEmail = async (email, token) => {
 
     try {
         await transporter.sendMail(mailOptions);
-        console.log(`Correo de verificación enviado a ${email}`);
     } catch (error) {
-        console.error('Error enviando el correo:', error);
+        console.error(error);
     }
 };
 
