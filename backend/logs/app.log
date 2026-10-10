@@ -8,3 +8,7 @@
 [2026-10-10 09:59:55] INFO: [0mGET /api/auth/google/callback?iss=https://accounts.google.com&code=4/0AXlqoi7P8W_FZGNl2aZ-LEMjmHxXlJCTYm1nevLOAgS1w8XnRnDq9WPmpGP7l-GYPDpKMw&scope=email+profile+https://www.googleapis.com/auth/userinfo.profile+https://www.googleapis.com/auth/userinfo.email+openid&authuser=0&prompt=consent [32m200[0m 541.713 ms - 318[0m
 [2026-10-10 09:59:55] INFO: [0mGET /api/session [36m304[0m 0.602 ms - -[0m
 [2026-10-10 09:59:55] INFO: [0mGET /favicon.ico [33m404[0m 0.711 ms - 150[0m
+[2026-10-10 10:11:06] INFO: 🚀 Servidor de Querencia corriendo en http://localhost:3000
+[2026-10-10 10:11:17] INFO: [0mGET /api/auth/google [36m302[0m 1.737 ms - 0[0m
+[2026-10-10 10:11:18] INFO: [0mGET /api/auth/google/callback?iss=https%3A%2F%2Faccounts.google.com&code=4%2F0AXlqoi5VOxXrgAegS0DMFy1aUOTRcs3LcrZsYNlMzOfI1SXZdzp4Kiczhj1MHh0ub19Axw&scope=email+profile+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.profile+https%3A%2F%2Fwww.googleapis.com%2Fauth%2Fuserinfo.email+openid&authuser=0&prompt=none [32m200[0m 326.339 ms - 318[0m
+[2026-10-10 10:11:18] INFO: [0mGET /api/session [36m304[0m 1.070 ms - -[0m
