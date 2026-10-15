@@ -11,6 +11,7 @@ const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const crypto = require('crypto');
 const { sendVerificationEmail } = require('./mailer');
+const { verificarDominio } = require('./domainLogic.js');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -155,6 +156,21 @@ app.get('/api/users', authMiddleware, isAdminMiddleware, async (req, res) => {
     } catch (error) {
         res.status(500).json({ message: error.message });
     }
+});
+
+app.post('/api/prueba/dominio', (req, res) => {
+    const { email } = req.body;
+
+    if (email === undefined || typeof email !== 'string') {
+        return res.status(400).json({ error: 'El campo email es obligatorio y debe ser texto.' });
+    }
+
+    if (!email.includes('@')) {
+        return res.status(400).json({ error: 'El email debe contener un carácter @' });
+    }
+
+    const isPermitido = verificarDominio(email);
+    return res.status(200).json({ permitido: isPermitido });
 });
 
 app.listen(PORT, () => {
