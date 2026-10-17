@@ -531,7 +531,7 @@
                 <a href="diario.html" class="nav-link">Diario Íntimo</a>
             </div>
 
-            <div class="nav-actions">
+            <div class="nav-actions" data-auth-header>
                 <span class="user-greeting"><span class="status-dot"></span><span style="display: inline-flex; align-items: center; gap: 0.55rem; background: rgba(184, 147, 69, 0.08); border: 1px solid rgba(184, 147, 69, 0.25); border-radius: 30px; padding: 0.25rem 0.75rem 0.25rem 0.35rem; font-family: -apple-system, BlinkMacSystemFont, sans-serif;" class=""><span style="width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg, rgba(184, 147, 69, 0.4), rgba(58, 10, 10, 0.6)); border: 1px solid rgba(184, 147, 69, 0.4); display: inline-flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 0.75rem; color: var(--gold-light); font-weight: 600;" class="">A</span><span id="currentAccountEmail" style="color: var(--text-main); font-family: 'Lora', serif; font-size: 0.82rem; font-style: italic; letter-spacing: 0.3px;" class="">admin@querencia.es</span><span style="font-size: 0.65rem; letter-spacing: 1.5px; text-transform: uppercase; color: var(--gold-dark); background: rgba(184, 147, 69, 0.15); padding: 0.15rem 0.45rem; border-radius: 12px; font-weight: 600;" class="">Admin</span></span></span>
                 <button id="logoutBtn" class="logout-btn">Cerrar Sesión</button>
             </div>
@@ -694,7 +694,8 @@
     </script>
 
     <!-- Enlace a tu script original -->
-    <script src="js/admin.js"></script>
+    <script type="module" src="js/auth.js"></script>
+    <script type="module" src="js/admin.js"></script>
 
 
 

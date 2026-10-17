@@ -338,6 +338,7 @@
         <header style="margin-bottom: 1.5rem;">
             <h1 class="">Querencia.</h1>
             <p class="subtitle">No escuches música. Siéntela, piénsala, compártela.</p>
+            <div data-auth-header id="authHeader" class="nav-actions" style="justify-content: center; margin-top: 1rem;"></div>
         </header>
 
         <!-- Botón Unificado de Google: Conexión Inmediata con Estilo Querencia -->
@@ -421,7 +422,6 @@
         window.addEventListener('resize', resize);
         resize();
 
-        // Rastrear el ratón por toda la pantalla
         window.addEventListener('mousemove', (e) => {
             mouseX = e.clientX;
             mouseY = e.clientY;
@@ -467,6 +467,7 @@
         animate();
     </script>
     
+    <script type="module" src="js/auth.js"></script>
     <!-- Autenticación y registro de usuarios (100% compatible con api.js) -->
     <script type="module">
         import { api } from './js/api.js';
@@ -477,7 +478,6 @@
 
         if (googleBtn) {
             googleBtn.addEventListener('click', (e) => {
-                // Si api.loginWithGoogle existe, se ejecuta; en caso contrario navega a la ruta natural /api/auth/google
                 if (api && typeof api.loginWithGoogle === 'function') {
                     e.preventDefault();
                     api.loginWithGoogle();
@@ -486,7 +486,7 @@
         }
 
         loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault(); // Evita que la página recargue bruscamente
+            e.preventDefault(); 
             
             const email = document.getElementById('login-email').value;
             const password = document.getElementById('login-password').value;

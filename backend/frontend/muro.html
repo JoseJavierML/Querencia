@@ -341,7 +341,7 @@
 <a class="nav-link active" href="muro.html">Muro de Debates</a>
 <a class="nav-link" href="diario.html">Diario Íntimo</a>
 </div>
-<div class="nav-actions">
+<div class="nav-actions" data-auth-header>
 <div id="userProfileBadge" style="display: inline-flex; align-items: center; gap: 0.65rem; padding: 0.3rem 0.85rem 0.3rem 0.4rem; border-radius: 9999px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(184, 147, 69, 0.2); backdrop-filter: blur(8px);"><div style="width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg, rgba(184, 147, 69, 0.25), rgba(58, 10, 10, 0.6)); border: 1px solid rgba(234, 221, 179, 0.4); display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 0.8rem; font-weight: 600; color: var(--gold-light); text-shadow: 0 0 8px rgba(234, 221, 179, 0.4);" class="">O</div><div style="display: flex; flex-direction: column; text-align: left; line-height: 1.15;"><span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: var(--gold-dark); font-family: -apple-system, sans-serif;" class="">Oyente</span><span id="currentUserEmail" style="font-family: 'Lora', serif; font-size: 0.82rem; color: var(--gold-light); font-style: italic; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;" class="">oyente@querencia.es</span></div></div><button class="logout-btn" id="logoutBtn" type="button">Cerrar sesión</button>
 </div>
 </nav>
@@ -463,6 +463,7 @@
 
         animate();
     </script>
+<script type="module" src="js/auth.js"></script>
 <script type="module">
         import { api } from './js/api.js'; 
 
