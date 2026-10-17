@@ -1,5 +1,7 @@
+import { fetchAutenticado } from './auth.js';
+
 document.addEventListener('DOMContentLoaded', () => {
-    const token = localStorage.getItem('querencia_token');
+    const token = localStorage.getItem('token') || localStorage.getItem('querencia_token');
     const tableBody = document.getElementById('usersTableBody');
     const errorMessage = document.getElementById('errorMessage');
 
@@ -10,12 +12,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     async function fetchUsers() {
         try {
-            const response = await fetch('/api/users', {
+            const response = await fetchAutenticado('/api/users', {
                 method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
+                headers: { 'Content-Type': 'application/json' }
             });
 
             if (!response.ok) {
@@ -26,7 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
 
             const users = await response.json();
-            renderUsersTable(users); // #T51
+            renderUsersTable(users);
         } catch (error) {
             errorMessage.textContent = error.message;
         }
@@ -35,9 +34,8 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderUsersTable(users) {
         tableBody.innerHTML = '';
 
-        users.forEach(user => {
+        users.forEach((user) => {
             const tr = document.createElement('tr');
-            
             tr.innerHTML = `
                 <td>${user.email}</td>
                 <td>${user.role || 'user'}</td>
@@ -45,15 +43,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     <button class="delete-btn" data-email="${user.email}">Eliminar</button>
                 </td>
             `;
-
             tableBody.appendChild(tr);
         });
 
-        document.querySelectorAll('.delete-btn').forEach(button => {
-            button.addEventListener('click', (e) => {
-                const email = e.target.getAttribute('data-email');
-                deleteUser(email);
-            });
+        document.querySelectorAll('.delete-btn').forEach((button) => {
+            button.addEventListener('click', () => deleteUser(button.getAttribute('data-email')));
         });
     }
 
@@ -61,18 +55,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!confirm(`¿Seguro que deseas eliminar al usuario ${email}?`)) return;
 
         try {
-            const response = await fetch(`/api/users/${email}`, {
+            const response = await fetchAutenticado(`/api/users/${email}`, {
                 method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
+                headers: { 'Content-Type': 'application/json' }
             });
 
-            if (!response.ok) {
-                throw new Error('No se pudo eliminar al usuario.');
-            }
-
+            if (!response.ok) throw new Error('No se pudo eliminar al usuario.');
             fetchUsers();
         } catch (error) {
             alert(error.message);

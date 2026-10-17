@@ -271,7 +271,7 @@
             <a href="diario.html" class="nav-link active">Diario Íntimo</a>
         </div>
 
-        <div class="nav-actions">
+        <div class="nav-actions" data-auth-header>
             <div id="userProfileBadge" class="user-badge" style="display: inline-flex; align-items: center; gap: 0.6rem; padding: 0.3rem 0.8rem 0.3rem 0.35rem; border-radius: 9999px; background: rgba(184, 147, 69, 0.05); border: 1px solid rgba(184, 147, 69, 0.25); box-shadow: rgba(184, 147, 69, 0.06) 0px 0px 12px;"><span style="display: inline-flex; align-items: center; justify-content: center; width: 1.65rem; height: 1.65rem; border-radius: 50%; background: linear-gradient(135deg, rgba(234, 221, 179, 0.2), rgba(184, 147, 69, 0.15)); border: 1px solid rgba(234, 221, 179, 0.35); font-family: 'Playfair Display', serif; font-size: 0.75rem; font-style: italic; font-weight: 600; color: var(--gold-light);" class="">O</span><span id="userAccountBadge" class="user-badge-email" style="font-family: 'Lora', serif; font-size: 0.82rem; color: var(--text-muted); letter-spacing: 0.3px; max-width: 170px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">oyente@querencia.es</span></div><button id="logoutBtn" class="logout-btn" type="button">Cerrar sesión</button>
         </div>
     </nav>
@@ -345,6 +345,7 @@
 
         animate();
     </script>
+    <script type="module" src="js/auth.js"></script>
     <script type="module">
         import { api } from './js/api.js';
 
