@@ -9,7 +9,6 @@ const logger = createLogger({
         })
     ),
     transports: [
-        // Salida 1: Consola
         new transports.Console({
             format: format.combine(
                 format.colorize(),
@@ -17,11 +16,7 @@ const logger = createLogger({
                     return `[${timestamp}] ${level}: ${message}`;
                 })
             )
-        }),
-        // Salida 2: Archivo con todo el historial
-        new transports.File({ filename: 'logs/app.log' }),
-        // Salida 3: Archivo solo para errores
-        new transports.File({ filename: 'logs/error.log', level: 'error' })
+        })
     ]
 });
 
