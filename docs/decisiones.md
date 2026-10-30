@@ -62,3 +62,27 @@ timestamp: 2026-10-30
 **Por qué:** `ci.yml` reconstruye `app.yaml` y ejecuta `gcloud app deploy`; el historial contiene `27b848b` con el cambio hacia GCP. El README aún menciona Render.
 
 **Estado:** vigente en el workflow; la documentación pública del destino queda **Por verificar**.
+
+## D-08 — Diario privado por usuario
+
+**Qué se decidió:** `GET /api/diario` devuelve únicamente las entradas del usuario autenticado. El `userId` de cada entrada se resuelve a partir del email que viaja en la sesión y se almacena como `ObjectId` con referencia al modelo `User`.
+
+**Por qué:** el diario es íntimo y privado; cada usuario debe poder leer solo sus propias entradas y MongoDB garantiza la integridad referencial mediante el `ObjectId`.
+
+**Estado:** vigente.
+
+## D-09 — Fecha generada por el servidor y contrato de la API
+
+**Qué se decidió:** la fecha de la entrada se genera automáticamente en el backend en formato ISO mediante Mongoose (`createdAt`) y nunca la envía el cliente. El payload de la API usa nomenclatura en inglés: `POST /api/diario` recibe `{ text }` y las respuestas incluyen `_id`, `text`, `createdAt` y `userId`.
+
+**Por qué:** evitar que un usuario manipule fechas falsas desde el navegador y mantener un contrato de API homogéneo en inglés.
+
+**Estado:** vigente.
+
+## D-10 — Validación del texto del diario
+
+**Qué se decidió:** `text` es obligatorio, se recorta con `trim` y debe tener entre 1 y 5000 caracteres. Un texto inválido devuelve `400`.
+
+**Por qué:** evitar entradas vacías y saturar la base de datos con contenido desmesurado en el MVP.
+
+**Estado:** vigente.
