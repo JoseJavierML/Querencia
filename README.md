@@ -8,7 +8,7 @@ Desarrollado para la asignatura Procesos de Ingeniería del Software (Curso 2026
 - **Backend (Node.js & Express):** Proporciona un entorno ligero y rápido para construir la API REST requerida, permitiendo mantener un ecosistema unificado en JavaScript.
 - **Frontend (Vanilla JS / HTML):** Asegura una estricta separación de la capa de presentación sin la sobrecarga de compilación de *frameworks* complejos en la etapa inicial.
 - **Pruebas (Jest):** Facilita la creación de pruebas unitarias automatizadas con aserciones claras y se integra nativamente con herramientas de CI.
-- **CI/CD (GitHub Actions & Render):** GitHub Actions automatiza la ejecución de los tests en cada *pull request*, mientras que Render facilita el despliegue continuo de la rama principal a una URL pública.
+- **CI/CD (GitHub Actions & Google App Engine):** GitHub Actions automatiza la ejecución de los tests en cada *pull request*, mientras que Google App Engine facilita el despliegue continuo de la rama principal a una URL pública.
 
 ## Instrucciones de Ejecución
 
