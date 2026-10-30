@@ -13,7 +13,7 @@ El historial local muestra ramas de funcionalidad, documentación y corrección 
 
 ## Integración continua
 
-En [ci.yml](../.github/workflows/ci.yml), los eventos `pull_request` contra `main` y `push` a `main` ejecutan un job con Ubuntu y Node.js 22. El job instala dependencias con `npm ci` dentro de `backend` y ejecuta `npm test`. La comprobación local equivalente observada fue: **2 suites pasadas, 10 tests pasados, 0 snapshots**.
+En [ci.yml](../.github/workflows/ci.yml), los eventos `pull_request` contra `main` y `push` a `main` ejecutan un job con Ubuntu y Node.js 22. El job instala dependencias con `npm ci` dentro de `backend` y ejecuta `npm test`. La comprobación local equivalente observada fue: **5 suites pasadas, 31 tests pasados, 0 snapshots**. Las 21 pruebas del diario usan dobles de repositorios y de autenticación, sin MongoDB ni llamadas externas.
 
 ## Despliegue continuo
 
@@ -21,4 +21,4 @@ El job `deploy` depende de `test` y solo se ejecuta en `push` a `main`. Reconstr
 
 ## Variables de entorno
 
-Los nombres declarados en [backend/.env.example](../backend/.env.example) son `PORT`, `MONGO_URI`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `EMAIL_USER`, `EMAIL_PASS` y `ALLOWED_DOMAINS`. No se documentan sus valores.
+Los nombres declarados en [backend/.env.example](../backend/.env.example) son `PORT`, `MONGO_URI`, `DIARY_MAX_TEXT_LENGTH`, `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET`, `EMAIL_USER`, `EMAIL_PASS` y `ALLOWED_DOMAINS`. No se documentan sus valores. `DIARY_MAX_TEXT_LENGTH` es opcional y solo reduce el límite de 5000 caracteres del diario.
