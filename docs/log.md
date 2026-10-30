@@ -1,5 +1,9 @@
 # Cronología
 
+## 2026-10-30 — Backend del Diario Íntimo (RF-MVP-Diario)
+
+Rama `feature/RF-MVP-backend-diario`. Se registran las decisiones D-08, D-09 y D-10; se añade el esquema `DiaryEntry`, el servicio `diaryService`, los endpoints `POST/GET /api/diario` protegidos por `authMiddleware` y 21 pruebas unitarias con dobles de repositorios y autenticación. La suite completa queda en 5 suites y 31 tests pasados.
+
 ## 2026-10-19 — Corrección de la cabecera y del cierre de sesión
 
 Commit `328caa0`, integrado en `main` por el merge `9ba45d1`. El mensaje indica que completa la cabecera dinámica y corrige la lógica de logout.

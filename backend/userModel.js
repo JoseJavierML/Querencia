@@ -60,6 +60,10 @@ const UserModel = {
         return user;
     },
 
+    findByEmail: async (email) => {
+        return await User.findOne({ email });
+    },
+
     getAll: async () => {
         return await User.find({});
     },

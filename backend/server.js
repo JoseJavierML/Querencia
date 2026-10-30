@@ -12,10 +12,24 @@ const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const crypto = require('crypto');
 const { sendVerificationEmail } = require('./mailer');
 const { verificarDominio } = require('./domainLogic.js');
+const { DiaryRepository } = require('./diaryModel');
+const { createDiaryService } = require('./diaryService');
+const { createDiaryRouter } = require('./diaryRouter');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
 connectDB();
+
+const diaryService = createDiaryService({
+    diaryRepository: DiaryRepository,
+    userRepository: userModel,
+    maxTextLength: process.env.DIARY_MAX_TEXT_LENGTH
+});
+
+const diaryRouter = createDiaryRouter({
+    diaryService,
+    authMiddleware
+});
 
 app.use(cors());
 app.use(express.json());
@@ -27,6 +41,8 @@ app.use(morgan('dev', {
 }));
 
 app.use(passport.initialize());
+
+app.use('/api/diario', diaryRouter);
 
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
