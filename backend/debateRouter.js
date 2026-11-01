@@ -33,15 +33,20 @@ const getAuthorEmail = (debate, fallback = null) => {
     return null;
 };
 
-const toDebateResponse = (debate, viewerId = null, authorEmail = null) => ({
-    _id: debate._id,
-    title: debate.title,
-    content: debate.content,
-    coverImageUrl: debate.coverImageUrl || null,
-    createdAt: debate.createdAt,
-    authorEmail: getAuthorEmail(debate, authorEmail),
-    reactions: toReactionsResponse(debate.reactions, viewerId)
-});
+const toDebateResponse = (debate, viewerId = null, authorEmail = null) => {
+    const isAnonymous = Boolean(debate.isAnonymous);
+
+    return {
+        _id: debate._id,
+        title: debate.title,
+        content: debate.content,
+        coverImageUrl: debate.coverImageUrl || null,
+        isAnonymous,
+        createdAt: debate.createdAt,
+        authorEmail: isAnonymous ? null : getAuthorEmail(debate, authorEmail),
+        reactions: toReactionsResponse(debate.reactions, viewerId)
+    };
+};
 
 const toReactionResponse = (debate, viewerId) => ({
     _id: debate._id,
@@ -87,7 +92,8 @@ const createDebateRouter = ({ debateService, authMiddleware, adminMiddleware }) 
                 email: req.user.email,
                 title: req.body ? req.body.title : undefined,
                 content: req.body ? req.body.content : undefined,
-                coverImageUrl: req.body ? req.body.coverImageUrl : undefined
+                coverImageUrl: req.body ? req.body.coverImageUrl : undefined,
+                isAnonymous: req.body ? req.body.isAnonymous : undefined
             });
 
             return res.status(201).json(toDebateResponse(debate, null, req.user.email));

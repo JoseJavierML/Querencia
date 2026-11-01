@@ -1,5 +1,25 @@
 # Cronología
 
+## 2026-11-01 — Scrollbar del formulario, autor anónimo y redirección al muro
+
+Se pule el diálogo de creación del muro. El `<textarea>` y el propio diálogo usan el mismo scrollbar fino dorado que el Diario (`scrollbar-width`, `::-webkit-scrollbar`, track transparente sobre el fondo oscuro y thumb dorado), de modo que desaparece la barra blanca nativa.
+
+El modelo `Debate` incorpora `isAnonymous` como booleano con `false` por defecto. El servicio solo acepta booleanos y normaliza la ausencia del campo; el router devuelve el flag y fuerza `authorEmail: null` cuando la reflexión es anónima. En el muro, el autor no anónimo se muestra sin el dominio del correo (`admin@querencia.es` → `admin`) y el anónimo como “Publicado por Anónimo”. El diálogo de administración añade una casilla “Publicar como anónimo” con checkbox personalizado en dorado.
+
+El login de `index.html` y el callback de Google redirigen ahora a `muro.html`. El registro intenta iniciar sesión automáticamente para entrar al muro; si la cuenta sigue pendiente de verificación, muestra el aviso correspondiente sin crear una sesión ficticia.
+
+La suite queda en **8 suites y 117 tests pasados** (`npm test -- --runInBand`), con pruebas nuevas para el flag de anonimato en modelo, servicio y router, incluida la ocultación de `authorEmail`.
+
+## 2026-11-01 — Rediseño UX del muro, borrado y portadas por URL
+
+Sobre la rama `feature/RF-MVP-muro-admin-seed` se retira el botón de creación del flujo normal del muro. En su lugar, `muro.js` construye un botón flotante fijo en la esquina inferior derecha con el mismo icono de lápiz del Diario y un diálogo modal para publicar. Ambos nodos, junto con la papelera de cada tarjeta, solo se insertan en el DOM cuando `obtenerUsuarioActual()` devuelve rol `admin`; un oyente no tiene ningún punto de entrada de administración.
+
+El backend incorpora `DELETE /api/debates/:id` con `authMiddleware` e `isAdminMiddleware`. `DebateRepository.deleteById` valida el `ObjectId` y usa `findByIdAndDelete`; el servicio traduce la ausencia del debate a `DebateNotFoundError` y el router responde `200` con `{ deleted: true, _id }` o `404`. El frontend añade `api.eliminarDebate(id)`, muestra una papelera por tarjeta solo a administradores y recarga el muro tras confirmar el borrado.
+
+El modelo `Debate` incorpora `coverImageUrl` opcional, recortado y limitado a 2048 caracteres. El servicio exige `http` o `https`, el formulario del diálogo incluye un campo de URL y la tarjeta renderiza esa imagen como portada, con el placeholder existente como respaldo si falta o falla. El seed incluye una portada de Camarón de la Isla y Paco de Lucía, completa la portada si el debate ya existía sin ella y carga `backend/.env` por ruta absoluta para poder ejecutarse desde la raíz.
+
+La suite queda en **8 suites y 111 tests pasados** (`npm test -- --runInBand`), con pruebas nuevas para el campo de portada, el borrado en modelo, servicio y router, y los permisos del endpoint.
+
 ## 2026-11-01 — UI de administración, reacciones semánticas y seed del muro
 
 Rama `feature/RF-MVP-muro-admin-seed`. El muro pasa de seis reacciones a tres etiquetas semánticas exactas: `profundo` (“Profundo”), `melancolico` (“Melancólico”) y `rompeEsquemas` (“Rompe esquemas”). `debateConstants.js` centraliza claves y etiquetas; `debateRouter.js` devuelve `label`, `count` y `reactedByMe`; el modelo mantiene cada reacción como un array de `ObjectId` y el toggle sigue resolviéndose con `$pull` y `$addToSet`. Las claves retiradas `intimo`, `inquietante` y `tecnologico` dejan de exponerse y no se ejecuta una migración destructiva.

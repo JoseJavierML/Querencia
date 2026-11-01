@@ -90,6 +90,17 @@ const normalizeCoverImageUrl = (coverImageUrl) => {
     return normalizedUrl;
 };
 
+const normalizeIsAnonymous = (isAnonymous) => {
+    if (isAnonymous === undefined || isAnonymous === null) {
+        return false;
+    }
+    if (typeof isAnonymous !== 'boolean') {
+        throw new DebateValidationError('El campo de anonimato no es válido');
+    }
+
+    return isAnonymous;
+};
+
 const createDebateService = ({ debateRepository, userRepository }) => {
     if (!debateRepository) {
         throw new Error('debateRepository es obligatorio');
@@ -106,16 +117,18 @@ const createDebateService = ({ debateRepository, userRepository }) => {
         return user._id;
     };
 
-    const createDebate = async ({ email, title, content, coverImageUrl } = {}) => {
+    const createDebate = async ({ email, title, content, coverImageUrl, isAnonymous } = {}) => {
         const normalizedTitle = normalizeTitle(title);
         const normalizedContent = normalizeContent(content);
         const normalizedCoverImageUrl = normalizeCoverImageUrl(coverImageUrl);
+        const normalizedIsAnonymous = normalizeIsAnonymous(isAnonymous);
         const authorId = await resolveUserId(email);
 
         return debateRepository.create({
             title: normalizedTitle,
             content: normalizedContent,
             coverImageUrl: normalizedCoverImageUrl,
+            isAnonymous: normalizedIsAnonymous,
             authorId
         });
     };

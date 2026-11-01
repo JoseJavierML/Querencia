@@ -59,6 +59,15 @@ function formatearFecha(fechaISO) {
     return fecha.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
 }
 
+function recortarEmail(email) {
+    if (typeof email !== 'string') {
+        return '';
+    }
+
+    const nombre = email.split('@')[0].trim();
+    return nombre || email.trim();
+}
+
 function crearIcono(pathData, className) {
     const svg = document.createElementNS(SVG_NAMESPACE, 'svg');
     svg.setAttribute('viewBox', '0 0 24 24');
@@ -201,9 +210,11 @@ function crearTarjeta(debate, esAdmin) {
 
     const meta = document.createElement('div');
     meta.className = 'debate-meta';
-    const autor = debate.authorEmail
-        ? `Abierto por ${debate.authorEmail}`
-        : 'Abierto por la Administración';
+    const autor = debate.isAnonymous
+        ? 'Publicado por Anónimo'
+        : debate.authorEmail
+            ? `Abierto por ${recortarEmail(debate.authorEmail)}`
+            : 'Abierto por la Administración';
     meta.textContent = `${autor} • ${formatearFecha(debate.createdAt)}`;
 
     const titulo = document.createElement('h2');
@@ -355,6 +366,35 @@ function crearModalAdmin() {
     contentInput.placeholder = 'Escribe la reflexión con calma...';
     contentLabel.append(contentText, contentInput);
 
+    const anonymousWrapper = document.createElement('div');
+    anonymousWrapper.className = 'admin-anonymous';
+
+    const anonymousLabel = document.createElement('label');
+    anonymousLabel.className = 'admin-checkbox';
+    anonymousLabel.htmlFor = 'adminDebateAnonymous';
+
+    const anonymousInput = document.createElement('input');
+    anonymousInput.type = 'checkbox';
+    anonymousInput.className = 'admin-checkbox-input';
+    anonymousInput.id = 'adminDebateAnonymous';
+    anonymousInput.name = 'isAnonymous';
+
+    const anonymousBox = document.createElement('span');
+    anonymousBox.className = 'admin-checkbox-box';
+    anonymousBox.setAttribute('aria-hidden', 'true');
+
+    const anonymousText = document.createElement('span');
+    anonymousText.className = 'admin-checkbox-text';
+    anonymousText.textContent = 'Publicar como anónimo';
+
+    anonymousLabel.append(anonymousInput, anonymousBox, anonymousText);
+
+    const anonymousHint = document.createElement('span');
+    anonymousHint.className = 'admin-field-hint';
+    anonymousHint.textContent = 'Tu correo no aparecerá en el muro.';
+
+    anonymousWrapper.append(anonymousLabel, anonymousHint);
+
     const actions = document.createElement('div');
     actions.className = 'admin-actions';
 
@@ -376,7 +416,16 @@ function crearModalAdmin() {
     feedback.setAttribute('role', 'status');
     feedback.hidden = true;
 
-    form.append(heading, intro, titleLabel, coverLabel, contentLabel, actions, feedback);
+    form.append(
+        heading,
+        intro,
+        titleLabel,
+        coverLabel,
+        contentLabel,
+        anonymousWrapper,
+        actions,
+        feedback
+    );
     dialog.append(close, form);
     overlay.append(backdrop, dialog);
 
@@ -429,6 +478,7 @@ function crearModalAdmin() {
         const title = titleInput.value.trim();
         const content = contentInput.value.trim();
         const coverImageUrl = coverInput.value.trim();
+        const isAnonymous = anonymousInput.checked;
 
         if (!title || !content) {
             mostrarFeedback('El título y el contenido son obligatorios.', true);
@@ -441,7 +491,7 @@ function crearModalAdmin() {
         mostrarFeedback('');
 
         try {
-            await api.crearDebate(title, content, coverImageUrl);
+            await api.crearDebate(title, content, coverImageUrl, isAnonymous);
             form.reset();
             cerrar();
 

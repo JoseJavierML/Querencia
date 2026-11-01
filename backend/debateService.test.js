@@ -50,6 +50,7 @@ describe('Servicio de debates', () => {
             title: 'Título',
             content: 'Contenido',
             coverImageUrl: null,
+            isAnonymous: false,
             authorId
         });
         expect(result).toBe(debate);
@@ -77,9 +78,45 @@ describe('Servicio de debates', () => {
             title: 'Título',
             content: 'Contenido',
             coverImageUrl: 'https://example.com/portada.jpg',
+            isAnonymous: false,
             authorId
         });
         expect(result).toBe(debate);
+    });
+
+    test('crea un debate anónimo cuando se solicita', async () => {
+        const authorId = 'usuario-1';
+        const debate = { _id: 'debate-1', title: 'Título', content: 'Contenido', isAnonymous: true };
+        userRepository.findByEmail.mockResolvedValue({ _id: authorId });
+        debateRepository.create.mockResolvedValue(debate);
+
+        const result = await service.createDebate({
+            email: 'admin@querencia.es',
+            title: 'Título',
+            content: 'Contenido',
+            isAnonymous: true
+        });
+
+        expect(debateRepository.create).toHaveBeenCalledWith({
+            title: 'Título',
+            content: 'Contenido',
+            coverImageUrl: null,
+            isAnonymous: true,
+            authorId
+        });
+        expect(result).toBe(debate);
+    });
+
+    test('rechaza un valor de anonimato que no sea booleano', async () => {
+        await expect(service.createDebate({
+            email: 'admin@querencia.es',
+            title: 'Título',
+            content: 'Contenido',
+            isAnonymous: 'true'
+        })).rejects.toBeInstanceOf(DebateValidationError);
+
+        expect(userRepository.findByEmail).not.toHaveBeenCalled();
+        expect(debateRepository.create).not.toHaveBeenCalled();
     });
 
     test('rechaza una URL de portada que no sea http o https', async () => {

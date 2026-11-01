@@ -87,7 +87,7 @@ app.get('/api/auth/google/callback',
             <script>
                 localStorage.setItem('querencia_token', '${token}');
                 localStorage.setItem('querencia_user', JSON.stringify({ email: '${req.user.email}', role: '${req.user.role}' }));
-                window.location.href = '/diario.html';
+                window.location.href = '/muro.html';
             </script>
         `);
     }

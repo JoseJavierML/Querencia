@@ -33,7 +33,8 @@ export const api = {
     login: async (email, password) => {
         const data = await fetchAPI('/login', {
             method: 'POST',
-            body: JSON.stringify({ email, password })
+            body: JSON.stringify({ email, password }),
+            skipAuthRedirect: true
         });
 
         if (data.token) {
@@ -56,9 +57,9 @@ export const api = {
         method: 'DELETE'
     }),
 
-    crearDebate: (title, content, coverImageUrl = '') => fetchAPI('/debates', {
+    crearDebate: (title, content, coverImageUrl = '', isAnonymous = false) => fetchAPI('/debates', {
         method: 'POST',
-        body: JSON.stringify({ title, content, coverImageUrl })
+        body: JSON.stringify({ title, content, coverImageUrl, isAnonymous })
     }),
 
     eliminarDebate: (id) => fetchAPI(`/debates/${encodeURIComponent(id)}`, {

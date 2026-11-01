@@ -91,7 +91,8 @@ describe('Rutas del muro de debates', () => {
             body: JSON.stringify({
                 title: 'La ruptura temporal en Omega',
                 content: 'Un debate con alma.',
-                coverImageUrl: 'https://example.com/portada.jpg'
+                coverImageUrl: 'https://example.com/portada.jpg',
+                isAnonymous: false
             })
         });
 
@@ -101,6 +102,7 @@ describe('Rutas del muro de debates', () => {
             title: 'La ruptura temporal en Omega',
             content: 'Un debate con alma.',
             coverImageUrl: 'https://example.com/portada.jpg',
+            isAnonymous: false,
             createdAt: '2026-11-01T10:00:00.000Z',
             authorEmail: 'admin@querencia.es'
         });
@@ -124,7 +126,38 @@ describe('Rutas del muro de debates', () => {
             email: 'admin@querencia.es',
             title: 'La ruptura temporal en Omega',
             content: 'Un debate con alma.',
-            coverImageUrl: 'https://example.com/portada.jpg'
+            coverImageUrl: 'https://example.com/portada.jpg',
+            isAnonymous: false
+        });
+    });
+
+    test('POST crea un debate anónimo sin exponer el correo del autor', async () => {
+        const debate = createDebate({ isAnonymous: true, authorId: { email: 'admin@querencia.es' } });
+        const createDebateMock = jest.fn().mockResolvedValue(debate);
+        server = await startServer(createService({ createDebate: createDebateMock }));
+
+        const { status, body } = await request('/api/debates', {
+            method: 'POST',
+            headers: jsonHeaders(ADMIN_TOKEN),
+            body: JSON.stringify({
+                title: 'La ruptura temporal en Omega',
+                content: 'Un debate con alma.',
+                isAnonymous: true
+            })
+        });
+
+        expect(status).toBe(201);
+        expect(body).toMatchObject({
+            _id: 'debate-1',
+            isAnonymous: true,
+            authorEmail: null
+        });
+        expect(createDebateMock).toHaveBeenCalledWith({
+            email: 'admin@querencia.es',
+            title: 'La ruptura temporal en Omega',
+            content: 'Un debate con alma.',
+            coverImageUrl: undefined,
+            isAnonymous: true
         });
     });
 
@@ -216,6 +249,24 @@ describe('Rutas del muro de debates', () => {
         });
         expect(body[0].reactions.intimo).toBeUndefined();
         expect(listDebates).toHaveBeenCalledWith({ email: undefined });
+    });
+
+    test('GET oculta el correo del autor en los debates anónimos', async () => {
+        const debate = createDebate({
+            isAnonymous: true,
+            authorId: { email: 'admin@querencia.es' }
+        });
+        const listDebates = jest.fn().mockResolvedValue({ debates: [debate], viewerId: null });
+        server = await startServer(createService({ listDebates }));
+
+        const { status, body } = await request('/api/debates', { method: 'GET' });
+
+        expect(status).toBe(200);
+        expect(body[0]).toMatchObject({
+            _id: 'debate-1',
+            isAnonymous: true,
+            authorEmail: null
+        });
     });
 
     test('GET marca las reacciones del usuario autenticado', async () => {

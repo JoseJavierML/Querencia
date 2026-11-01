@@ -83,6 +83,19 @@ describe('Esquema Debate', () => {
         });
     });
 
+    test('isAnonymous es opcional y por defecto vale false', () => {
+        const debate = createValidDebate();
+
+        expect(debate.isAnonymous).toBe(false);
+    });
+
+    test('acepta isAnonymous verdadero', async () => {
+        const debate = createValidDebate({ isAnonymous: true });
+
+        await expect(debate.validate()).resolves.toBeUndefined();
+        expect(debate.isAnonymous).toBe(true);
+    });
+
     test('define exactamente las tres reacciones del alma con sus etiquetas', () => {
         expect(REACTION_DEFINITIONS).toEqual([
             { key: 'profundo', label: 'Profundo' },
@@ -136,12 +149,14 @@ describe('Repositorio de debates', () => {
             title: '  Título  ',
             content: '  Contenido  ',
             coverImageUrl: '  https://example.com/portada.jpg  ',
+            isAnonymous: true,
             authorId
         });
 
         expect(debate.title).toBe('Título');
         expect(debate.content).toBe('Contenido');
         expect(debate.coverImageUrl).toBe('https://example.com/portada.jpg');
+        expect(debate.isAnonymous).toBe(true);
         expect(debate.authorId.toString()).toBe(authorId.toString());
         expect(save).toHaveBeenCalled();
     });

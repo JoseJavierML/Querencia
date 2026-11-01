@@ -113,7 +113,7 @@ timestamp: 2026-11-01
 
 ## D-14 — Modelo `Debate` con reacciones del alma basadas en `ObjectId`
 
-**Qué se decidió:** persistir los debates en el modelo `Debate` con `title` (obligatorio, recortado, máximo 120 caracteres), `content` (obligatorio, recortado, máximo 5000 caracteres), `authorId` como `ObjectId` de `User`, `createdAt` generado por el servidor y un objeto `reactions` con tres claves fijas: `profundo`, `melancolico` y `rompeEsquemas`. Las etiquetas visibles son “Profundo”, “Melancólico” y “Rompe esquemas”, y viven junto a las claves en `REACTION_DEFINITIONS`. Cada clave es un array de `ObjectId` de usuarios, nunca un contador numérico. Las claves retiradas `intimo`, `inquietante` y `tecnologico` dejan de formar parte del subesquema; no se ejecuta una migración destructiva y la API solo expone las tres reacciones vigentes.
+**Qué se decidió:** persistir los debates en el modelo `Debate` con `title` (obligatorio, recortado, máximo 120 caracteres), `content` (obligatorio, recortado, máximo 5000 caracteres), `coverImageUrl` (opcional, recortado, máximo 2048 caracteres y por defecto `null`), `isAnonymous` (booleano, por defecto `false`), `authorId` como `ObjectId` de `User`, `createdAt` generado por el servidor y un objeto `reactions` con tres claves fijas: `profundo`, `melancolico` y `rompeEsquemas`. Las etiquetas visibles son “Profundo”, “Melancólico” y “Rompe esquemas”, y viven junto a las claves en `REACTION_DEFINITIONS`. Cada clave es un array de `ObjectId` de usuarios, nunca un contador numérico. Las claves retiradas `intimo`, `inquietante` y `tecnologico` dejan de formar parte del subesquema; no se ejecuta una migración destructiva y la API solo expone las tres reacciones vigentes.
 
 **Por qué:** los arrays permiten saber qué usuarios han reaccionado y evitan votos infinitos. El toggle se resuelve con dos operaciones atómicas: `$pull` si el usuario ya había votado y `$addToSet` si no había votado. Si un usuario vuelve a pulsar la misma reacción, se le retira el voto. Mantener claves estables sin acentos ni espacios evita problemas en MongoDB y permite cambiar la etiqueta visible sin migrar datos.
 
@@ -121,32 +121,48 @@ timestamp: 2026-11-01
 
 ## D-15 — Contrato y permisos del muro de debates
 
-**Qué se decidió:** `POST /api/debates` exige `authMiddleware` y `adminMiddleware`, recibe `{ title, content }` y responde `201`. `GET /api/debates` es público para respetar la lectura abierta del muro; si la petición incluye un token válido, calcula `reactedByMe` para el usuario y, si no lo incluye, devuelve ese campo en `false`. `POST /api/debates/:id/react` exige `authMiddleware`, recibe `{ reaction }` y devuelve `{ _id, reactions }` con el estado actualizado. Los errores se traducen a `400`, `401`, `403`, `404` o `500` según corresponda. No hay edición ni borrado de debates en este MVP.
+**Qué se decidió:** `POST /api/debates` exige `authMiddleware` y `adminMiddleware`, recibe `{ title, content, coverImageUrl, isAnonymous }` y responde `201`. Cuando `isAnonymous` es `true`, la respuesta devuelve `authorEmail: null` para no filtrar el correo del autor. `GET /api/debates` es público para respetar la lectura abierta del muro; si la petición incluye un token válido, calcula `reactedByMe` para el usuario y, si no lo incluye, devuelve ese campo en `false`. `POST /api/debates/:id/react` exige `authMiddleware`, recibe `{ reaction }` y devuelve `{ _id, reactions }` con el estado actualizado. `DELETE /api/debates/:id` exige `authMiddleware` y `adminMiddleware`, y responde `200` con `{ deleted: true, _id }`. Los errores se traducen a `400`, `401`, `403`, `404` o `500` según corresponda. No hay edición de debates en este MVP.
 
-**Por qué:** la creación queda reservada a administración sin crear roles nuevos, mientras que la lectura puede ser anónima o personalizada sin duplicar endpoints. El frontend envía el token para que los botones conserven su estado `active` tras recargar.
+**Por qué:** la creación y el borrado quedan reservados a administración sin crear roles nuevos, mientras que la lectura puede ser anónima o personalizada sin duplicar endpoints. El frontend envía el token para que los botones conserven su estado `active` tras recargar.
 
 **Estado:** vigente.
 
 ## D-16 — Integración dinámica del muro en el frontend
 
-**Qué se decidió:** `muro.html` deja de contener debates estáticos y carga las tarjetas desde `GET /api/debates` mediante `api.listarDebates()`. Las reacciones se envían con `api.reaccionarDebate(id, reaction)` y las nuevas reflexiones con `api.crearDebate(title, content)`; ambas añaden el token mediante `fetchAutenticado`. El renderizado reutiliza las clases existentes (`debate-grid`, `debate-card`, `album-cover-wrapper`, `album-cover`, `debate-meta`, `debate-title`, `debate-text`, `reactions-container`, `reaction-tag`, `count` y `active`), conserva el placeholder de portada y el efecto de aura, usa el `label` que devuelve la API y emplea `textContent` para no inyectar HTML no confiable.
+**Qué se decidió:** `muro.html` deja de contener debates estáticos y carga las tarjetas desde `GET /api/debates` mediante `api.listarDebates()`. Las reacciones se envían con `api.reaccionarDebate(id, reaction)`, las nuevas reflexiones con `api.crearDebate(title, content, coverImageUrl, isAnonymous)` y el borrado con `api.eliminarDebate(id)`; todas añaden el token mediante `fetchAutenticado`. El autor se muestra sin el dominio del correo y, si `isAnonymous` es `true`, como “Publicado por Anónimo”. El renderizado reutiliza las clases existentes (`debate-grid`, `debate-card`, `album-cover-wrapper`, `album-cover`, `debate-meta`, `debate-title`, `debate-text`, `reactions-container`, `reaction-tag`, `count` y `active`), usa `coverImageUrl` como imagen principal con el placeholder como respaldo y el efecto de aura, usa el `label` que devuelve la API y emplea `textContent` para no inyectar HTML no confiable.
 
 **Por qué:** mantiene intacta la maquetación y los estilos de scroll existentes, centraliza la comunicación en `api.js` y evita que un título o contenido malicioso se interprete como HTML.
 
 **Estado:** vigente.
 
-## D-17 — Panel de administración dinámico y autorización en servidor
+## D-17 — Botón flotante de administración y autorización en servidor
 
-**Qué se decidió:** `muro.js` construye el botón y el formulario de creación solo cuando `obtenerUsuarioActual()` devuelve `rol === 'admin'`. Para un oyente no se inserta ningún nodo del panel en el DOM; `muro.html` solo aporta los estilos. La autorización real sigue en `POST /api/debates` mediante `authMiddleware` e `isAdminMiddleware`, de modo que manipular `localStorage` solo produce un `403`.
+**Qué se decidió:** `muro.js` construye un botón flotante fijo en la esquina inferior derecha, con el mismo icono de lápiz del Diario, y un diálogo modal de creación solo cuando `obtenerUsuarioActual()` devuelve `rol === 'admin'`. El botón no forma parte del flujo normal de la página ni del HTML estático. El diálogo incluye una casilla “Publicar como anónimo” con estilo propio y el textarea usa el mismo scrollbar fino dorado que el Diario. Para un oyente no se inserta ningún nodo del botón, del diálogo ni de las papeleras de las tarjetas en el DOM; `muro.html` solo aporta los estilos. La autorización real sigue en `POST /api/debates` y `DELETE /api/debates/:id` mediante `authMiddleware` e `isAdminMiddleware`, de modo que manipular `localStorage` solo produce un `403`.
 
-**Por qué:** se evita dejar markup oculto o formularios inactivos para usuarios sin permiso, y no se confía en una comprobación de rol hecha en el navegador. El backend sigue siendo la única frontera de autorización.
+**Por qué:** se evita dejar markup oculto o formularios inactivos para usuarios sin permiso, se mantiene el flujo de lectura limpio y no se confía en una comprobación de rol hecha en el navegador. El backend sigue siendo la única frontera de autorización.
 
 **Estado:** vigente.
 
 ## D-18 — Seed idempotente para el muro
 
-**Qué se decidió:** `seedDebate.js` crea un debate inicial sobre el duende, Camarón de la Isla y el consumo musical inmediato. Busca el título antes de insertar para no duplicar datos. Resuelve el autor con `SEED_AUTHOR_EMAIL`, con el primer usuario `admin` o, si no existe ninguno, con un autor técnico `seed@querencia.local` de rol `admin`, estado activo y contraseña aleatoria hasheada que no se imprime. La conexión se cierra al terminar.
+**Qué se decidió:** `seedDebate.js` crea un debate inicial sobre el duende, Camarón de la Isla y el consumo musical inmediato, con una portada de Camarón y Paco de Lucía. Busca el título antes de insertar para no duplicar datos y, si el debate ya existe sin portada, la completa. Carga `backend/.env` por ruta absoluta para que el script funcione desde la raíz del repositorio. Resuelve el autor con `SEED_AUTHOR_EMAIL`, con el primer usuario `admin` o, si no existe ninguno, con un autor técnico `seed@querencia.local` de rol `admin`, estado activo y contraseña aleatoria hasheada que no se imprime. La conexión se cierra al terminar.
 
 **Por qué:** permite disponer de contenido inicial en una base vacía sin exigir una configuración manual previa, sin repetir el debate en ejecuciones sucesivas y sin exponer credenciales de una cuenta que no está pensada para iniciar sesión.
+
+**Estado:** vigente.
+
+## D-19 — Anonimato opcional y formato del autor en el muro
+
+**Qué se decidió:** `Debate` incorpora `isAnonymous` como booleano con `false` por defecto. El servicio solo acepta booleanos y normaliza la ausencia del campo a `false`. El router devuelve `isAnonymous` en cada debate y, cuando es `true`, fuerza `authorEmail: null`; el frontend muestra “Publicado por Anónimo”. En los debates no anónimos, el autor visible es la parte local del correo (`admin@querencia.es` se muestra como `admin`). La casilla “Publicar como anónimo” solo existe en el diálogo de administración.
+
+**Por qué:** el anonimato debe ser real también en la respuesta HTTP, no solo un cambio visual. Ocultar el dominio reduce ruido en la tarjeta sin perder la referencia del autor. Mantener el flag como booleano evita estados ambiguos y no requiere migración para los debates existentes, que pasan a valer `false`.
+
+**Estado:** vigente.
+
+## D-20 — Redirección posterior a la autenticación
+
+**Qué se decidió:** el formulario de login de `index.html` y el callback de Google redirigen a `muro.html`, no a `diario.html`. Tras un registro correcto, el frontend intenta iniciar sesión con las mismas credenciales y, si la cuenta ya está activa, entra al muro. Si el backend la mantiene pendiente de verificación, se muestra el aviso y no se crea una sesión ficticia. El login usa `skipAuthRedirect` para que un `401` de credenciales no borre la sesión ni recargue la landing antes de mostrar el error.
+
+**Por qué:** el muro es la entrada principal de la plataforma. El registro no puede garantizar una sesión válida porque `UserModel` exige verificar el correo; intentar el login automático cubre el caso de cuentas activas y deja explícito el caso pendiente sin debilitar la verificación.
 
 **Estado:** vigente.

@@ -37,6 +37,10 @@ const debateSchema = new mongoose.Schema(
             maxlength: MAX_COVER_URL_LENGTH,
             default: null
         },
+        isAnonymous: {
+            type: Boolean,
+            default: false
+        },
         authorId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User',
@@ -59,8 +63,8 @@ const debateSchema = new mongoose.Schema(
 const Debate = mongoose.models.Debate || mongoose.model('Debate', debateSchema);
 
 const DebateRepository = {
-    create: async ({ title, content, coverImageUrl = null, authorId }) => {
-        const debate = new Debate({ title, content, coverImageUrl, authorId });
+    create: async ({ title, content, coverImageUrl = null, isAnonymous = false, authorId }) => {
+        const debate = new Debate({ title, content, coverImageUrl, isAnonymous, authorId });
         await debate.save();
         return debate;
     },
