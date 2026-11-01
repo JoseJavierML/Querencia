@@ -45,6 +45,17 @@ export const api = {
         return data;
     },
 
+    crearEntradaDiario: (text, title = '') => fetchAPI('/diario', {
+        method: 'POST',
+        body: JSON.stringify({ text, title })
+    }),
+
+    listarDiario: () => fetchAPI('/diario', { method: 'GET' }),
+
+    eliminarEntradaDiario: (id) => fetchAPI(`/diario/${encodeURIComponent(id)}`, {
+        method: 'DELETE'
+    }),
+
     checkSession: async () => {
         if (!localStorage.getItem('token') && !localStorage.getItem('querencia_token')) {
             return false;

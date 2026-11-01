@@ -2,7 +2,7 @@
 type: Requisitos
 title: Requisitos del Sprint 1
 description: Evaluación de los requisitos frente a la especificación y al repositorio.
-timestamp: 2026-10-30
+timestamp: 2026-10-31
 ---
 
 # Requisitos
@@ -22,13 +22,14 @@ timestamp: 2026-10-30
 | RF-08 | Comprobar si un usuario está activo (administrador) | pendiente | Existe `UserModel.isActive`, pero no se ha encontrado un endpoint administrativo para esta operación. |
 | RF-09 | Eliminar usuario | hecho | `DELETE /api/users/:email` está protegido por sesión y rol. |
 | RF-10 | Creación del primer administrador | pendiente | No se ha encontrado en el repositorio un mecanismo verificable para crear el primer administrador. |
-| RF-MVP-Diario | Diario íntimo: crear y listar entradas propias | hecho | `POST` y `GET /api/diario` protegidos por `authMiddleware`; `diaryModel.js`, `diaryService.js` y `diaryRouter.js`; 21 pruebas unitarias con dobles. |
+| RF-MVP-Diario | Diario íntimo: crear, listar y borrar entradas propias con título opcional | hecho | `POST`, `GET` y `DELETE /api/diario` protegidos por `authMiddleware`; `diaryModel.js`, `diaryService.js` y `diaryRouter.js`; título opcional de máximo 50 caracteres; 40 pruebas unitarias con dobles. |
+| RF-MVP-Diario-Frontend | Integración frontend del diario: guardado, historial “Ecos”, lectura y borrado | hecho | `diario.html` muestra el título o un extracto de 40 caracteres, abre el eco completo y permite eliminarlo; `api.js` centraliza `crearEntradaDiario(text, title)`, `listarDiario` y `eliminarEntradaDiario`. |
 | RNF-01 | Persistencia en una base de datos real | hecho | Mongoose conecta con MongoDB y `User` persiste los usuarios. |
 | RNF-02 | Secretos fuera del código y .env.example | hecho | `.env.example` declara los nombres y el workflow usa secretos de GitHub. |
 | RNF-03 | Hash seguro de contraseñas | hecho | `bcrypt.hash` y `bcrypt.compare` en `userModel.js`. |
 | RNF-04 | Rutas protegidas por sesión y rol | hecho | `authMiddleware` e `isAdminMiddleware` protegen las rutas privadas. |
 | RNF-05 | Despliegue en cloud con URL pública | parcial | Hay workflow y configuración de App Engine; la URL pública operativa queda por verificar. |
-| RNF-06 | Pruebas unitarias de la lógica (5 o más) | hecho | `backend npm test -- --runInBand`: 5 suites, 31 tests pasados. |
+| RNF-06 | Pruebas unitarias de la lógica (5 o más) | hecho | `backend npm test -- --runInBand`: 5 suites, 50 tests pasados. |
 | RNF-07 | Manejo de errores con feedback al usuario | hecho | Las rutas devuelven mensajes y `api.js` propaga errores al frontend. |
 | RNF-08 | Registro de actividad (log) | hecho | Winston y Morgan se configuran en `logger.js` y `server.js`. |
 | PRO-01 | Flujo de trabajo GitHub Flow | Por verificar | El historial muestra ramas y merges; revisar Pull requests de GitHub porque `gh` no está autenticado. |

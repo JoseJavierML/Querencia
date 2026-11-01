@@ -30,16 +30,20 @@ npm test
 
 ## API del Diario Íntimo
 
-El diario es privado: cada usuario autenticado solo puede crear y listar sus propias entradas. Todas las peticiones requieren la cabecera `Authorization: Bearer <token>`.
+El diario es privado: cada usuario autenticado solo puede crear, listar y eliminar sus propias entradas. Todas las peticiones requieren la cabecera `Authorization: Bearer <token>`.
 
 | Método | Ruta | Cuerpo | Respuesta |
 |---|---|---|---|
-| POST | `/api/diario` | `{ "text": "..." }` | `201` con `{ "_id", "text", "createdAt", "userId" }` |
+| POST | `/api/diario` | `{ "text": "...", "title": "..." }` | `201` con `{ "_id", "text", "title", "createdAt", "userId" }` |
 | GET | `/api/diario` | — | `200` con las entradas propias, de la más reciente a la más antigua |
+| DELETE | `/api/diario/:id` | — | `200` con `{ "message": "Eco eliminado correctamente" }`; `404` si el eco no existe o es de otro usuario |
 
 - `text` es obligatorio, se recorta con `trim` y admite entre 1 y 5000 caracteres.
+- `title` es opcional, se recorta con `trim`, admite como máximo 50 caracteres y vale `''` si no se envía.
+- En el historial del frontend se muestra el título o, si está vacío, un extracto de los primeros 40 caracteres del texto.
 - `createdAt` lo genera el servidor; el cliente no puede enviarlo.
 - `userId` es el `ObjectId` del usuario autenticado y referencia al modelo `User`.
+- El borrado incluye el `userId` en la consulta: un usuario no puede eliminar ecos ajenos.
 - `DIARY_MAX_TEXT_LENGTH` permite reducir el límite de caracteres; si no se define, se usan 5000.
 
 Ejemplo de creación de una entrada:
@@ -48,7 +52,7 @@ Ejemplo de creación de una entrada:
 curl -X POST http://localhost:3000/api/diario \
   -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
-  -d '{"text":"Primera escucha del día"}'
+  -d '{"text":"Primera escucha del día","title":"Mañana"}'
 ```
 
 ## Estado Actual (Sprint 1)
@@ -59,3 +63,4 @@ curl -X POST http://localhost:3000/api/diario \
 
 ## Estado Actual (Sprint 2)
 - [x] **RF-MVP-Diario:** backend del diario íntimo con esquema `DiaryEntry`, endpoints protegidos y pruebas unitarias con dobles.
+- [x] **RF-MVP-Diario-Frontend:** guardado, historial “Ecos”, título opcional, lectura completa y borrado de ecos propios.

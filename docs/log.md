@@ -1,5 +1,21 @@
 # Cronología
 
+## 2026-11-01 — Icono de nueva entrada en la vista de lectura
+
+Se sustituye el botón de texto “← Volver” del Diario Íntimo por un botón circular con icono de lápiz, situado junto a la papelera en la esquina superior derecha de la lectura. Ambos comparten la clase `reading-action` y, por tanto, el mismo tamaño, hover y foco; el lápiz usa el dorado de la web y la papelera conserva el rojo reservado a la acción destructiva. El botón conserva el `id="backToEditorBtn"`, de modo que el manejador existente sigue funcionando; además, limpia el título y el texto antes de devolver al editor. No se modifican IDs estructurales ni la lógica de borrado.
+
+## 2026-11-01 — Corrección de scroll en el Diario Íntimo
+
+Se ajusta el CSS de `diario.html` para que la lista “Tus Ecos” tenga scroll independiente con `flex: 1`, `min-height: 0` y `overflow-y: auto`, sin desplazar el resto de la interfaz. El `<textarea>` del editor y la vista de lectura también limitan su altura y gestionan su propio scroll. Se unifica un estilo de scrollbar fino en tono dorado para la lista, la lectura y el editor. No se modifican IDs, clases estructurales ni el JavaScript.
+
+## 2026-10-31 — Ampliación del Diario Íntimo: título, lectura y borrado
+
+Rama `feature/RF-MVP-frontend-diario`. Se completa el PBI con `title` opcional de máximo 50 caracteres en `DiaryEntry` y en la API, lectura del eco completo al pulsarlo y borrado mediante `DELETE /api/diario/:id`. El repositorio ejecuta `findOneAndDelete({ _id, userId })`, por lo que solo elimina ecos del usuario autenticado; un eco inexistente o ajeno devuelve `404`. En el frontend, la barra lateral muestra el título o un extracto de 40 caracteres, y el formulario envía `{ text, title }` mediante `api.crearEntradaDiario`. Se añaden pruebas de modelo, servicio y router: 5 suites y 50 tests pasados, 40 de ellos del diario.
+
+## 2026-10-31 — Frontend del Diario Íntimo (RF-MVP-Diario-Frontend)
+
+Rama `feature/RF-MVP-frontend-diario`. Se registra la decisión D-11 sobre el consumo de la API con rutas relativas. `diario.html` carga el historial “Tus Ecos” con `api.listarDiario()` y guarda entradas con `api.crearEntradaDiario(text)`; `api.js` centraliza `POST/GET /api/diario` y reutiliza `fetchAutenticado`, que añade el token de `localStorage` y gestiona el `401`. Se comprueba la sintaxis de los módulos y la suite Jest sigue en 5 suites y 31 tests; la prueba funcional completa requiere una sesión real en el navegador.
+
 ## 2026-10-30 — Backend del Diario Íntimo (RF-MVP-Diario)
 
 Rama `feature/RF-MVP-backend-diario`. Se registran las decisiones D-08, D-09 y D-10; se añade el esquema `DiaryEntry`, el servicio `diaryService`, los endpoints `POST/GET /api/diario` protegidos por `authMiddleware` y 21 pruebas unitarias con dobles de repositorios y autenticación. La suite completa queda en 5 suites y 31 tests pasados.
