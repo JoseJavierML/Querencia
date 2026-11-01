@@ -15,8 +15,18 @@ const AURAS = [
 
 const PLACEHOLDER_COVER = 'https://www.gstatic.com/labs-code/stitch/stitch-placeholder-300x300.svg';
 
+const PENCIL_ICON_PATH = 'M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25ZM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83Z';
+const TRASH_ICON_PATH = 'M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-1 12H7L6 9Zm4 2v8h1v-8h-1Zm3 0v8h1v-8h-1Z';
+
+const SVG_NAMESPACE = 'http://www.w3.org/2000/svg';
+
 const grid = document.querySelector('.debate-grid');
 const status = document.getElementById('wallStatus');
+
+function esAdministrador() {
+    const usuario = obtenerUsuarioActual();
+    return Boolean(usuario && usuario.rol === 'admin');
+}
 
 function mostrarEstado(mensaje, visible = true) {
     if (!status) return;
@@ -47,6 +57,23 @@ function formatearFecha(fechaISO) {
     if (dias < 7) return `Hace ${dias} días`;
 
     return fecha.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
+}
+
+function crearIcono(pathData, className) {
+    const svg = document.createElementNS(SVG_NAMESPACE, 'svg');
+    svg.setAttribute('viewBox', '0 0 24 24');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.setAttribute('focusable', 'false');
+    if (className) {
+        svg.setAttribute('class', className);
+    }
+
+    const path = document.createElementNS(SVG_NAMESPACE, 'path');
+    path.setAttribute('d', pathData);
+    path.setAttribute('fill', 'currentColor');
+    svg.appendChild(path);
+
+    return svg;
 }
 
 function normalizarReacciones(debate) {
@@ -122,18 +149,54 @@ function activarAura(tarjeta) {
     });
 }
 
-function crearTarjeta(debate) {
+async function eliminarDebate(debate, tarjeta, boton) {
+    const titulo = debate.title || 'esta reflexión';
+    if (!window.confirm(`¿Eliminar "${titulo}"? Esta acción no se puede deshacer.`)) {
+        return;
+    }
+
+    boton.disabled = true;
+    tarjeta.classList.add('is-deleting');
+
+    try {
+        await api.eliminarDebate(debate._id);
+        const actualizado = await cargarDebates();
+        if (actualizado) {
+            mostrarEstado('Reflexión eliminada del muro.', true);
+        } else {
+            boton.disabled = false;
+            tarjeta.classList.remove('is-deleting');
+        }
+    } catch (error) {
+        console.error('No se pudo eliminar la reflexión:', error);
+        mostrarEstado(error.message || 'No se pudo eliminar la reflexión.', true);
+        boton.disabled = false;
+        tarjeta.classList.remove('is-deleting');
+    }
+}
+
+function crearTarjeta(debate, esAdmin) {
     const tarjeta = document.createElement('article');
     tarjeta.className = 'debate-card';
     tarjeta.dataset.debateId = String(debate._id);
+
+    const portadaUrl = typeof debate.coverImageUrl === 'string' && debate.coverImageUrl.trim()
+        ? debate.coverImageUrl.trim()
+        : PLACEHOLDER_COVER;
 
     const portada = document.createElement('div');
     portada.className = 'album-cover-wrapper';
     const imagen = document.createElement('img');
     imagen.className = 'album-cover';
-    imagen.src = PLACEHOLDER_COVER;
-    imagen.alt = debate.title || 'Debate de la comunidad';
+    imagen.src = portadaUrl;
+    imagen.alt = debate.title ? `Portada de ${debate.title}` : 'Portada de la reflexión';
     imagen.loading = 'lazy';
+    imagen.referrerPolicy = 'no-referrer';
+    imagen.addEventListener('error', () => {
+        if (imagen.src !== PLACEHOLDER_COVER) {
+            imagen.src = PLACEHOLDER_COVER;
+        }
+    }, { once: true });
     portada.appendChild(imagen);
 
     const meta = document.createElement('div');
@@ -156,6 +219,18 @@ function crearTarjeta(debate) {
     renderizarReacciones(reacciones, debate);
 
     tarjeta.append(portada, meta, titulo, texto, reacciones);
+
+    if (esAdmin) {
+        const borrar = document.createElement('button');
+        borrar.type = 'button';
+        borrar.className = 'debate-delete';
+        borrar.title = 'Eliminar reflexión';
+        borrar.setAttribute('aria-label', `Eliminar reflexión: ${debate.title || 'sin título'}`);
+        borrar.appendChild(crearIcono(TRASH_ICON_PATH, 'debate-delete-icon'));
+        borrar.addEventListener('click', () => eliminarDebate(debate, tarjeta, borrar));
+        tarjeta.appendChild(borrar);
+    }
+
     activarAura(tarjeta);
 
     return tarjeta;
@@ -171,8 +246,9 @@ function renderizarDebates(debates) {
         return;
     }
 
+    const esAdmin = esAdministrador();
     const fragmento = document.createDocumentFragment();
-    debates.forEach((debate) => fragmento.appendChild(crearTarjeta(debate)));
+    debates.forEach((debate) => fragmento.appendChild(crearTarjeta(debate, esAdmin)));
     grid.appendChild(fragmento);
     mostrarEstado('', false);
 }
@@ -191,26 +267,36 @@ async function cargarDebates() {
     }
 }
 
-function crearPanelAdmin() {
-    const panel = document.createElement('section');
-    panel.className = 'admin-panel';
-    panel.setAttribute('aria-label', 'Administración del muro');
+function crearModalAdmin() {
+    const overlay = document.createElement('div');
+    overlay.className = 'admin-modal';
+    overlay.id = 'adminDebateModal';
+    overlay.hidden = true;
 
-    const toggle = document.createElement('button');
-    toggle.type = 'button';
-    toggle.className = 'admin-panel-toggle';
-    toggle.id = 'adminPanelToggle';
-    toggle.setAttribute('aria-expanded', 'false');
-    toggle.setAttribute('aria-controls', 'adminDebateForm');
-    toggle.textContent = 'Crear nueva reflexión';
+    const backdrop = document.createElement('div');
+    backdrop.className = 'admin-modal-backdrop';
+    backdrop.setAttribute('aria-hidden', 'true');
+
+    const dialog = document.createElement('section');
+    dialog.className = 'admin-dialog';
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    dialog.setAttribute('aria-labelledby', 'adminDebateHeading');
+
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'admin-modal-close';
+    close.setAttribute('aria-label', 'Cerrar formulario');
+    close.title = 'Cerrar formulario';
+    close.textContent = '×';
 
     const form = document.createElement('form');
     form.className = 'admin-panel-form';
     form.id = 'adminDebateForm';
-    form.hidden = true;
 
     const heading = document.createElement('h2');
     heading.className = 'admin-panel-title';
+    heading.id = 'adminDebateHeading';
     heading.textContent = 'Abrir una nueva reflexión';
 
     const intro = document.createElement('p');
@@ -233,6 +319,25 @@ function crearPanelAdmin() {
     titleInput.autocomplete = 'off';
     titleInput.placeholder = 'El duende no cabe en un algoritmo';
     titleLabel.append(titleText, titleInput);
+
+    const coverLabel = document.createElement('label');
+    coverLabel.className = 'admin-field';
+    coverLabel.htmlFor = 'adminDebateCover';
+    const coverText = document.createElement('span');
+    coverText.className = 'admin-field-label';
+    coverText.textContent = 'URL de la imagen de portada';
+    const coverInput = document.createElement('input');
+    coverInput.className = 'admin-input';
+    coverInput.id = 'adminDebateCover';
+    coverInput.name = 'coverImageUrl';
+    coverInput.type = 'url';
+    coverInput.maxLength = 2048;
+    coverInput.autocomplete = 'url';
+    coverInput.placeholder = 'https://...';
+    const coverHint = document.createElement('span');
+    coverHint.className = 'admin-field-hint';
+    coverHint.textContent = 'Opcional. Si la dejas vacía, se usará la portada por defecto.';
+    coverLabel.append(coverText, coverInput, coverHint);
 
     const contentLabel = document.createElement('label');
     contentLabel.className = 'admin-field';
@@ -271,15 +376,28 @@ function crearPanelAdmin() {
     feedback.setAttribute('role', 'status');
     feedback.hidden = true;
 
-    form.append(heading, intro, titleLabel, contentLabel, actions, feedback);
-    panel.append(toggle, form);
+    form.append(heading, intro, titleLabel, coverLabel, contentLabel, actions, feedback);
+    dialog.append(close, form);
+    overlay.append(backdrop, dialog);
 
-    const setOpen = (open) => {
-        form.hidden = !open;
-        toggle.setAttribute('aria-expanded', String(open));
-        toggle.textContent = open ? 'Cerrar formulario' : 'Crear nueva reflexión';
-        if (open) {
-            window.requestAnimationFrame(() => titleInput.focus());
+    let elementoConFoco = null;
+
+    const abrir = () => {
+        if (!overlay.hidden) return;
+        elementoConFoco = document.activeElement instanceof HTMLElement
+            ? document.activeElement
+            : null;
+        overlay.hidden = false;
+        document.body.classList.add('admin-modal-open');
+        window.requestAnimationFrame(() => titleInput.focus());
+    };
+
+    const cerrar = () => {
+        overlay.hidden = true;
+        document.body.classList.remove('admin-modal-open');
+        if (elementoConFoco) {
+            elementoConFoco.focus();
+            elementoConFoco = null;
         }
     };
 
@@ -289,14 +407,20 @@ function crearPanelAdmin() {
         feedback.classList.toggle('is-error', esError);
     };
 
-    toggle.addEventListener('click', () => {
-        setOpen(form.hidden);
-    });
+    close.addEventListener('click', cerrar);
+    backdrop.addEventListener('click', cerrar);
 
     cancel.addEventListener('click', () => {
+        form.reset();
         mostrarFeedback('');
-        setOpen(false);
-        toggle.focus();
+        cerrar();
+    });
+
+    document.addEventListener('keydown', (event) => {
+        if (!overlay.hidden && event.key === 'Escape') {
+            event.preventDefault();
+            cerrar();
+        }
     });
 
     form.addEventListener('submit', async (event) => {
@@ -304,6 +428,7 @@ function crearPanelAdmin() {
 
         const title = titleInput.value.trim();
         const content = contentInput.value.trim();
+        const coverImageUrl = coverInput.value.trim();
 
         if (!title || !content) {
             mostrarFeedback('El título y el contenido son obligatorios.', true);
@@ -316,9 +441,9 @@ function crearPanelAdmin() {
         mostrarFeedback('');
 
         try {
-            await api.crearDebate(title, content);
+            await api.crearDebate(title, content, coverImageUrl);
             form.reset();
-            setOpen(false);
+            cerrar();
 
             const actualizado = await cargarDebates();
             if (actualizado) {
@@ -335,19 +460,31 @@ function crearPanelAdmin() {
         }
     });
 
-    return panel;
+    return { overlay, abrir };
 }
 
-function montarPanelAdmin() {
-    if (!grid || !grid.parentNode) return;
+function crearBotonFlotanteAdmin() {
+    const boton = document.createElement('button');
+    boton.type = 'button';
+    boton.className = 'admin-fab';
+    boton.id = 'adminDebateFab';
+    boton.title = 'Crear nueva reflexión';
+    boton.setAttribute('aria-label', 'Crear nueva reflexión');
+    boton.setAttribute('aria-haspopup', 'dialog');
+    boton.setAttribute('aria-controls', 'adminDebateModal');
+    boton.appendChild(crearIcono(PENCIL_ICON_PATH, 'admin-fab-icon'));
+    return boton;
+}
 
-    const usuario = obtenerUsuarioActual();
-    if (!usuario || usuario.rol !== 'admin') return;
-    if (document.getElementById('adminDebatePanel')) return;
+function montarAdministracion() {
+    if (!esAdministrador()) return;
+    if (document.getElementById('adminDebateFab')) return;
 
-    const panel = crearPanelAdmin();
-    panel.id = 'adminDebatePanel';
-    grid.parentNode.insertBefore(panel, grid);
+    const modal = crearModalAdmin();
+    const fab = crearBotonFlotanteAdmin();
+
+    fab.addEventListener('click', modal.abrir);
+    document.body.append(fab, modal.overlay);
 }
 
 if (grid) {
@@ -405,7 +542,7 @@ async function inicializarMuro() {
         console.warn('Verificación de sesión:', error);
     }
 
-    montarPanelAdmin();
+    montarAdministracion();
     await cargarDebates();
 }
 

@@ -60,6 +60,7 @@ const createService = (overrides = {}) => ({
     createDebate: jest.fn(),
     listDebates: jest.fn(),
     reactToDebate: jest.fn(),
+    deleteDebate: jest.fn(),
     ...overrides
 });
 
@@ -67,6 +68,7 @@ const createDebate = (overrides = {}) => ({
     _id: 'debate-1',
     title: 'La ruptura temporal en Omega',
     content: 'Un debate con alma.',
+    coverImageUrl: 'https://example.com/portada.jpg',
     createdAt: new Date('2026-11-01T10:00:00.000Z'),
     authorId: { email: 'admin@querencia.es' },
     reactions: {
@@ -88,7 +90,8 @@ describe('Rutas del muro de debates', () => {
             headers: jsonHeaders(ADMIN_TOKEN),
             body: JSON.stringify({
                 title: 'La ruptura temporal en Omega',
-                content: 'Un debate con alma.'
+                content: 'Un debate con alma.',
+                coverImageUrl: 'https://example.com/portada.jpg'
             })
         });
 
@@ -97,6 +100,7 @@ describe('Rutas del muro de debates', () => {
             _id: 'debate-1',
             title: 'La ruptura temporal en Omega',
             content: 'Un debate con alma.',
+            coverImageUrl: 'https://example.com/portada.jpg',
             createdAt: '2026-11-01T10:00:00.000Z',
             authorEmail: 'admin@querencia.es'
         });
@@ -119,7 +123,8 @@ describe('Rutas del muro de debates', () => {
         expect(createDebateMock).toHaveBeenCalledWith({
             email: 'admin@querencia.es',
             title: 'La ruptura temporal en Omega',
-            content: 'Un debate con alma.'
+            content: 'Un debate con alma.',
+            coverImageUrl: 'https://example.com/portada.jpg'
         });
     });
 
@@ -353,5 +358,71 @@ describe('Rutas del muro de debates', () => {
 
         expect(status).toBe(500);
         expect(body).toEqual({ message: 'No se pudo registrar la reacción' });
+    });
+
+    test('DELETE elimina un debate cuando el usuario es administrador', async () => {
+        const deleteDebate = jest.fn().mockResolvedValue({ _id: 'debate-1' });
+        server = await startServer(createService({ deleteDebate }));
+
+        const { status, body } = await request('/api/debates/debate-1', {
+            method: 'DELETE',
+            headers: jsonHeaders(ADMIN_TOKEN)
+        });
+
+        expect(status).toBe(200);
+        expect(body).toEqual({ deleted: true, _id: 'debate-1' });
+        expect(deleteDebate).toHaveBeenCalledWith({ id: 'debate-1' });
+    });
+
+    test('DELETE devuelve 403 si el usuario no es administrador', async () => {
+        const deleteDebate = jest.fn();
+        server = await startServer(createService({ deleteDebate }));
+
+        const { status } = await request('/api/debates/debate-1', {
+            method: 'DELETE',
+            headers: jsonHeaders(USER_TOKEN)
+        });
+
+        expect(status).toBe(403);
+        expect(deleteDebate).not.toHaveBeenCalled();
+    });
+
+    test('DELETE exige autenticación', async () => {
+        const deleteDebate = jest.fn();
+        server = await startServer(createService({ deleteDebate }));
+
+        const { status } = await request('/api/debates/debate-1', {
+            method: 'DELETE',
+            headers: jsonHeaders()
+        });
+
+        expect(status).toBe(401);
+        expect(deleteDebate).not.toHaveBeenCalled();
+    });
+
+    test('DELETE devuelve 404 si el debate no existe', async () => {
+        const deleteDebate = jest.fn().mockRejectedValue(new DebateNotFoundError());
+        server = await startServer(createService({ deleteDebate }));
+
+        const { status, body } = await request('/api/debates/debate-inexistente', {
+            method: 'DELETE',
+            headers: jsonHeaders(ADMIN_TOKEN)
+        });
+
+        expect(status).toBe(404);
+        expect(body).toEqual({ message: 'Debate no encontrado' });
+    });
+
+    test('DELETE devuelve 500 ante un error inesperado', async () => {
+        const deleteDebate = jest.fn().mockRejectedValue(new Error('fallo interno'));
+        server = await startServer(createService({ deleteDebate }));
+
+        const { status, body } = await request('/api/debates/debate-1', {
+            method: 'DELETE',
+            headers: jsonHeaders(ADMIN_TOKEN)
+        });
+
+        expect(status).toBe(500);
+        expect(body).toEqual({ message: 'No se pudo eliminar el debate' });
     });
 });

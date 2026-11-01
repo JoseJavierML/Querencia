@@ -13,6 +13,7 @@ const createFakes = () => ({
     debateRepository: {
         create: jest.fn(),
         findAll: jest.fn(),
+        deleteById: jest.fn(),
         toggleReaction: jest.fn()
     },
     userRepository: {
@@ -48,9 +49,56 @@ describe('Servicio de debates', () => {
         expect(debateRepository.create).toHaveBeenCalledWith({
             title: 'Título',
             content: 'Contenido',
+            coverImageUrl: null,
             authorId
         });
         expect(result).toBe(debate);
+    });
+
+    test('crea un debate con la URL de portada normalizada', async () => {
+        const authorId = 'usuario-1';
+        const debate = {
+            _id: 'debate-1',
+            title: 'Título',
+            content: 'Contenido',
+            coverImageUrl: 'https://example.com/portada.jpg'
+        };
+        userRepository.findByEmail.mockResolvedValue({ _id: authorId });
+        debateRepository.create.mockResolvedValue(debate);
+
+        const result = await service.createDebate({
+            email: 'admin@querencia.es',
+            title: 'Título',
+            content: 'Contenido',
+            coverImageUrl: '  https://example.com/portada.jpg  '
+        });
+
+        expect(debateRepository.create).toHaveBeenCalledWith({
+            title: 'Título',
+            content: 'Contenido',
+            coverImageUrl: 'https://example.com/portada.jpg',
+            authorId
+        });
+        expect(result).toBe(debate);
+    });
+
+    test('rechaza una URL de portada que no sea http o https', async () => {
+        await expect(service.createDebate({
+            email: 'admin@querencia.es',
+            title: 'Título',
+            content: 'Contenido',
+            coverImageUrl: 'javascript:alert(1)'
+        })).rejects.toBeInstanceOf(DebateValidationError);
+
+        await expect(service.createDebate({
+            email: 'admin@querencia.es',
+            title: 'Título',
+            content: 'Contenido',
+            coverImageUrl: 42
+        })).rejects.toBeInstanceOf(DebateValidationError);
+
+        expect(userRepository.findByEmail).not.toHaveBeenCalled();
+        expect(debateRepository.create).not.toHaveBeenCalled();
     });
 
     test('rechaza un título ausente o que no sea texto', async () => {
@@ -214,5 +262,22 @@ describe('Servicio de debates', () => {
         })).rejects.toBeInstanceOf(DebateUserNotFoundError);
 
         expect(debateRepository.toggleReaction).not.toHaveBeenCalled();
+    });
+
+    test('elimina un debate existente', async () => {
+        const debate = { _id: 'debate-1' };
+        debateRepository.deleteById.mockResolvedValue(debate);
+
+        const result = await service.deleteDebate({ id: 'debate-1' });
+
+        expect(debateRepository.deleteById).toHaveBeenCalledWith('debate-1');
+        expect(result).toBe(debate);
+    });
+
+    test('lanza un error de dominio al eliminar un debate inexistente', async () => {
+        debateRepository.deleteById.mockResolvedValue(null);
+
+        await expect(service.deleteDebate({ id: 'debate-inexistente' }))
+            .rejects.toBeInstanceOf(DebateNotFoundError);
     });
 });

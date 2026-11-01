@@ -4,7 +4,8 @@ const {
     REACTION_DEFINITIONS,
     REACTION_TYPES,
     MAX_TITLE_LENGTH,
-    MAX_CONTENT_LENGTH
+    MAX_CONTENT_LENGTH,
+    MAX_COVER_URL_LENGTH
 } = require('./debateConstants');
 
 const validAuthorId = () => new mongoose.Types.ObjectId();
@@ -54,6 +55,31 @@ describe('Esquema Debate', () => {
 
         await expect(debate.validate()).rejects.toMatchObject({
             errors: { content: expect.anything() }
+        });
+    });
+
+    test('coverImageUrl es opcional y por defecto vale null', () => {
+        const debate = createValidDebate();
+
+        expect(debate.coverImageUrl).toBeNull();
+    });
+
+    test('recorta la URL de portada cuando se proporciona', async () => {
+        const debate = createValidDebate({
+            coverImageUrl: '  https://example.com/portada.jpg  '
+        });
+
+        await expect(debate.validate()).resolves.toBeUndefined();
+        expect(debate.coverImageUrl).toBe('https://example.com/portada.jpg');
+    });
+
+    test(`rechaza una portada de más de ${MAX_COVER_URL_LENGTH} caracteres`, async () => {
+        const debate = createValidDebate({
+            coverImageUrl: `https://example.com/${'a'.repeat(MAX_COVER_URL_LENGTH)}`
+        });
+
+        await expect(debate.validate()).rejects.toMatchObject({
+            errors: { coverImageUrl: expect.anything() }
         });
     });
 
@@ -109,11 +135,13 @@ describe('Repositorio de debates', () => {
         const debate = await DebateRepository.create({
             title: '  Título  ',
             content: '  Contenido  ',
+            coverImageUrl: '  https://example.com/portada.jpg  ',
             authorId
         });
 
         expect(debate.title).toBe('Título');
         expect(debate.content).toBe('Contenido');
+        expect(debate.coverImageUrl).toBe('https://example.com/portada.jpg');
         expect(debate.authorId.toString()).toBe(authorId.toString());
         expect(save).toHaveBeenCalled();
     });
@@ -200,5 +228,26 @@ describe('Repositorio de debates', () => {
         )).resolves.toBeNull();
 
         expect(findOneAndUpdate).not.toHaveBeenCalled();
+    });
+
+    test('elimina un debate por id y devuelve el documento', async () => {
+        const id = new mongoose.Types.ObjectId().toString();
+        const debate = { _id: id };
+        const findByIdAndDelete = jest
+            .spyOn(Debate, 'findByIdAndDelete')
+            .mockResolvedValue(debate);
+
+        const result = await DebateRepository.deleteById(id);
+
+        expect(findByIdAndDelete).toHaveBeenCalledWith(id);
+        expect(result).toBe(debate);
+    });
+
+    test('no consulta al eliminar si el id no es válido', async () => {
+        const findByIdAndDelete = jest.spyOn(Debate, 'findByIdAndDelete');
+
+        await expect(DebateRepository.deleteById('no-es-un-id')).resolves.toBeNull();
+
+        expect(findByIdAndDelete).not.toHaveBeenCalled();
     });
 });

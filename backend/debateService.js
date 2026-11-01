@@ -1,7 +1,8 @@
 const {
     REACTION_TYPES,
     MAX_TITLE_LENGTH,
-    MAX_CONTENT_LENGTH
+    MAX_CONTENT_LENGTH,
+    MAX_COVER_URL_LENGTH
 } = require('./debateConstants');
 
 class DebateValidationError extends Error {
@@ -57,6 +58,38 @@ const normalizeContent = (content) => {
     return normalizedContent;
 };
 
+const normalizeCoverImageUrl = (coverImageUrl) => {
+    if (coverImageUrl === undefined || coverImageUrl === null) {
+        return null;
+    }
+    if (typeof coverImageUrl !== 'string') {
+        throw new DebateValidationError('La URL de la portada no es válida');
+    }
+
+    const normalizedUrl = coverImageUrl.trim();
+    if (normalizedUrl.length === 0) {
+        return null;
+    }
+    if (normalizedUrl.length > MAX_COVER_URL_LENGTH) {
+        throw new DebateValidationError(
+            `La URL de la portada no puede superar los ${MAX_COVER_URL_LENGTH} caracteres`
+        );
+    }
+
+    let parsedUrl;
+    try {
+        parsedUrl = new URL(normalizedUrl);
+    } catch (error) {
+        throw new DebateValidationError('La URL de la portada no es válida');
+    }
+
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+        throw new DebateValidationError('La URL de la portada debe empezar por http o https');
+    }
+
+    return normalizedUrl;
+};
+
 const createDebateService = ({ debateRepository, userRepository }) => {
     if (!debateRepository) {
         throw new Error('debateRepository es obligatorio');
@@ -73,14 +106,16 @@ const createDebateService = ({ debateRepository, userRepository }) => {
         return user._id;
     };
 
-    const createDebate = async ({ email, title, content } = {}) => {
+    const createDebate = async ({ email, title, content, coverImageUrl } = {}) => {
         const normalizedTitle = normalizeTitle(title);
         const normalizedContent = normalizeContent(content);
+        const normalizedCoverImageUrl = normalizeCoverImageUrl(coverImageUrl);
         const authorId = await resolveUserId(email);
 
         return debateRepository.create({
             title: normalizedTitle,
             content: normalizedContent,
+            coverImageUrl: normalizedCoverImageUrl,
             authorId
         });
     };
@@ -115,10 +150,21 @@ const createDebateService = ({ debateRepository, userRepository }) => {
         };
     };
 
+    const deleteDebate = async ({ id } = {}) => {
+        const deletedDebate = await debateRepository.deleteById(id);
+
+        if (!deletedDebate) {
+            throw new DebateNotFoundError();
+        }
+
+        return deletedDebate;
+    };
+
     return {
         createDebate,
         listDebates,
-        reactToDebate
+        reactToDebate,
+        deleteDebate
     };
 };
 

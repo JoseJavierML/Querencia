@@ -236,6 +236,49 @@
             filter: grayscale(0%) contrast(100%) brightness(1);
         }
 
+        .debate-delete {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            z-index: 20;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2rem;
+            height: 2rem;
+            border: 1px solid rgba(232, 160, 160, 0.18);
+            border-radius: 50%;
+            background: rgba(6, 6, 8, 0.72);
+            color: rgba(232, 160, 160, 0.65);
+            cursor: pointer;
+            backdrop-filter: blur(8px);
+            transition: all 0.3s ease;
+        }
+
+        .debate-delete:hover:not(:disabled),
+        .debate-delete:focus-visible {
+            color: #f1b4b4;
+            border-color: rgba(232, 160, 160, 0.55);
+            background: rgba(90, 18, 18, 0.6);
+            outline: none;
+        }
+
+        .debate-delete:disabled {
+            opacity: 0.45;
+            cursor: not-allowed;
+        }
+
+        .debate-delete-icon {
+            width: 1rem;
+            height: 1rem;
+        }
+
+        .debate-card.is-deleting {
+            opacity: 0.45;
+            pointer-events: none;
+            transition: opacity 0.3s ease;
+        }
+
         .debate-meta {
             font-family: -apple-system, BlinkMacSystemFont, sans-serif;
             font-size: 0.75rem;
@@ -323,56 +366,152 @@
             color: var(--gold-dark);
         }
 
-        /* --- Panel de administración --- */
-        .admin-panel {
-            margin-bottom: 3rem;
-            padding: 1.5rem;
-            border: 1px solid var(--border-color);
-            border-top: 1px solid rgba(184, 147, 69, 0.35);
-            border-radius: 6px;
-            background: linear-gradient(135deg, rgba(15, 15, 18, 0.82), rgba(10, 10, 12, 0.92));
-            backdrop-filter: blur(15px);
-            display: flex;
-            flex-direction: column;
-            gap: 1.25rem;
+        /* --- Botón flotante y diálogo de administración --- */
+        body.admin-modal-open {
+            overflow: hidden;
         }
 
-        .admin-panel-toggle {
-            align-self: flex-start;
-            background: transparent;
+        .admin-fab {
+            position: fixed;
+            right: 2rem;
+            bottom: 2rem;
+            z-index: 60;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 3.75rem;
+            height: 3.75rem;
+            border: 1px solid rgba(234, 221, 179, 0.5);
+            border-radius: 50%;
+            background: linear-gradient(145deg, rgba(58, 38, 12, 0.96), rgba(14, 12, 9, 0.98));
             color: var(--gold-light);
-            border: 1px solid rgba(184, 147, 69, 0.4);
-            border-radius: 30px;
-            padding: 0.55rem 1.4rem;
-            font-family: 'Lora', serif;
-            font-size: 0.95rem;
-            font-style: italic;
-            letter-spacing: 0.3px;
+            cursor: pointer;
+            box-shadow:
+                0 18px 35px rgba(0, 0, 0, 0.55),
+                0 0 24px rgba(184, 147, 69, 0.18),
+                inset 0 0 18px rgba(234, 221, 179, 0.08);
+            transition: transform 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .admin-fab::before {
+            content: '';
+            position: absolute;
+            inset: -5px;
+            border: 1px solid rgba(184, 147, 69, 0.18);
+            border-radius: inherit;
+            pointer-events: none;
+        }
+
+        .admin-fab:hover,
+        .admin-fab:focus-visible {
+            transform: translateY(-3px) scale(1.03);
+            border-color: var(--gold-light);
+            box-shadow:
+                0 22px 42px rgba(0, 0, 0, 0.6),
+                0 0 32px rgba(184, 147, 69, 0.32),
+                inset 0 0 20px rgba(234, 221, 179, 0.14);
+            outline: none;
+        }
+
+        .admin-fab-icon {
+            width: 1.55rem;
+            height: 1.55rem;
+        }
+
+        .admin-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .admin-modal[hidden] {
+            display: none;
+        }
+
+        .admin-modal-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(3, 3, 5, 0.78);
+            backdrop-filter: blur(7px);
+        }
+
+        .admin-dialog {
+            position: relative;
+            width: min(620px, 100%);
+            max-height: calc(100vh - 3rem);
+            overflow-y: auto;
+            padding: 2.2rem;
+            border: 1px solid var(--border-color);
+            border-top: 1px solid rgba(234, 221, 179, 0.4);
+            border-radius: 8px;
+            background: linear-gradient(145deg, rgba(18, 18, 22, 0.97), rgba(8, 8, 10, 0.99));
+            box-shadow: 0 30px 80px rgba(0, 0, 0, 0.75);
+            animation: adminDialogIn 0.35s ease;
+        }
+
+        .admin-dialog::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 2.2rem;
+            right: 2.2rem;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(234, 221, 179, 0.7), transparent);
+            pointer-events: none;
+        }
+
+        .admin-modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2rem;
+            height: 2rem;
+            border: 1px solid transparent;
+            border-radius: 50%;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 1.35rem;
+            line-height: 1;
             cursor: pointer;
             transition: all 0.3s ease;
         }
 
-        .admin-panel-toggle:hover,
-        .admin-panel-toggle:focus-visible {
-            border-color: var(--gold-light);
+        .admin-modal-close:hover,
+        .admin-modal-close:focus-visible {
+            color: var(--gold-light);
+            border-color: rgba(184, 147, 69, 0.4);
             background: rgba(184, 147, 69, 0.08);
             outline: none;
+        }
+
+        @keyframes adminDialogIn {
+            from {
+                opacity: 0;
+                transform: translateY(14px) scale(0.98);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
         }
 
         .admin-panel-form {
             display: flex;
             flex-direction: column;
             gap: 1.2rem;
-            padding-top: 0.25rem;
-        }
-
-        .admin-panel-form[hidden] {
-            display: none;
         }
 
         .admin-panel-title {
+            padding-right: 2rem;
             font-family: 'Playfair Display', serif;
-            font-size: 1.5rem;
+            font-size: 1.6rem;
             font-weight: 400;
             color: var(--text-main);
             letter-spacing: 0.5px;
@@ -398,6 +537,14 @@
             letter-spacing: 2px;
             text-transform: uppercase;
             color: var(--gold-dark);
+        }
+
+        .admin-field-hint {
+            font-family: 'Lora', serif;
+            font-size: 0.8rem;
+            font-style: italic;
+            line-height: 1.5;
+            color: rgba(139, 143, 158, 0.85);
         }
 
         .admin-input,
@@ -497,7 +644,10 @@
             .nav-links { gap: 1.5rem; order: 3; width: 100%; justify-content: center; }
             main { padding: 2rem 1.5rem; }
             .debate-grid { grid-template-columns: 1fr; }
-            .admin-panel { padding: 1.2rem; }
+            .admin-fab { right: 1.2rem; bottom: 1.2rem; width: 3.4rem; height: 3.4rem; }
+            .admin-modal { padding: 0.75rem; }
+            .admin-dialog { padding: 1.5rem; max-height: calc(100vh - 1.5rem); }
+            .admin-dialog::before { left: 1.5rem; right: 1.5rem; }
         }
     </style>
 </head>

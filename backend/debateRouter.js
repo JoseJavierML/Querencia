@@ -37,6 +37,7 @@ const toDebateResponse = (debate, viewerId = null, authorEmail = null) => ({
     _id: debate._id,
     title: debate.title,
     content: debate.content,
+    coverImageUrl: debate.coverImageUrl || null,
     createdAt: debate.createdAt,
     authorEmail: getAuthorEmail(debate, authorEmail),
     reactions: toReactionsResponse(debate.reactions, viewerId)
@@ -85,7 +86,8 @@ const createDebateRouter = ({ debateService, authMiddleware, adminMiddleware }) 
             const debate = await debateService.createDebate({
                 email: req.user.email,
                 title: req.body ? req.body.title : undefined,
-                content: req.body ? req.body.content : undefined
+                content: req.body ? req.body.content : undefined,
+                coverImageUrl: req.body ? req.body.coverImageUrl : undefined
             });
 
             return res.status(201).json(toDebateResponse(debate, null, req.user.email));
@@ -105,6 +107,19 @@ const createDebateRouter = ({ debateService, authMiddleware, adminMiddleware }) 
             );
         } catch (error) {
             return respondWithError(res, error, 'No se pudieron obtener los debates');
+        }
+    });
+
+    router.delete('/:id', authMiddleware, adminMiddleware, async (req, res) => {
+        try {
+            const debate = await debateService.deleteDebate({ id: req.params.id });
+
+            return res.status(200).json({
+                deleted: true,
+                _id: debate._id
+            });
+        } catch (error) {
+            return respondWithError(res, error, 'No se pudo eliminar el debate');
         }
     });
 
