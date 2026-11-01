@@ -350,74 +350,11 @@
 <h1 class="">Ecos de la Comunidad</h1>
 <p class="subtitle">Lee, siente y reacciona con el alma.</p>
 </div>
-<div class="debate-grid">
-<article class="debate-card">
-<div class="album-cover-wrapper">
-<img alt="Omega" class="album-cover" src="https://www.gstatic.com/labs-code/stitch/stitch-placeholder-300x300.svg">
+<div class="debate-grid" id="debateGrid">
+<!-- Las tarjetas se generan dinámicamente mediante js/muro.js -->
 </div>
-<div class="debate-meta">Abierto por Editor_01 • Hace 2 horas</div>
-<h2 class="debate-title">La ruptura temporal en 'Omega'</h2>
-<p class="debate-text">
-                    Enrique Morente y Lagartija Nick no solo fusionaron flamenco y rock. Destruyeron el compás tradicional para construir una nueva forma de entender el tiempo en la música. ¿Es el ruido una nueva forma de silencio?
-                </p>
-<div class="reactions-container">
-<button class="reaction-tag active">Rompe esquemas <span class="count">19</span></button>
-<button class="reaction-tag">Profundo <span class="count">27</span></button>
-</div>
-</article>
-<article class="debate-card">
-<div class="album-cover-wrapper">
-<img alt="Kind of Blue" class="album-cover" src="https://www.gstatic.com/labs-code/stitch/stitch-placeholder-300x300.svg">
-</div>
-<div class="debate-meta">Abierto por Editor_02 • Ayer</div>
-<h2 class="debate-title">El silencio de Miles Davis</h2>
-<p class="debate-text">
-                    "La música es el espacio entre las notas". Esta frase cobra sentido absoluto en Kind of Blue. No es lo que toca, es lo que decide callar lo que te rompe el alma. Un análisis de la melancolía a través de la trompeta y la ausencia deliberada de sonido.
-                </p>
-<div class="reactions-container">
-<button class="reaction-tag">Melancólico <span class="count">45</span></button>
-<button class="reaction-tag active">Íntimo <span class="count">12</span></button>
-</div>
-</article>
-<article class="debate-card">
-<div class="album-cover-wrapper">
-<img alt="IA y Música" class="album-cover" src="https://www.gstatic.com/labs-code/stitch/stitch-placeholder-300x300.svg">
-</div>
-<div class="debate-meta">Abierto por Editor_03 • 28 de Septiembre</div>
-<h2 class="debate-title">La artificialidad del dolor</h2>
-<p class="debate-text">
-                    Exploramos cómo la inteligencia artificial está redefiniendo la creatividad. Desde melodías algorítmicas hasta la síntesis de voz, ¿puede una máquina replicar el desgarro de un cante jondo? Debatimos el límite ético entre la técnica pura y la vivencia humana.
-                </p>
-<div class="reactions-container">
-<button class="reaction-tag">Inquietante <span class="count">51</span></button>
-<button class="reaction-tag">Tecnológico <span class="count">18</span></button>
-</div>
-</article>
-</div>
+<p class="subtitle" id="wallStatus" hidden style="text-align: center; margin-top: 2.5rem;">Cargando los ecos del muro...</p>
 </main>
-<script>
-        const cards = document.querySelectorAll('.debate-card');
-        const auras = [
-            'rgba(184, 147, 69, 0.55)',
-            'rgba(138, 22, 22, 0.45)',
-            'rgba(234, 221, 179, 0.35)'
-        ];
-
-        cards.forEach(card => {
-            card.addEventListener('mouseenter', () => {
-                const randomAura = auras[Math.floor(Math.random() * auras.length)];
-                card.style.setProperty('--aura-color', randomAura);
-            });
-
-            card.addEventListener('mousemove', (e) => {
-                const rect = card.getBoundingClientRect();
-                const x = e.clientX - rect.left;
-                const y = e.clientY - rect.top;
-                card.style.setProperty('--mouse-x', `${x}px`);
-                card.style.setProperty('--mouse-y', `${y}px`);
-            });
-        });
-    </script>
 <script>
         const canvas = document.getElementById('soulCanvas');
         const ctx = canvas.getContext('2d');
@@ -464,47 +401,6 @@
         animate();
     </script>
 <script type="module" src="js/auth.js"></script>
-<script type="module">
-        import { api } from './js/api.js'; 
-
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                if (api && api.checkSession) {
-                    const tieneSesion = await api.checkSession();
-                    if (!tieneSesion) {
-                        window.location.href = 'index.html'; 
-                        return;
-                    }
-                }
-            } catch (err) {
-                console.warn('Verificación de sesión:', err);
-            }
-        });
-
-        async function ejecutarLogout() {
-            try {
-                if (api && api.logout) {
-                    await api.logout();
-                } else {
-                    localStorage.clear();
-                    sessionStorage.clear();
-                    window.location.href = 'index.html';
-                }
-            } catch (error) {
-                console.error('Error al cerrar sesión:', error);
-                window.location.href = 'index.html';
-            }
-        }
-
-        const btnLogout = document.getElementById('logoutBtn') || document.querySelector('.logout-btn');
-        if (btnLogout) {
-            btnLogout.addEventListener('click', async (e) => {
-                e.preventDefault();
-                await ejecutarLogout();
-            });
-        }
-    </script>
-
-
+<script type="module" src="js/muro.js"></script>
 
 </body></html>

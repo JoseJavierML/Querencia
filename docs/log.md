@@ -1,5 +1,11 @@
 # Cronología
 
+## 2026-11-01 — MVP del Muro de Debates (RF-MVP-Muro)
+
+Rama `feature/RF-MVP-muro-debates`. Se añade el modelo `Debate` con título, contenido, autor, fecha generada por el servidor y seis reacciones del alma (`rompeEsquemas`, `profundo`, `melancolico`, `intimo`, `inquietante`, `tecnologico`) almacenadas como arrays de `ObjectId` de `User`. El repositorio resuelve el toggle con `$pull` y `$addToSet`, de modo que cada usuario puede votar o retirar su voto sin duplicados. Se incorporan `POST /api/debates` con `authMiddleware` e `isAdminMiddleware`, `GET /api/debates` público con autenticación opcional y `POST /api/debates/:id/react` protegido. Se registran las decisiones D-14, D-15 y D-16.
+
+En el frontend, `muro.html` elimina las tarjetas estáticas y carga el muro desde la API mediante `api.listarDebates()`; `muro.js` renderiza las tarjetas con las clases CSS existentes, conserva el placeholder de portada y el efecto de aura, y conecta cada reacción con `api.reaccionarDebate(id, reaction)`, enviando el token de `localStorage`. Se mantienen intactos el diseño, el canvas y los estilos de scroll. La suite queda en **8 suites y 93 tests pasados** (`npm test -- --runInBand`), 43 de ellos nuevos para el muro.
+
 ## 2026-11-01 — Icono de nueva entrada en la vista de lectura
 
 Se sustituye el botón de texto “← Volver” del Diario Íntimo por un botón circular con icono de lápiz, situado junto a la papelera en la esquina superior derecha de la lectura. Ambos comparten la clase `reading-action` y, por tanto, el mismo tamaño, hover y foco; el lápiz usa el dorado de la web y la papelera conserva el rojo reservado a la acción destructiva. El botón conserva el `id="backToEditorBtn"`, de modo que el manejador existente sigue funcionando; además, limpia el título y el texto antes de devolver al editor. No se modifican IDs estructurales ni la lógica de borrado.

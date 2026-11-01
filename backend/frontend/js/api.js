@@ -56,6 +56,13 @@ export const api = {
         method: 'DELETE'
     }),
 
+    listarDebates: () => fetchAPI('/debates', { method: 'GET' }),
+
+    reaccionarDebate: (id, reaction) => fetchAPI(`/debates/${encodeURIComponent(id)}/react`, {
+        method: 'POST',
+        body: JSON.stringify({ reaction })
+    }),
+
     checkSession: async () => {
         if (!localStorage.getItem('token') && !localStorage.getItem('querencia_token')) {
             return false;
