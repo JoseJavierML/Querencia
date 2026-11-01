@@ -15,6 +15,9 @@ const { verificarDominio } = require('./domainLogic.js');
 const { DiaryRepository } = require('./diaryModel');
 const { createDiaryService } = require('./diaryService');
 const { createDiaryRouter } = require('./diaryRouter');
+const { DebateRepository } = require('./debateModel');
+const { createDebateService } = require('./debateService');
+const { createDebateRouter } = require('./debateRouter');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -31,6 +34,17 @@ const diaryRouter = createDiaryRouter({
     authMiddleware
 });
 
+const debateService = createDebateService({
+    debateRepository: DebateRepository,
+    userRepository: userModel
+});
+
+const debateRouter = createDebateRouter({
+    debateService,
+    authMiddleware,
+    adminMiddleware: isAdminMiddleware
+});
+
 app.use(cors());
 app.use(express.json());
 const path = require('path');
@@ -43,6 +57,7 @@ app.use(morgan('dev', {
 app.use(passport.initialize());
 
 app.use('/api/diario', diaryRouter);
+app.use('/api/debates', debateRouter);
 
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
