@@ -55,6 +55,53 @@ curl -X POST http://localhost:3000/api/diario \
   -d '{"text":"Primera escucha del día","title":"Mañana"}'
 ```
 
+## Muro de Debates
+
+El muro es el espacio público de reflexión de Querencia. Cualquier visitante puede leer las reflexiones publicadas; para reaccionar es necesario iniciar sesión. Las interacciones no usan iconos ni emojis: son etiquetas semánticas y filosóficas que se activan y desactivan con un clic.
+
+| Reacción | Clave interna | Comportamiento |
+|---|---|---|
+| Profundo | `profundo` | Alterna el voto del usuario |
+| Melancólico | `melancolico` | Alterna el voto del usuario |
+| Rompe esquemas | `rompeEsquemas` | Alterna el voto del usuario |
+
+Cada reacción se guarda en MongoDB como un array de `ObjectId` de usuarios, no como un contador. Si el usuario vuelve a pulsar la misma reacción, su voto se retira. La API devuelve `count`, `reactedByMe` y `label` para que la interfaz muestre siempre el texto exacto.
+
+### Roles
+
+| Rol | Estado | Permisos en el muro |
+|---|---|---|
+| `oyente` | Implementado en backend como `usuario`; la interfaz lo muestra como “Oyente” | Leer y reaccionar |
+| `editor` | No implementado en este MVP; reservado para trabajo futuro | Sin permisos ni UI propia |
+| `admin` | Implementado | Crear reflexiones, leer y reaccionar |
+
+La creación de reflexiones está reservada a `admin`. El formulario de creación se construye dinámicamente en `muro.js` y solo se inserta en el DOM cuando la sesión tiene rol `admin`; para un `oyente` no existen ni el botón ni el formulario. La autorización real no depende del navegador: `POST /api/debates` exige `authMiddleware` e `isAdminMiddleware`, y devuelve `403` a cualquier usuario que no sea administrador.
+
+### API del Muro
+
+| Método | Ruta | Cuerpo | Respuesta |
+|---|---|---|---|
+| POST | `/api/debates` | `{ "title": "...", "content": "..." }` | `201` con la reflexión creada; solo administradores |
+| GET | `/api/debates` | — | `200` con las reflexiones, de la más reciente a la más antigua; público, con `reactedByMe` si hay token |
+| POST | `/api/debates/:id/react` | `{ "reaction": "profundo" }` | `200` con `{ "_id", "reactions" }`; requiere sesión |
+
+- `title` es obligatorio, se recorta y admite hasta 120 caracteres.
+- `content` es obligatorio, se recorta y admite hasta 5000 caracteres.
+- Las reacciones válidas son `profundo`, `melancolico` y `rompeEsquemas`.
+- `createdAt` lo genera el servidor.
+- No hay edición ni borrado de reflexiones en este MVP.
+
+### Datos de prueba
+
+El script `backend/seedDebate.js` crea una reflexión inicial sobre el duende, Camarón de la Isla y el consumo musical inmediato. Es idempotente: si el título ya existe, no crea un duplicado.
+
+```bash
+cd backend
+npm run seed
+```
+
+El script requiere `MONGO_URI` en `backend/.env`. Para elegir el autor, usa `SEED_AUTHOR_EMAIL`; si no se define, reutiliza el primer usuario con rol `admin`. Si no hay ningún administrador, crea un autor técnico `seed@querencia.local` con rol `admin`, estado activo y una contraseña aleatoria que no se imprime. Ese autor es solo para datos de desarrollo y no está pensado para iniciar sesión.
+
 ## Estado Actual (Sprint 1)
 - [x] **Hito 1:** Esqueleto, backend (lógica en memoria), API, pruebas automatizadas, pipeline de Integración Continua (CI) y Despliegue Continuo (CD).
 - [x] **Hito 2:** Interfaz frontend, registro e inicio de sesión, mantenimiento de sesión.
@@ -64,3 +111,6 @@ curl -X POST http://localhost:3000/api/diario \
 ## Estado Actual (Sprint 2)
 - [x] **RF-MVP-Diario:** backend del diario íntimo con esquema `DiaryEntry`, endpoints protegidos y pruebas unitarias con dobles.
 - [x] **RF-MVP-Diario-Frontend:** guardado, historial “Ecos”, título opcional, lectura completa y borrado de ecos propios.
+- [x] **RF-MVP-Muro:** backend del muro con reacciones `Profundo`, `Melancólico` y `Rompe esquemas`, toggle sin doble voto y creación reservada a administradores.
+- [x] **RF-MVP-Muro-Frontend:** tarjetas dinámicas, reacciones autenticadas y panel de creación visible solo para administradores.
+- [x] **RF-MVP-Muro-Seed:** script `seedDebate.js` con un hilo inicial idempotente y comando `npm run seed`.

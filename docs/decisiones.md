@@ -113,9 +113,9 @@ timestamp: 2026-11-01
 
 ## D-14 — Modelo `Debate` con reacciones del alma basadas en `ObjectId`
 
-**Qué se decidió:** persistir los debates en el modelo `Debate` con `title` (obligatorio, recortado, máximo 120 caracteres), `content` (obligatorio, recortado, máximo 5000 caracteres), `authorId` como `ObjectId` de `User`, `createdAt` generado por el servidor y un objeto `reactions` con seis claves fijas: `rompeEsquemas`, `profundo`, `melancolico`, `intimo`, `inquietante` y `tecnologico`. Cada clave es un array de `ObjectId` de usuarios, nunca un contador numérico.
+**Qué se decidió:** persistir los debates en el modelo `Debate` con `title` (obligatorio, recortado, máximo 120 caracteres), `content` (obligatorio, recortado, máximo 5000 caracteres), `authorId` como `ObjectId` de `User`, `createdAt` generado por el servidor y un objeto `reactions` con tres claves fijas: `profundo`, `melancolico` y `rompeEsquemas`. Las etiquetas visibles son “Profundo”, “Melancólico” y “Rompe esquemas”, y viven junto a las claves en `REACTION_DEFINITIONS`. Cada clave es un array de `ObjectId` de usuarios, nunca un contador numérico. Las claves retiradas `intimo`, `inquietante` y `tecnologico` dejan de formar parte del subesquema; no se ejecuta una migración destructiva y la API solo expone las tres reacciones vigentes.
 
-**Por qué:** los arrays permiten saber qué usuarios han reaccionado y evitan votos infinitos. El toggle se resuelve con dos operaciones atómicas: `$pull` si el usuario ya había votado y `$addToSet` si no había votado. Si un usuario vuelve a pulsar la misma reacción, se le retira el voto.
+**Por qué:** los arrays permiten saber qué usuarios han reaccionado y evitan votos infinitos. El toggle se resuelve con dos operaciones atómicas: `$pull` si el usuario ya había votado y `$addToSet` si no había votado. Si un usuario vuelve a pulsar la misma reacción, se le retira el voto. Mantener claves estables sin acentos ni espacios evita problemas en MongoDB y permite cambiar la etiqueta visible sin migrar datos.
 
 **Estado:** vigente.
 
@@ -129,8 +129,24 @@ timestamp: 2026-11-01
 
 ## D-16 — Integración dinámica del muro en el frontend
 
-**Qué se decidió:** `muro.html` deja de contener debates estáticos y carga las tarjetas desde `GET /api/debates` mediante `api.listarDebates()`. Las reacciones se envían con `api.reaccionarDebate(id, reaction)`, que añade el token mediante `fetchAutenticado`. El renderizado reutiliza las clases existentes (`debate-grid`, `debate-card`, `album-cover-wrapper`, `album-cover`, `debate-meta`, `debate-title`, `debate-text`, `reactions-container`, `reaction-tag`, `count` y `active`), conserva el placeholder de portada y el efecto de aura, y usa `textContent` para no inyectar HTML no confiable.
+**Qué se decidió:** `muro.html` deja de contener debates estáticos y carga las tarjetas desde `GET /api/debates` mediante `api.listarDebates()`. Las reacciones se envían con `api.reaccionarDebate(id, reaction)` y las nuevas reflexiones con `api.crearDebate(title, content)`; ambas añaden el token mediante `fetchAutenticado`. El renderizado reutiliza las clases existentes (`debate-grid`, `debate-card`, `album-cover-wrapper`, `album-cover`, `debate-meta`, `debate-title`, `debate-text`, `reactions-container`, `reaction-tag`, `count` y `active`), conserva el placeholder de portada y el efecto de aura, usa el `label` que devuelve la API y emplea `textContent` para no inyectar HTML no confiable.
 
 **Por qué:** mantiene intacta la maquetación y los estilos de scroll existentes, centraliza la comunicación en `api.js` y evita que un título o contenido malicioso se interprete como HTML.
+
+**Estado:** vigente.
+
+## D-17 — Panel de administración dinámico y autorización en servidor
+
+**Qué se decidió:** `muro.js` construye el botón y el formulario de creación solo cuando `obtenerUsuarioActual()` devuelve `rol === 'admin'`. Para un oyente no se inserta ningún nodo del panel en el DOM; `muro.html` solo aporta los estilos. La autorización real sigue en `POST /api/debates` mediante `authMiddleware` e `isAdminMiddleware`, de modo que manipular `localStorage` solo produce un `403`.
+
+**Por qué:** se evita dejar markup oculto o formularios inactivos para usuarios sin permiso, y no se confía en una comprobación de rol hecha en el navegador. El backend sigue siendo la única frontera de autorización.
+
+**Estado:** vigente.
+
+## D-18 — Seed idempotente para el muro
+
+**Qué se decidió:** `seedDebate.js` crea un debate inicial sobre el duende, Camarón de la Isla y el consumo musical inmediato. Busca el título antes de insertar para no duplicar datos. Resuelve el autor con `SEED_AUTHOR_EMAIL`, con el primer usuario `admin` o, si no existe ninguno, con un autor técnico `seed@querencia.local` de rol `admin`, estado activo y contraseña aleatoria hasheada que no se imprime. La conexión se cierra al terminar.
+
+**Por qué:** permite disponer de contenido inicial en una base vacía sin exigir una configuración manual previa, sin repetir el debate en ejecuciones sucesivas y sin exponer credenciales de una cuenta que no está pensada para iniciar sesión.
 
 **Estado:** vigente.

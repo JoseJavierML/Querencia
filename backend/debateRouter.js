@@ -1,5 +1,5 @@
 const express = require('express');
-const { REACTION_TYPES } = require('./debateConstants');
+const { REACTION_DEFINITIONS } = require('./debateConstants');
 const {
     DebateValidationError,
     DebateUserNotFoundError,
@@ -7,9 +7,10 @@ const {
 } = require('./debateService');
 
 const toReactionsResponse = (reactions = {}, viewerId = null) => {
-    return REACTION_TYPES.reduce((response, reaction) => {
-        const users = Array.isArray(reactions[reaction]) ? reactions[reaction] : [];
-        response[reaction] = {
+    return REACTION_DEFINITIONS.reduce((response, { key, label }) => {
+        const users = Array.isArray(reactions[key]) ? reactions[key] : [];
+        response[key] = {
+            label,
             count: users.length,
             reactedByMe: Boolean(
                 viewerId && users.some((userId) => String(userId) === String(viewerId))

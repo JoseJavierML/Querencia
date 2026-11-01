@@ -70,12 +70,9 @@ const createDebate = (overrides = {}) => ({
     createdAt: new Date('2026-11-01T10:00:00.000Z'),
     authorId: { email: 'admin@querencia.es' },
     reactions: {
-        rompeEsquemas: ['usuario-1'],
         profundo: ['usuario-1', 'usuario-2'],
         melancolico: [],
-        intimo: [],
-        inquietante: [],
-        tecnologico: []
+        rompeEsquemas: ['usuario-1']
     },
     ...overrides
 });
@@ -103,8 +100,22 @@ describe('Rutas del muro de debates', () => {
             createdAt: '2026-11-01T10:00:00.000Z',
             authorEmail: 'admin@querencia.es'
         });
-        expect(body.reactions.rompeEsquemas).toEqual({ count: 1, reactedByMe: false });
-        expect(body.reactions.profundo).toEqual({ count: 2, reactedByMe: false });
+        expect(body.reactions.profundo).toEqual({
+            label: 'Profundo',
+            count: 2,
+            reactedByMe: false
+        });
+        expect(body.reactions.melancolico).toEqual({
+            label: 'Melancólico',
+            count: 0,
+            reactedByMe: false
+        });
+        expect(body.reactions.rompeEsquemas).toEqual({
+            label: 'Rompe esquemas',
+            count: 1,
+            reactedByMe: false
+        });
+        expect(body.reactions.intimo).toBeUndefined();
         expect(createDebateMock).toHaveBeenCalledWith({
             email: 'admin@querencia.es',
             title: 'La ruptura temporal en Omega',
@@ -183,8 +194,22 @@ describe('Rutas del muro de debates', () => {
             _id: 'debate-1',
             authorEmail: 'admin@querencia.es'
         });
-        expect(body[0].reactions.rompeEsquemas).toEqual({ count: 1, reactedByMe: false });
-        expect(body[0].reactions.profundo).toEqual({ count: 2, reactedByMe: false });
+        expect(body[0].reactions.profundo).toEqual({
+            label: 'Profundo',
+            count: 2,
+            reactedByMe: false
+        });
+        expect(body[0].reactions.melancolico).toEqual({
+            label: 'Melancólico',
+            count: 0,
+            reactedByMe: false
+        });
+        expect(body[0].reactions.rompeEsquemas).toEqual({
+            label: 'Rompe esquemas',
+            count: 1,
+            reactedByMe: false
+        });
+        expect(body[0].reactions.intimo).toBeUndefined();
         expect(listDebates).toHaveBeenCalledWith({ email: undefined });
     });
 
@@ -199,9 +224,9 @@ describe('Rutas del muro de debates', () => {
         });
 
         expect(status).toBe(200);
-        expect(body[0].reactions.rompeEsquemas.reactedByMe).toBe(true);
         expect(body[0].reactions.profundo.reactedByMe).toBe(true);
         expect(body[0].reactions.melancolico.reactedByMe).toBe(false);
+        expect(body[0].reactions.rompeEsquemas.reactedByMe).toBe(true);
         expect(listDebates).toHaveBeenCalledWith({ email: 'ana@uclm.es' });
     });
 
@@ -247,12 +272,9 @@ describe('Rutas del muro de debates', () => {
         expect(body).toEqual({
             _id: 'debate-1',
             reactions: {
-                rompeEsquemas: { count: 1, reactedByMe: true },
-                profundo: { count: 2, reactedByMe: true },
-                melancolico: { count: 0, reactedByMe: false },
-                intimo: { count: 0, reactedByMe: false },
-                inquietante: { count: 0, reactedByMe: false },
-                tecnologico: { count: 0, reactedByMe: false }
+                profundo: { label: 'Profundo', count: 2, reactedByMe: true },
+                melancolico: { label: 'Melancólico', count: 0, reactedByMe: false },
+                rompeEsquemas: { label: 'Rompe esquemas', count: 1, reactedByMe: true }
             }
         });
         expect(reactToDebate).toHaveBeenCalledWith({

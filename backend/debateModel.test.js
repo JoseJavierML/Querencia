@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 const { Debate, DebateRepository } = require('./debateModel');
 const {
+    REACTION_DEFINITIONS,
     REACTION_TYPES,
     MAX_TITLE_LENGTH,
     MAX_CONTENT_LENGTH
@@ -56,11 +57,29 @@ describe('Esquema Debate', () => {
         });
     });
 
-    test('crea las seis reacciones como arrays vacíos de ObjectId', () => {
+    test('define exactamente las tres reacciones del alma con sus etiquetas', () => {
+        expect(REACTION_DEFINITIONS).toEqual([
+            { key: 'profundo', label: 'Profundo' },
+            { key: 'melancolico', label: 'Melancólico' },
+            { key: 'rompeEsquemas', label: 'Rompe esquemas' }
+        ]);
+        expect(REACTION_TYPES).toEqual(['profundo', 'melancolico', 'rompeEsquemas']);
+    });
+
+    test('crea las tres reacciones como arrays vacíos de ObjectId', () => {
         const debate = createValidDebate();
 
         REACTION_TYPES.forEach((reaction) => {
             expect(Array.from(debate.reactions[reaction])).toEqual([]);
+        });
+    });
+
+    test('no conserva las claves de reacciones retiradas', () => {
+        const debate = createValidDebate();
+
+        ['intimo', 'inquietante', 'tecnologico'].forEach((reaction) => {
+            expect(Debate.schema.path(`reactions.${reaction}`)).toBeUndefined();
+            expect(debate.reactions[reaction]).toBeUndefined();
         });
     });
 

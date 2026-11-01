@@ -323,11 +323,181 @@
             color: var(--gold-dark);
         }
 
+        /* --- Panel de administración --- */
+        .admin-panel {
+            margin-bottom: 3rem;
+            padding: 1.5rem;
+            border: 1px solid var(--border-color);
+            border-top: 1px solid rgba(184, 147, 69, 0.35);
+            border-radius: 6px;
+            background: linear-gradient(135deg, rgba(15, 15, 18, 0.82), rgba(10, 10, 12, 0.92));
+            backdrop-filter: blur(15px);
+            display: flex;
+            flex-direction: column;
+            gap: 1.25rem;
+        }
+
+        .admin-panel-toggle {
+            align-self: flex-start;
+            background: transparent;
+            color: var(--gold-light);
+            border: 1px solid rgba(184, 147, 69, 0.4);
+            border-radius: 30px;
+            padding: 0.55rem 1.4rem;
+            font-family: 'Lora', serif;
+            font-size: 0.95rem;
+            font-style: italic;
+            letter-spacing: 0.3px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .admin-panel-toggle:hover,
+        .admin-panel-toggle:focus-visible {
+            border-color: var(--gold-light);
+            background: rgba(184, 147, 69, 0.08);
+            outline: none;
+        }
+
+        .admin-panel-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1.2rem;
+            padding-top: 0.25rem;
+        }
+
+        .admin-panel-form[hidden] {
+            display: none;
+        }
+
+        .admin-panel-title {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
+            font-weight: 400;
+            color: var(--text-main);
+            letter-spacing: 0.5px;
+        }
+
+        .admin-panel-intro {
+            font-family: 'Lora', serif;
+            font-size: 0.95rem;
+            font-style: italic;
+            color: var(--text-muted);
+            line-height: 1.6;
+        }
+
+        .admin-field {
+            display: flex;
+            flex-direction: column;
+            gap: 0.45rem;
+        }
+
+        .admin-field-label {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.7rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--gold-dark);
+        }
+
+        .admin-input,
+        .admin-textarea {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            padding: 0.8rem 1rem;
+            color: var(--text-main);
+            font-family: 'Lora', serif;
+            font-size: 1rem;
+            line-height: 1.6;
+            transition: border-color 0.3s ease, background 0.3s ease;
+        }
+
+        .admin-input::placeholder,
+        .admin-textarea::placeholder {
+            color: rgba(139, 143, 158, 0.7);
+            font-style: italic;
+        }
+
+        .admin-input:focus,
+        .admin-textarea:focus {
+            outline: none;
+            border-color: var(--gold-dark);
+            background: rgba(184, 147, 69, 0.04);
+        }
+
+        .admin-textarea {
+            resize: vertical;
+            min-height: 150px;
+        }
+
+        .admin-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.8rem;
+            align-items: center;
+        }
+
+        .admin-submit,
+        .admin-cancel {
+            border-radius: 30px;
+            padding: 0.55rem 1.4rem;
+            font-family: 'Lora', serif;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .admin-submit {
+            background: rgba(184, 147, 69, 0.12);
+            color: var(--gold-light);
+            border: 1px solid rgba(184, 147, 69, 0.45);
+        }
+
+        .admin-submit:hover:not(:disabled),
+        .admin-submit:focus-visible:not(:disabled) {
+            background: rgba(184, 147, 69, 0.22);
+            border-color: var(--gold-light);
+            outline: none;
+        }
+
+        .admin-cancel {
+            background: transparent;
+            color: var(--text-muted);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+        }
+
+        .admin-cancel:hover:not(:disabled),
+        .admin-cancel:focus-visible:not(:disabled) {
+            color: var(--gold-light);
+            border-color: var(--gold-dark);
+            outline: none;
+        }
+
+        .admin-submit:disabled,
+        .admin-cancel:disabled {
+            opacity: 0.55;
+            cursor: not-allowed;
+        }
+
+        .admin-feedback {
+            font-family: 'Lora', serif;
+            font-size: 0.9rem;
+            line-height: 1.5;
+            color: var(--gold-light);
+        }
+
+        .admin-feedback.is-error {
+            color: #d98b8b;
+        }
+
         @media (max-width: 768px) {
             nav { padding: 1.2rem 1.5rem; flex-wrap: wrap; gap: 1rem; }
             .nav-links { gap: 1.5rem; order: 3; width: 100%; justify-content: center; }
             main { padding: 2rem 1.5rem; }
             .debate-grid { grid-template-columns: 1fr; }
+            .admin-panel { padding: 1.2rem; }
         }
     </style>
 </head>

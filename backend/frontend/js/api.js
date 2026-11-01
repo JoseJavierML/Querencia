@@ -56,6 +56,11 @@ export const api = {
         method: 'DELETE'
     }),
 
+    crearDebate: (title, content) => fetchAPI('/debates', {
+        method: 'POST',
+        body: JSON.stringify({ title, content })
+    }),
+
     listarDebates: () => fetchAPI('/debates', { method: 'GET' }),
 
     reaccionarDebate: (id, reaction) => fetchAPI(`/debates/${encodeURIComponent(id)}/react`, {

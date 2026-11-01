@@ -1,5 +1,13 @@
 # Cronología
 
+## 2026-11-01 — UI de administración, reacciones semánticas y seed del muro
+
+Rama `feature/RF-MVP-muro-admin-seed`. El muro pasa de seis reacciones a tres etiquetas semánticas exactas: `profundo` (“Profundo”), `melancolico` (“Melancólico”) y `rompeEsquemas` (“Rompe esquemas”). `debateConstants.js` centraliza claves y etiquetas; `debateRouter.js` devuelve `label`, `count` y `reactedByMe`; el modelo mantiene cada reacción como un array de `ObjectId` y el toggle sigue resolviéndose con `$pull` y `$addToSet`. Las claves retiradas `intimo`, `inquietante` y `tecnologico` dejan de exponerse y no se ejecuta una migración destructiva.
+
+En el frontend, `muro.js` construye el botón “Crear nueva reflexión” y su formulario solo cuando `obtenerUsuarioActual()` devuelve rol `admin`; para un oyente no existen nodos del panel en el DOM. El formulario usa `api.crearDebate(title, content)` y el backend mantiene la autorización real con `authMiddleware` e `isAdminMiddleware`. `muro.html` solo añade los estilos del panel, con glassmorphism oscuro y acentos dorados, sin iconos ni emojis.
+
+Se añade `seedDebate.js` y el comando `npm run seed`. El seed crea un debate sobre el duende, Camarón de la Isla y el consumo musical inmediato, es idempotente por título y resuelve el autor con `SEED_AUTHOR_EMAIL`, el primer administrador o un autor técnico si la base está vacía. Se registran las decisiones D-17 y D-18 y se actualizan D-14 y D-16. La suite queda en **8 suites y 97 tests pasados** (`npm test -- --runInBand`).
+
 ## 2026-11-01 — MVP del Muro de Debates (RF-MVP-Muro)
 
 Rama `feature/RF-MVP-muro-debates`. Se añade el modelo `Debate` con título, contenido, autor, fecha generada por el servidor y seis reacciones del alma (`rompeEsquemas`, `profundo`, `melancolico`, `intimo`, `inquietante`, `tecnologico`) almacenadas como arrays de `ObjectId` de `User`. El repositorio resuelve el toggle con `$pull` y `$addToSet`, de modo que cada usuario puede votar o retirar su voto sin duplicados. Se incorporan `POST /api/debates` con `authMiddleware` e `isAdminMiddleware`, `GET /api/debates` público con autenticación opcional y `POST /api/debates/:id/react` protegido. Se registran las decisiones D-14, D-15 y D-16.

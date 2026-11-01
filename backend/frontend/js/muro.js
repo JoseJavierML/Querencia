@@ -1,12 +1,10 @@
 import { api } from './api.js';
+import { obtenerUsuarioActual } from './auth.js';
 
-const REACTION_LABELS = Object.freeze({
-    rompeEsquemas: 'Rompe esquemas',
+const REACTION_FALLBACK_LABELS = Object.freeze({
     profundo: 'Profundo',
     melancolico: 'Melancólico',
-    intimo: 'Íntimo',
-    inquietante: 'Inquietante',
-    tecnologico: 'Tecnológico'
+    rompeEsquemas: 'Rompe esquemas'
 });
 
 const AURAS = [
@@ -51,6 +49,33 @@ function formatearFecha(fechaISO) {
     return fecha.toLocaleDateString('es-ES', { day: 'numeric', month: 'long' });
 }
 
+function normalizarReacciones(debate) {
+    const reacciones = debate && debate.reactions && typeof debate.reactions === 'object'
+        ? debate.reactions
+        : {};
+
+    const entradas = Object.entries(reacciones);
+    if (entradas.length === 0) {
+        return Object.entries(REACTION_FALLBACK_LABELS).map(([tipo, label]) => ({
+            tipo,
+            label,
+            count: 0,
+            reactedByMe: false
+        }));
+    }
+
+    return entradas.map(([tipo, reaccion]) => {
+        const total = Number(reaccion && reaccion.count);
+
+        return {
+            tipo,
+            label: (reaccion && reaccion.label) || REACTION_FALLBACK_LABELS[tipo] || tipo,
+            count: Number.isFinite(total) ? total : 0,
+            reactedByMe: Boolean(reaccion && reaccion.reactedByMe)
+        };
+    });
+}
+
 function crearBotonReaccion(debateId, tipo, etiqueta, reaccion) {
     const boton = document.createElement('button');
     boton.type = 'button';
@@ -66,8 +91,7 @@ function crearBotonReaccion(debateId, tipo, etiqueta, reaccion) {
 
     const contador = document.createElement('span');
     contador.className = 'count';
-    const total = Number(reaccion.count);
-    contador.textContent = String(Number.isFinite(total) ? total : 0);
+    contador.textContent = String(reaccion.count);
     boton.appendChild(contador);
 
     return boton;
@@ -76,13 +100,9 @@ function crearBotonReaccion(debateId, tipo, etiqueta, reaccion) {
 function renderizarReacciones(contenedor, debate) {
     contenedor.replaceChildren();
 
-    Object.entries(REACTION_LABELS).forEach(([tipo, etiqueta]) => {
-        const reaccion = debate.reactions && debate.reactions[tipo]
-            ? debate.reactions[tipo]
-            : { count: 0, reactedByMe: false };
-
+    normalizarReacciones(debate).forEach(({ tipo, label, count, reactedByMe }) => {
         contenedor.appendChild(
-            crearBotonReaccion(String(debate._id), tipo, etiqueta, reaccion)
+            crearBotonReaccion(String(debate._id), tipo, label, { count, reactedByMe })
         );
     });
 }
@@ -163,10 +183,171 @@ async function cargarDebates() {
     try {
         const debates = await api.listarDebates();
         renderizarDebates(debates);
+        return true;
     } catch (error) {
         console.error('No se pudieron cargar los debates:', error);
         mostrarEstado('No se pudieron cargar los debates. Inténtalo de nuevo.');
+        return false;
     }
+}
+
+function crearPanelAdmin() {
+    const panel = document.createElement('section');
+    panel.className = 'admin-panel';
+    panel.setAttribute('aria-label', 'Administración del muro');
+
+    const toggle = document.createElement('button');
+    toggle.type = 'button';
+    toggle.className = 'admin-panel-toggle';
+    toggle.id = 'adminPanelToggle';
+    toggle.setAttribute('aria-expanded', 'false');
+    toggle.setAttribute('aria-controls', 'adminDebateForm');
+    toggle.textContent = 'Crear nueva reflexión';
+
+    const form = document.createElement('form');
+    form.className = 'admin-panel-form';
+    form.id = 'adminDebateForm';
+    form.hidden = true;
+
+    const heading = document.createElement('h2');
+    heading.className = 'admin-panel-title';
+    heading.textContent = 'Abrir una nueva reflexión';
+
+    const intro = document.createElement('p');
+    intro.className = 'admin-panel-intro';
+    intro.textContent = 'Comparte una idea que merezca ser pensada despacio.';
+
+    const titleLabel = document.createElement('label');
+    titleLabel.className = 'admin-field';
+    titleLabel.htmlFor = 'adminDebateTitle';
+    const titleText = document.createElement('span');
+    titleText.className = 'admin-field-label';
+    titleText.textContent = 'Título';
+    const titleInput = document.createElement('input');
+    titleInput.className = 'admin-input';
+    titleInput.id = 'adminDebateTitle';
+    titleInput.name = 'title';
+    titleInput.type = 'text';
+    titleInput.maxLength = 120;
+    titleInput.required = true;
+    titleInput.autocomplete = 'off';
+    titleInput.placeholder = 'El duende no cabe en un algoritmo';
+    titleLabel.append(titleText, titleInput);
+
+    const contentLabel = document.createElement('label');
+    contentLabel.className = 'admin-field';
+    contentLabel.htmlFor = 'adminDebateContent';
+    const contentText = document.createElement('span');
+    contentText.className = 'admin-field-label';
+    contentText.textContent = 'Contenido';
+    const contentInput = document.createElement('textarea');
+    contentInput.className = 'admin-textarea';
+    contentInput.id = 'adminDebateContent';
+    contentInput.name = 'content';
+    contentInput.maxLength = 5000;
+    contentInput.rows = 6;
+    contentInput.required = true;
+    contentInput.placeholder = 'Escribe la reflexión con calma...';
+    contentLabel.append(contentText, contentInput);
+
+    const actions = document.createElement('div');
+    actions.className = 'admin-actions';
+
+    const submit = document.createElement('button');
+    submit.type = 'submit';
+    submit.className = 'admin-submit';
+    submit.textContent = 'Publicar reflexión';
+
+    const cancel = document.createElement('button');
+    cancel.type = 'button';
+    cancel.className = 'admin-cancel';
+    cancel.textContent = 'Cancelar';
+
+    actions.append(submit, cancel);
+
+    const feedback = document.createElement('p');
+    feedback.className = 'admin-feedback';
+    feedback.id = 'adminFeedback';
+    feedback.setAttribute('role', 'status');
+    feedback.hidden = true;
+
+    form.append(heading, intro, titleLabel, contentLabel, actions, feedback);
+    panel.append(toggle, form);
+
+    const setOpen = (open) => {
+        form.hidden = !open;
+        toggle.setAttribute('aria-expanded', String(open));
+        toggle.textContent = open ? 'Cerrar formulario' : 'Crear nueva reflexión';
+        if (open) {
+            window.requestAnimationFrame(() => titleInput.focus());
+        }
+    };
+
+    const mostrarFeedback = (mensaje, esError = false) => {
+        feedback.textContent = mensaje;
+        feedback.hidden = !mensaje;
+        feedback.classList.toggle('is-error', esError);
+    };
+
+    toggle.addEventListener('click', () => {
+        setOpen(form.hidden);
+    });
+
+    cancel.addEventListener('click', () => {
+        mostrarFeedback('');
+        setOpen(false);
+        toggle.focus();
+    });
+
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+
+        const title = titleInput.value.trim();
+        const content = contentInput.value.trim();
+
+        if (!title || !content) {
+            mostrarFeedback('El título y el contenido son obligatorios.', true);
+            return;
+        }
+
+        submit.disabled = true;
+        cancel.disabled = true;
+        submit.textContent = 'Publicando...';
+        mostrarFeedback('');
+
+        try {
+            await api.crearDebate(title, content);
+            form.reset();
+            setOpen(false);
+
+            const actualizado = await cargarDebates();
+            if (actualizado) {
+                mostrarEstado('Reflexión publicada en el muro.', true);
+            } else {
+                mostrarEstado('La reflexión se publicó, pero el muro no se pudo actualizar. Recarga la página.', true);
+            }
+        } catch (error) {
+            mostrarFeedback(error.message || 'No se pudo publicar la reflexión.', true);
+        } finally {
+            submit.disabled = false;
+            cancel.disabled = false;
+            submit.textContent = 'Publicar reflexión';
+        }
+    });
+
+    return panel;
+}
+
+function montarPanelAdmin() {
+    if (!grid || !grid.parentNode) return;
+
+    const usuario = obtenerUsuarioActual();
+    if (!usuario || usuario.rol !== 'admin') return;
+    if (document.getElementById('adminDebatePanel')) return;
+
+    const panel = crearPanelAdmin();
+    panel.id = 'adminDebatePanel';
+    grid.parentNode.insertBefore(panel, grid);
 }
 
 if (grid) {
@@ -224,6 +405,7 @@ async function inicializarMuro() {
         console.warn('Verificación de sesión:', error);
     }
 
+    montarPanelAdmin();
     await cargarDebates();
 }
 

@@ -12,12 +12,13 @@ timestamp: 2026-11-01
 - **API/presentación:** [server.js](../backend/server.js) define las rutas HTTP, valida entradas básicas y construye respuestas; [diaryRouter.js](../backend/diaryRouter.js) expone las rutas del diario y [debateRouter.js](../backend/debateRouter.js) expone las del muro, traduciendo errores de dominio a HTTP.
 - **Lógica de aplicación:** [userModel.js](../backend/userModel.js), [authMiddleware.js](../backend/authMiddleware.js), [adminMiddleware.js](../backend/adminMiddleware.js), [domainLogic.js](../backend/domainLogic.js), [diaryService.js](../backend/diaryService.js), [debateService.js](../backend/debateService.js) y [debateConstants.js](../backend/debateConstants.js) gestionan usuarios, sesión, roles, dominios, entradas del diario y debates.
 - **Datos:** [database.js](../backend/database.js) conecta Mongoose con MongoDB; `userModel.js` usa el modelo persistente `User`, [diaryModel.js](../backend/diaryModel.js) define `DiaryEntry` con referencia a `User` y [debateModel.js](../backend/debateModel.js) define `Debate` con autor y reacciones como arrays de `ObjectId`.
+- **Datos de desarrollo:** [seedDebate.js](../backend/seedDebate.js) crea un debate inicial idempotente. Reutiliza un administrador existente o crea un autor técnico si la base de datos todavía no tiene ninguno.
 - **Servicios transversales:** [logger.js](../backend/logger.js) registra actividad y [mailer.js](../backend/mailer.js) prepara el correo de confirmación.
 
 ## Frontend
 
-- **Presentación:** las páginas HTML de [backend/frontend/](../backend/frontend/) contienen las vistas pública, privada y de administración; [diario.html](../backend/frontend/diario.html) renderiza el historial “Ecos”, el formulario de escritura con título opcional y la vista de lectura de cada eco; [muro.html](../backend/frontend/muro.html) y [muro.js](../backend/frontend/js/muro.js) renderizan las tarjetas de debate y sus reacciones.
-- **Comunicación:** [api.js](../backend/frontend/js/api.js) centraliza las peticiones de negocio, incluidas `crearEntradaDiario`, `listarDiario`, `eliminarEntradaDiario`, `listarDebates` y `reaccionarDebate`, y [auth.js](../backend/frontend/js/auth.js) añade el token, comprueba la sesión y cierra sesión.
+- **Presentación:** las páginas HTML de [backend/frontend/](../backend/frontend/) contienen las vistas pública, privada y de administración; [diario.html](../backend/frontend/diario.html) renderiza el historial “Ecos”, el formulario de escritura con título opcional y la vista de lectura de cada eco; [muro.html](../backend/frontend/muro.html) y [muro.js](../backend/frontend/js/muro.js) renderizan las tarjetas de debate, sus reacciones y el panel de creación que solo existe para administradores.
+- **Comunicación:** [api.js](../backend/frontend/js/api.js) centraliza las peticiones de negocio, incluidas `crearEntradaDiario`, `listarDiario`, `eliminarEntradaDiario`, `crearDebate`, `listarDebates` y `reaccionarDebate`, y [auth.js](../backend/frontend/js/auth.js) añade el token, comprueba la sesión y cierra sesión.
 
 ## Frontera exacta
 
@@ -31,7 +32,9 @@ En el frontend, `diario.html` no llama a `fetch` directamente: usa `api.listarDi
 
 En el muro, `server.js` compone `DebateRepository` y `createDebateService` inyectando `userModel`, y después crea `createDebateRouter` con el servicio, `authMiddleware` e `isAdminMiddleware`. El router aplica autenticación opcional al `GET`: sin cabecera devuelve el muro público con `reactedByMe` en `false`; con token válido lo calcula para el usuario. `POST` y `POST /:id/react` exigen sesión, y la creación exige además rol administrador.
 
-Las reacciones se guardan como arrays de `ObjectId` por tipo. Si el usuario ya había reaccionado, `DebateRepository.toggleReaction` ejecuta `$pull`; si no, `$addToSet`. La respuesta solo expone `count` y `reactedByMe`, nunca la lista de identificadores. En el frontend, `muro.html` usa `api.listarDebates()` al cargar y `api.reaccionarDebate(id, reaction)` al pulsar un botón; `muro.js` reutiliza las clases existentes y actualiza solo el contenedor de reacciones.
+Las reacciones se guardan como arrays de `ObjectId` por tipo. El catálogo vive en `debateConstants.js` con tres claves y sus etiquetas exactas: `profundo` (“Profundo”), `melancolico` (“Melancólico”) y `rompeEsquemas` (“Rompe esquemas”). Si el usuario ya había reaccionado, `DebateRepository.toggleReaction` ejecuta `$pull`; si no, `$addToSet`. La respuesta expone `label`, `count` y `reactedByMe`, nunca la lista de identificadores. En el frontend, `muro.html` usa `api.listarDebates()` al cargar, `api.reaccionarDebate(id, reaction)` al pulsar un botón y `api.crearDebate(title, content)` desde el panel de administración. `muro.js` reutiliza las clases existentes, actualiza solo el contenedor de reacciones y construye el panel solo cuando `obtenerUsuarioActual()` devuelve rol `admin`; para un oyente no inserta ningún nodo del formulario.
+
+El seed se ejecuta con `npm run seed` desde `backend`. Conecta directamente con Mongoose, busca un debate por título para no duplicarlo y resuelve el autor con `SEED_AUTHOR_EMAIL`, con el primer administrador o con un autor técnico `seed@querencia.local`. No imprime credenciales y cierra la conexión al terminar.
 
 ## Endpoints
 
@@ -51,6 +54,6 @@ Las reacciones se guardan como arrays de `ObjectId` por tipo. Si el usuario ya h
 | GET | `/api/diario` | Usuario con sesión; lista solo sus entradas |
 | DELETE | `/api/diario/:id` | Usuario con sesión; elimina solo un eco propio |
 | POST | `/api/debates` | Administrador con sesión; crea un debate |
-| GET | `/api/debates` | Público; con token válido añade `reactedByMe` |
-| POST | `/api/debates/:id/react` | Usuario con sesión; alterna su reacción |
+| GET | `/api/debates` | Público; con token válido añade `reactedByMe`; cada reacción incluye `label` |
+| POST | `/api/debates/:id/react` | Usuario con sesión; alterna su reacción y devuelve `label`, `count` y `reactedByMe` |
 | POST | `/api/prueba/dominio` | Cualquiera |
