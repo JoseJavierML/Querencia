@@ -1,6 +1,10 @@
 const express = require('express');
 const { createDiaryRouter } = require('./diaryRouter');
-const { DiaryValidationError, DiaryUserNotFoundError } = require('./diaryService');
+const {
+    DiaryValidationError,
+    DiaryUserNotFoundError,
+    DiaryEntryNotFoundError
+} = require('./diaryService');
 
 const AUTH_TOKEN = 'Bearer test-token';
 
@@ -43,11 +47,12 @@ const jsonHeaders = (withAuth = true) => ({
 });
 
 describe('Rutas del diario', () => {
-    test('POST crea una entrada para el usuario autenticado', async () => {
+    test('POST crea una entrada con título para el usuario autenticado', async () => {
         const createdAt = new Date('2026-10-30T10:00:00.000Z');
         const createEntry = jest.fn().mockResolvedValue({
             _id: 'entrada-1',
             text: 'Hoy escuché un disco',
+            title: 'Noche de escucha',
             createdAt,
             userId: 'usuario-1'
         });
@@ -56,19 +61,49 @@ describe('Rutas del diario', () => {
         const { status, body } = await request('/api/diario', {
             method: 'POST',
             headers: jsonHeaders(),
-            body: JSON.stringify({ text: 'Hoy escuché un disco' })
+            body: JSON.stringify({
+                text: 'Hoy escuché un disco',
+                title: 'Noche de escucha'
+            })
         });
 
         expect(status).toBe(201);
         expect(body).toEqual({
             _id: 'entrada-1',
             text: 'Hoy escuché un disco',
+            title: 'Noche de escucha',
             createdAt: '2026-10-30T10:00:00.000Z',
             userId: 'usuario-1'
         });
         expect(createEntry).toHaveBeenCalledWith({
             email: 'ana@uclm.es',
-            text: 'Hoy escuché un disco'
+            text: 'Hoy escuché un disco',
+            title: 'Noche de escucha'
+        });
+    });
+
+    test('POST acepta una entrada sin título y responde con título vacío', async () => {
+        const createEntry = jest.fn().mockResolvedValue({
+            _id: 'entrada-1',
+            text: 'Sin título',
+            title: '',
+            createdAt: new Date('2026-10-30T10:00:00.000Z'),
+            userId: 'usuario-1'
+        });
+        server = await startServer({ createEntry, listEntries: jest.fn() });
+
+        const { status, body } = await request('/api/diario', {
+            method: 'POST',
+            headers: jsonHeaders(),
+            body: JSON.stringify({ text: 'Sin título' })
+        });
+
+        expect(status).toBe(201);
+        expect(body.title).toBe('');
+        expect(createEntry).toHaveBeenCalledWith({
+            email: 'ana@uclm.es',
+            text: 'Sin título',
+            title: undefined
         });
     });
 
@@ -121,12 +156,14 @@ describe('Rutas del diario', () => {
             {
                 _id: 'entrada-2',
                 text: 'Segunda',
+                title: 'Después',
                 createdAt: new Date('2026-10-30T11:00:00.000Z'),
                 userId: 'usuario-1'
             },
             {
                 _id: 'entrada-1',
                 text: 'Primera',
+                title: '',
                 createdAt: new Date('2026-10-30T10:00:00.000Z'),
                 userId: 'usuario-1'
             }
@@ -143,9 +180,11 @@ describe('Rutas del diario', () => {
         expect(body[0]).toEqual({
             _id: 'entrada-2',
             text: 'Segunda',
+            title: 'Después',
             createdAt: '2026-10-30T11:00:00.000Z',
             userId: 'usuario-1'
         });
+        expect(body[1].title).toBe('');
         expect(listEntries).toHaveBeenCalledWith({ email: 'ana@uclm.es' });
     });
 
@@ -170,5 +209,90 @@ describe('Rutas del diario', () => {
 
         expect(status).toBe(500);
         expect(body).toEqual({ message: 'No se pudieron obtener las entradas del diario' });
+    });
+
+    test('DELETE elimina un eco propio y responde 200', async () => {
+        const deleteEntry = jest.fn().mockResolvedValue({ _id: 'entrada-1' });
+        server = await startServer({
+            createEntry: jest.fn(),
+            listEntries: jest.fn(),
+            deleteEntry
+        });
+
+        const { status, body } = await request('/api/diario/entrada-1', {
+            method: 'DELETE',
+            headers: { Authorization: AUTH_TOKEN }
+        });
+
+        expect(status).toBe(200);
+        expect(body).toEqual({ message: 'Eco eliminado correctamente' });
+        expect(deleteEntry).toHaveBeenCalledWith({
+            email: 'ana@uclm.es',
+            id: 'entrada-1'
+        });
+    });
+
+    test('DELETE devuelve 404 si el eco no existe o es de otro usuario', async () => {
+        const deleteEntry = jest.fn().mockRejectedValue(new DiaryEntryNotFoundError());
+        server = await startServer({
+            createEntry: jest.fn(),
+            listEntries: jest.fn(),
+            deleteEntry
+        });
+
+        const { status, body } = await request('/api/diario/entrada-ajena', {
+            method: 'DELETE',
+            headers: { Authorization: AUTH_TOKEN }
+        });
+
+        expect(status).toBe(404);
+        expect(body).toEqual({ message: 'Entrada del diario no encontrada' });
+    });
+
+    test('DELETE devuelve 401 si el usuario de la sesión ya no existe', async () => {
+        const deleteEntry = jest.fn().mockRejectedValue(new DiaryUserNotFoundError());
+        server = await startServer({
+            createEntry: jest.fn(),
+            listEntries: jest.fn(),
+            deleteEntry
+        });
+
+        const { status } = await request('/api/diario/entrada-1', {
+            method: 'DELETE',
+            headers: { Authorization: AUTH_TOKEN }
+        });
+
+        expect(status).toBe(401);
+    });
+
+    test('DELETE exige autenticación y no llama al servicio sin token', async () => {
+        const deleteEntry = jest.fn();
+        server = await startServer({
+            createEntry: jest.fn(),
+            listEntries: jest.fn(),
+            deleteEntry
+        });
+
+        const { status } = await request('/api/diario/entrada-1', { method: 'DELETE' });
+
+        expect(status).toBe(401);
+        expect(deleteEntry).not.toHaveBeenCalled();
+    });
+
+    test('DELETE devuelve un error genérico si falla el servicio', async () => {
+        const deleteEntry = jest.fn().mockRejectedValue(new Error('fallo interno'));
+        server = await startServer({
+            createEntry: jest.fn(),
+            listEntries: jest.fn(),
+            deleteEntry
+        });
+
+        const { status, body } = await request('/api/diario/entrada-1', {
+            method: 'DELETE',
+            headers: { Authorization: AUTH_TOKEN }
+        });
+
+        expect(status).toBe(500);
+        expect(body).toEqual({ message: 'No se pudo eliminar la entrada del diario' });
     });
 });

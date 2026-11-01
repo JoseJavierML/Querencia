@@ -2,7 +2,7 @@
 type: Proceso
 title: Flujo de trabajo, CI y despliegue
 description: Proceso observable en el historial y en el workflow de GitHub Actions.
-timestamp: 2026-10-30
+timestamp: 2026-10-31
 ---
 
 # Procesos
@@ -13,7 +13,9 @@ El historial local muestra ramas de funcionalidad, documentación y corrección 
 
 ## Integración continua
 
-En [ci.yml](../.github/workflows/ci.yml), los eventos `pull_request` contra `main` y `push` a `main` ejecutan un job con Ubuntu y Node.js 22. El job instala dependencias con `npm ci` dentro de `backend` y ejecuta `npm test`. La comprobación local equivalente observada fue: **5 suites pasadas, 31 tests pasados, 0 snapshots**. Las 21 pruebas del diario usan dobles de repositorios y de autenticación, sin MongoDB ni llamadas externas.
+En [ci.yml](../.github/workflows/ci.yml), los eventos `pull_request` contra `main` y `push` a `main` ejecutan un job con Ubuntu y Node.js 22. El job instala dependencias con `npm ci` dentro de `backend` y ejecuta `npm test`. La comprobación local equivalente observada fue: **5 suites pasadas, 50 tests pasados, 0 snapshots**. Las 40 pruebas del diario usan dobles de repositorios y de autenticación, sin MongoDB ni llamadas externas.
+
+La integración frontend del diario no añade pruebas de navegador a Jest. Se verifica manualmente con el servidor en local: iniciar sesión, comprobar el `GET /api/diario` al cargar `diario.html`, guardar entradas con y sin título, abrir un eco para leer su contenido completo, comprobar el extracto de 40 caracteres cuando no hay título y borrar un eco con confirmación.
 
 ## Despliegue continuo
 

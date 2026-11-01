@@ -144,17 +144,21 @@
             grid-template-columns: 280px 1fr;
             gap: 5rem;
             height: calc(100vh - 150px);
+            min-height: 0;
         }
 
         /* --- Sidebar (Memoria) --- */
         aside {
             display: flex;
             flex-direction: column;
+            min-height: 0;
+            overflow: hidden;
             border-right: 1px solid rgba(255, 255, 255, 0.05);
             padding-right: 2rem;
         }
 
         h2.sidebar-title {
+            flex-shrink: 0;
             font-family: 'Playfair Display', serif;
             font-size: 1.1rem;
             color: var(--text-muted);
@@ -172,31 +176,128 @@
             background-color: var(--gold-dark);
         }
 
-        .entries-list { list-style: none; overflow-y: auto; }
-        .entries-list::-webkit-scrollbar { width: 2px; }
-        .entries-list::-webkit-scrollbar-thumb { background: rgba(184, 147, 69, 0.2); }
-
-        .entry-item {
-            font-family: 'Lora', serif;
-            padding: 1.2rem 0;
-            color: rgba(255, 255, 255, 0.4);
-            font-size: 1.05rem;
-            cursor: pointer;
-            transition: all 0.4s ease;
-            border-bottom: 1px solid rgba(255,255,255,0.02);
-            position: relative;
+        .entries-list {
+            flex: 1;
+            min-height: 0;
+            padding-right: 0.5rem;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            list-style: none;
         }
 
-        .entry-item:hover {
-            color: var(--gold-light);
-            padding-left: 10px;
+        .entry-item {
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+            border-bottom: 1px solid rgba(255,255,255,0.02);
+            transition: border-color 0.4s ease;
+        }
+
+        .entry-item:hover,
+        .entry-item.is-active {
             border-bottom-color: rgba(184, 147, 69, 0.3);
+        }
+
+        .entry-open {
+            all: unset;
+            box-sizing: border-box;
+            display: block;
+            flex: 1;
+            min-width: 0;
+            padding: 1.1rem 2.25rem 1.1rem 0;
+            cursor: pointer;
+            transition: padding-left 0.4s ease;
+        }
+
+        .entry-item:hover .entry-open,
+        .entry-open:focus-visible {
+            padding-left: 10px;
+        }
+
+        .entry-open:focus-visible {
+            outline: 1px solid rgba(184, 147, 69, 0.45);
+            outline-offset: 2px;
+        }
+
+        .entry-date {
+            display: block;
+            margin-bottom: 0.45rem;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 0.68rem;
+            letter-spacing: 1.4px;
+            text-transform: uppercase;
+            color: var(--gold-dark);
+        }
+
+        .entry-label {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            overflow-wrap: anywhere;
+            font-family: 'Lora', serif;
+            font-size: 0.98rem;
+            line-height: 1.55;
+            color: rgba(255, 255, 255, 0.55);
+            transition: color 0.4s ease;
+        }
+
+        .entry-item:hover .entry-label,
+        .entry-item.is-active .entry-label {
+            color: var(--gold-light);
+        }
+
+        .entry-delete {
+            position: absolute;
+            top: 0.9rem;
+            right: 0;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 1.75rem;
+            height: 1.75rem;
+            border: 1px solid transparent;
+            border-radius: 50%;
+            background: transparent;
+            color: rgba(232, 160, 160, 0.45);
+            font-size: 1.1rem;
+            line-height: 1;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .entry-delete:hover:not(:disabled),
+        .entry-delete:focus-visible {
+            color: #e8a0a0;
+            border-color: rgba(232, 160, 160, 0.35);
+            background: rgba(232, 160, 160, 0.08);
+            outline: none;
+        }
+
+        .entry-delete:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .entry-empty,
+        .entry-error {
+            padding: 1rem 0;
+            font-family: 'Lora', serif;
+            font-size: 0.95rem;
+            font-style: italic;
+            color: var(--text-muted);
+        }
+
+        .entry-error {
+            color: #e8a0a0;
         }
 
         .editor-area {
             display: flex;
             flex-direction: column;
             position: relative;
+            min-height: 0;
+            overflow: hidden;
         }
 
         .editor-header {
@@ -212,16 +313,50 @@
             margin-bottom: 0.5rem;
         }
 
-        .poetic-prompt {
-            font-family: 'Lora', serif;
+        .diary-view {
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .diary-view[hidden] {
+            display: none !important;
+        }
+
+        .title-input {
+            width: 100%;
+            margin-bottom: 1.2rem;
+            padding: 0.45rem 0;
+            border: none;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+            background: transparent;
+            color: var(--gold-light);
+            font-family: 'Playfair Display', serif;
+            font-size: 1.5rem;
             font-style: italic;
-            color: var(--gold-dark);
-            font-size: 1.1rem;
-            opacity: 0.85;
+            transition: border-color 0.4s ease;
+        }
+
+        .title-input:focus {
+            outline: none;
+            border-bottom-color: rgba(184, 147, 69, 0.55);
+        }
+
+        .title-input::placeholder {
+            color: rgba(255, 255, 255, 0.2);
+            font-family: 'Lora', serif;
+            font-size: 1rem;
+            font-style: italic;
         }
 
         textarea {
-            flex-grow: 1;
+            flex: 1 1 auto;
+            min-height: 0;
+            max-height: 100%;
+            padding-right: 0.5rem;
+            overflow-y: auto;
+            overscroll-behavior: contain;
             background: transparent;
             border: none;
             color: rgba(255, 255, 255, 0.95);
@@ -239,6 +374,198 @@
             font-style: italic;
         }
 
+        .diary-form {
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+            min-height: 0;
+        }
+
+        .editor-footer {
+            display: flex;
+            flex-shrink: 0;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 1.25rem;
+            padding-top: 1.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .diary-status {
+            min-height: 1.2rem;
+            padding-top: 0.75rem;
+            font-family: 'Lora', serif;
+            font-size: 0.9rem;
+            font-style: italic;
+            color: var(--text-muted);
+            text-align: right;
+        }
+
+        .diary-status.success { color: var(--gold-light); }
+        .diary-status.error { color: #e8a0a0; }
+
+        .save-entry-btn {
+            padding: 0.7rem 1.6rem;
+            border: 1px solid rgba(184, 147, 69, 0.45);
+            border-radius: 30px;
+            background: rgba(184, 147, 69, 0.12);
+            color: var(--gold-light);
+            font-family: 'Lora', serif;
+            font-size: 0.9rem;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.4s ease;
+        }
+
+        .save-entry-btn:hover:not(:disabled) {
+            background: rgba(184, 147, 69, 0.22);
+            border-color: var(--gold-light);
+        }
+
+        .save-entry-btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .reading-view {
+            flex: 1;
+            min-height: 0;
+            max-height: 100%;
+            overflow-y: auto;
+            overscroll-behavior: contain;
+            scrollbar-gutter: stable;
+            padding-right: 0.75rem;
+            animation: fadeIn 0.6s ease;
+        }
+
+        .entries-list,
+        .reading-view,
+        textarea {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(184, 147, 69, 0.35) transparent;
+        }
+
+        .entries-list::-webkit-scrollbar,
+        .reading-view::-webkit-scrollbar,
+        textarea::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .entries-list::-webkit-scrollbar-track,
+        .reading-view::-webkit-scrollbar-track,
+        textarea::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .entries-list::-webkit-scrollbar-thumb,
+        .reading-view::-webkit-scrollbar-thumb,
+        textarea::-webkit-scrollbar-thumb {
+            border-radius: 999px;
+            background: rgba(184, 147, 69, 0.35);
+        }
+
+        .entries-list::-webkit-scrollbar-thumb:hover,
+        .reading-view::-webkit-scrollbar-thumb:hover,
+        textarea::-webkit-scrollbar-thumb:hover {
+            background: rgba(184, 147, 69, 0.55);
+        }
+
+        .reading-topbar {
+            display: flex;
+            flex-shrink: 0;
+            align-items: center;
+            justify-content: flex-end;
+            margin-bottom: 1.2rem;
+        }
+
+        .reading-actions {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.6rem;
+        }
+
+        .reading-action {
+            display: inline-flex;
+            flex-shrink: 0;
+            align-items: center;
+            justify-content: center;
+            width: 2rem;
+            height: 2rem;
+            border: 1px solid rgba(232, 160, 160, 0.3);
+            border-radius: 50%;
+            background: rgba(232, 160, 160, 0.06);
+            color: rgba(232, 160, 160, 0.75);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .reading-action:hover:not(:disabled),
+        .reading-action:focus-visible {
+            border-color: rgba(232, 160, 160, 0.5);
+            background: rgba(232, 160, 160, 0.1);
+            color: #e8a0a0;
+            outline: none;
+        }
+
+        .reading-action:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .reading-action svg {
+            width: 15px;
+            height: 15px;
+        }
+
+        .reading-new {
+            border-color: rgba(184, 147, 69, 0.4);
+            background: rgba(184, 147, 69, 0.08);
+            color: var(--gold-light);
+        }
+
+        .reading-new:hover:not(:disabled),
+        .reading-new:focus-visible {
+            border-color: rgba(234, 221, 179, 0.6);
+            background: rgba(184, 147, 69, 0.16);
+            color: var(--gold-light);
+        }
+
+        .reading-date {
+            margin-bottom: 0.8rem;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 0.7rem;
+            letter-spacing: 1.4px;
+            text-transform: uppercase;
+            color: var(--gold-dark);
+        }
+
+        .reading-title {
+            margin-bottom: 1.8rem;
+            overflow-wrap: anywhere;
+            font-family: 'Playfair Display', serif;
+            font-size: 2.2rem;
+            font-weight: 400;
+            color: var(--gold-light);
+        }
+
+        .reading-title.is-untitled {
+            font-size: 1.5rem;
+            font-style: italic;
+            color: var(--text-muted);
+        }
+
+        .reading-content {
+            flex: 0 0 auto;
+            padding-bottom: 2rem;
+            overflow-wrap: anywhere;
+            white-space: pre-wrap;
+            font-family: 'Lora', serif;
+            font-size: 1.2rem;
+            font-weight: 300;
+            line-height: 1.85;
+            color: rgba(255, 255, 255, 0.9);
+        }
+
         @keyframes fadeIn {
             from { opacity: 0; transform: translateY(10px); }
             to { opacity: 1; transform: translateY(0); }
@@ -254,6 +581,17 @@
                 padding: 0 1.5rem;
             }
             body { overflow: auto; }
+            .editor-area { overflow: visible; }
+            .editor-footer { flex-direction: column; align-items: stretch; gap: 0.75rem; }
+            .diary-status { text-align: center; }
+            .save-entry-btn { width: 100%; }
+            .entries-list { max-height: 40vh; }
+            textarea { min-height: 40vh; }
+            .reading-view {
+                max-height: none;
+                overflow-y: visible;
+                padding-right: 0;
+            }
         }
     </style>
 </head>
@@ -279,21 +617,46 @@
     <main>
         <aside>
             <h2 class="sidebar-title">Tus Ecos</h2>
-            <ul class="entries-list">
-                <li class="entry-item">Ayer, en la madrugada</li>
-                <li class="entry-item">12 de Octubre</li>
-                <li class="entry-item">9 de Octubre</li>
-                <li class="entry-item">6 de Octubre</li>
-                <li class="entry-item">Septiembre</li>
+            <ul class="entries-list" id="entriesList" aria-live="polite">
+                <li class="entry-empty">Cargando tus ecos...</li>
             </ul>
         </aside>
 
         <section class="editor-area">
-            <div class="editor-header">
-                <h1 class="date-title">Hoy.</h1>
-                <p class="poetic-prompt">"El sueño va sobre el tiempo, flotando como un velero..."</p>
+            <div class="diary-view" id="editorView">
+                <div class="editor-header">
+                    <h1 class="date-title">Hoy.</h1>
+                </div>
+                <form class="diary-form" id="diaryForm">
+                    <input class="title-input" id="diaryTitle" type="text" maxlength="50" autocomplete="off" aria-label="Título de la entrada (opcional)" placeholder="Un título para este eco (opcional)">
+                    <textarea id="diaryText" maxlength="5000" aria-label="Texto de la entrada del diario" placeholder="Deja que sangre el alma aquí... Nadie más leerá esto."></textarea>
+                    <div class="editor-footer">
+                        <button class="save-entry-btn" id="saveEntryBtn" type="submit">Guardar Eco</button>
+                    </div>
+                </form>
             </div>
-            <textarea placeholder="Deja que sangre el alma aquí... Nadie más leerá esto."></textarea>
+
+            <article class="diary-view reading-view" id="readingView" hidden>
+                <div class="reading-topbar">
+                    <div class="reading-actions">
+                        <button class="reading-action reading-new" id="backToEditorBtn" type="button" title="Nueva entrada" aria-label="Escribir un nuevo eco">
+                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path d="M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25ZM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83Z" fill="currentColor"/>
+                            </svg>
+                        </button>
+                        <button class="reading-action reading-delete" id="deleteReadingBtn" type="button" title="Eliminar eco" aria-label="Eliminar eco">
+                            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                                <path d="M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-1 12H7L6 9Zm4 2v8h1v-8h-1Zm3 0v8h1v-8h-1Z" fill="currentColor"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+                <p class="reading-date" id="readingDate"></p>
+                <h1 class="reading-title" id="readingTitle"></h1>
+                <div class="reading-content" id="readingContent"></div>
+            </article>
+
+            <p class="diary-status" id="diaryStatus" role="status" aria-live="polite"></p>
         </section>
     </main>
 
@@ -349,42 +712,306 @@
     <script type="module">
         import { api } from './js/api.js';
 
-        document.addEventListener('DOMContentLoaded', async () => {
-            try {
-                if (api && api.checkSession) {
-                    const tieneSesion = await api.checkSession();
-                    if (!tieneSesion) {
-                        window.location.href = 'index.html'; 
-                        return;
-                    }
-                }
-            } catch (err) {
-                console.warn('Verificación de sesión:', err);
-            }
+        const diaryForm = document.getElementById('diaryForm');
+        const diaryTitle = document.getElementById('diaryTitle');
+        const diaryText = document.getElementById('diaryText');
+        const saveEntryBtn = document.getElementById('saveEntryBtn');
+        const diaryStatus = document.getElementById('diaryStatus');
+        const entriesList = document.getElementById('entriesList');
+        const editorView = document.getElementById('editorView');
+        const readingView = document.getElementById('readingView');
+        const readingDate = document.getElementById('readingDate');
+        const readingTitle = document.getElementById('readingTitle');
+        const readingContent = document.getElementById('readingContent');
+        const backToEditorBtn = document.getElementById('backToEditorBtn');
+        const deleteReadingBtn = document.getElementById('deleteReadingBtn');
+
+        const MAX_TITLE_LENGTH = 50;
+        const EXCERPT_LENGTH = 40;
+
+        let entradaSeleccionada = null;
+        let estadoTimeout = null;
+
+        const formateadorFecha = new Intl.DateTimeFormat('es-ES', {
+            dateStyle: 'long',
+            timeStyle: 'short'
         });
+
+        function mostrarEstado(mensaje, tipo = '') {
+            if (!diaryStatus) return;
+
+            if (estadoTimeout) {
+                clearTimeout(estadoTimeout);
+                estadoTimeout = null;
+            }
+
+            diaryStatus.textContent = mensaje;
+            diaryStatus.classList.remove('success', 'error');
+            if (tipo) diaryStatus.classList.add(tipo);
+
+            if (mensaje) {
+                estadoTimeout = setTimeout(() => {
+                    diaryStatus.textContent = '';
+                    diaryStatus.classList.remove('success', 'error');
+                    estadoTimeout = null;
+                }, 3000);
+            }
+        }
+
+        function formatearFecha(valor) {
+            const fecha = new Date(valor);
+            if (!valor || Number.isNaN(fecha.getTime())) return 'Sin fecha';
+            return formateadorFecha.format(fecha);
+        }
+
+        function obtenerTitulo(entrada) {
+            return typeof entrada.title === 'string' ? entrada.title.trim() : '';
+        }
+
+        function obtenerEtiqueta(entrada) {
+            const titulo = obtenerTitulo(entrada);
+            if (titulo) return titulo;
+
+            const texto = typeof entrada.text === 'string'
+                ? entrada.text.replace(/\s+/g, ' ').trim()
+                : '';
+            if (!texto) return 'Eco sin título';
+            if (texto.length <= EXCERPT_LENGTH) return texto;
+            return `${texto.slice(0, EXCERPT_LENGTH).trimEnd()}…`;
+        }
+
+        function marcarEntradaActiva() {
+            if (!entriesList) return;
+            entriesList.querySelectorAll('.entry-item').forEach((item) => {
+                const activa = Boolean(entradaSeleccionada)
+                    && item.dataset.id === String(entradaSeleccionada._id);
+                item.classList.toggle('is-active', activa);
+            });
+        }
+
+        function mostrarLectura(entrada) {
+            if (!editorView || !readingView) return;
+
+            entradaSeleccionada = entrada;
+            const titulo = obtenerTitulo(entrada);
+
+            readingDate.textContent = formatearFecha(entrada.createdAt);
+            if (titulo) {
+                readingTitle.textContent = titulo;
+                readingTitle.classList.remove('is-untitled');
+            } else {
+                readingTitle.textContent = 'Eco sin título';
+                readingTitle.classList.add('is-untitled');
+            }
+            readingContent.textContent = entrada.text || '';
+
+            editorView.hidden = true;
+            readingView.hidden = false;
+            readingView.scrollTop = 0;
+            marcarEntradaActiva();
+
+            if (backToEditorBtn) backToEditorBtn.focus();
+        }
+
+        function mostrarEditor() {
+            if (!editorView || !readingView) return;
+
+            entradaSeleccionada = null;
+            readingView.hidden = true;
+            editorView.hidden = false;
+            marcarEntradaActiva();
+
+            if (diaryTitle) diaryTitle.focus();
+        }
+
+        function crearEntradaVisual(entrada) {
+            const item = document.createElement('li');
+            item.className = 'entry-item';
+            item.dataset.id = entrada._id ? String(entrada._id) : '';
+
+            const etiqueta = obtenerEtiqueta(entrada);
+
+            const abrir = document.createElement('button');
+            abrir.type = 'button';
+            abrir.className = 'entry-open';
+            abrir.setAttribute('aria-label', `Leer eco: ${etiqueta}`);
+            abrir.addEventListener('click', () => mostrarLectura(entrada));
+
+            const fecha = document.createElement('time');
+            fecha.className = 'entry-date';
+            fecha.dateTime = entrada.createdAt || '';
+            fecha.textContent = formatearFecha(entrada.createdAt);
+
+            const titulo = document.createElement('span');
+            titulo.className = 'entry-label';
+            titulo.textContent = etiqueta;
+
+            abrir.append(fecha, titulo);
+
+            const borrar = document.createElement('button');
+            borrar.type = 'button';
+            borrar.className = 'entry-delete';
+            borrar.textContent = '×';
+            borrar.title = 'Eliminar eco';
+            borrar.setAttribute('aria-label', `Eliminar eco: ${etiqueta}`);
+            borrar.addEventListener('click', () => eliminarEntrada(entrada, borrar));
+
+            item.append(abrir, borrar);
+            return item;
+        }
+
+        function renderizarEntradas(entradas) {
+            if (!entriesList) return;
+            entriesList.replaceChildren();
+
+            if (!Array.isArray(entradas) || entradas.length === 0) {
+                const vacio = document.createElement('li');
+                vacio.className = 'entry-empty';
+                vacio.textContent = 'Aún no has escrito ningún eco.';
+                entriesList.appendChild(vacio);
+                return;
+            }
+
+            const fragmento = document.createDocumentFragment();
+            entradas.forEach((entrada) => fragmento.appendChild(crearEntradaVisual(entrada)));
+            entriesList.appendChild(fragmento);
+            marcarEntradaActiva();
+        }
+
+        function mostrarErrorEntradas(mensaje) {
+            if (!entriesList) return;
+            entriesList.replaceChildren();
+            const fallo = document.createElement('li');
+            fallo.className = 'entry-error';
+            fallo.textContent = mensaje;
+            entriesList.appendChild(fallo);
+        }
+
+        async function cargarEntradas() {
+            try {
+                const entradas = await api.listarDiario();
+                renderizarEntradas(entradas);
+
+                if (entradaSeleccionada) {
+                    const sigueExistiendo = Array.isArray(entradas)
+                        && entradas.some((entrada) => String(entrada._id) === String(entradaSeleccionada._id));
+                    if (!sigueExistiendo) mostrarEditor();
+                }
+            } catch (error) {
+                mostrarErrorEntradas('No se pudo cargar tu diario.');
+                mostrarEstado(error.message || 'No se pudo cargar tu diario.', 'error');
+            }
+        }
+
+        async function guardarEntrada(event) {
+            event.preventDefault();
+            if (!diaryText || !saveEntryBtn) return;
+
+            const texto = diaryText.value.trim();
+            if (!texto) {
+                mostrarEstado('Escribe algo antes de guardar tu eco.', 'error');
+                diaryText.focus();
+                return;
+            }
+
+            const titulo = diaryTitle ? diaryTitle.value.trim() : '';
+            if (titulo.length > MAX_TITLE_LENGTH) {
+                mostrarEstado(`El título no puede superar los ${MAX_TITLE_LENGTH} caracteres.`, 'error');
+                if (diaryTitle) diaryTitle.focus();
+                return;
+            }
+
+            saveEntryBtn.disabled = true;
+            mostrarEstado('Guardando tu eco...');
+
+            try {
+                await api.crearEntradaDiario(texto, titulo);
+                diaryText.value = '';
+                if (diaryTitle) diaryTitle.value = '';
+                mostrarEstado('Eco guardado.', 'success');
+                await cargarEntradas();
+            } catch (error) {
+                mostrarEstado(error.message || 'No se pudo guardar el eco.', 'error');
+            } finally {
+                saveEntryBtn.disabled = false;
+            }
+        }
+
+        async function eliminarEntrada(entrada, boton) {
+            if (!entrada || !entrada._id) return;
+
+            const confirmado = window.confirm(
+                `¿Eliminar "${obtenerEtiqueta(entrada)}"? Esta acción no se puede deshacer.`
+            );
+            if (!confirmado) return;
+
+            if (boton) boton.disabled = true;
+            mostrarEstado('Eliminando eco...');
+
+            try {
+                await api.eliminarEntradaDiario(entrada._id);
+
+                if (entradaSeleccionada
+                    && String(entradaSeleccionada._id) === String(entrada._id)) {
+                    mostrarEditor();
+                }
+
+                mostrarEstado('Eco eliminado.', 'success');
+                await cargarEntradas();
+            } catch (error) {
+                mostrarEstado(error.message || 'No se pudo eliminar el eco.', 'error');
+            } finally {
+                if (boton) boton.disabled = false;
+            }
+        }
 
         async function ejecutarLogout() {
             try {
-                if (api && api.logout) {
-                    await api.logout();
-                } else {
-                    localStorage.clear();
-                    sessionStorage.clear();
-                    window.location.href = 'index.html';
-                }
+                await api.logout();
             } catch (error) {
-                console.error('Error al cerrar sesión:', error);
+                localStorage.clear();
+                sessionStorage.clear();
                 window.location.href = 'index.html';
             }
         }
 
-        const btnLogout = document.getElementById('logoutBtn') || document.querySelector('.logout-btn');
-        if (btnLogout) {
-            btnLogout.addEventListener('click', async (e) => {
-                e.preventDefault();
-                await ejecutarLogout();
+        window.ejecutarLogout = ejecutarLogout;
+
+        async function inicializarDiario() {
+            try {
+                const tieneSesion = await api.checkSession();
+                if (!tieneSesion) {
+                    window.location.href = 'index.html';
+                    return;
+                }
+                await cargarEntradas();
+            } catch (error) {
+                mostrarErrorEntradas('No se pudo cargar tu diario.');
+                mostrarEstado(error.message || 'No se pudo verificar la sesión.', 'error');
+            }
+        }
+
+        if (diaryForm) {
+            diaryForm.addEventListener('submit', guardarEntrada);
+        }
+
+        if (backToEditorBtn) {
+            backToEditorBtn.addEventListener('click', () => {
+                if (diaryText) diaryText.value = '';
+                if (diaryTitle) diaryTitle.value = '';
+                mostrarEditor();
             });
         }
+
+        if (deleteReadingBtn) {
+            deleteReadingBtn.addEventListener('click', () => {
+                if (entradaSeleccionada) {
+                    eliminarEntrada(entradaSeleccionada, deleteReadingBtn);
+                }
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', inicializarDiario);
     </script>
 
 

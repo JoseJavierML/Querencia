@@ -2,7 +2,7 @@
 type: Arquitectura
 title: Arquitectura del Sprint 1
 description: Capas comprobables del backend y del frontend, con su frontera HTTP.
-timestamp: 2026-10-30
+timestamp: 2026-10-31
 ---
 
 # Arquitectura
@@ -16,14 +16,18 @@ timestamp: 2026-10-30
 
 ## Frontend
 
-- **Presentación:** las páginas HTML de [backend/frontend/](../backend/frontend/) contienen las vistas pública, privada y de administración.
-- **Comunicación:** [api.js](../backend/frontend/js/api.js) centraliza las peticiones de negocio y [auth.js](../backend/frontend/js/auth.js) añade el token, comprueba la sesión y cierra sesión.
+- **Presentación:** las páginas HTML de [backend/frontend/](../backend/frontend/) contienen las vistas pública, privada y de administración; [diario.html](../backend/frontend/diario.html) renderiza el historial “Ecos”, el formulario de escritura con título opcional y la vista de lectura de cada eco.
+- **Comunicación:** [api.js](../backend/frontend/js/api.js) centraliza las peticiones de negocio, incluidas `crearEntradaDiario`, `listarDiario` y `eliminarEntradaDiario`, y [auth.js](../backend/frontend/js/auth.js) añade el token, comprueba la sesión y cierra sesión.
 
 ## Frontera exacta
 
 El frontend llama a rutas relativas que empiezan por `/api`. Express las recibe en `server.js`; allí se aplican `authMiddleware` y, cuando corresponde, `isAdminMiddleware`, antes de delegar en el modelo o la lógica. Las páginas estáticas se sirven desde `frontend` mediante `express.static`.
 
 En el diario, `server.js` actúa como composición: crea `DiaryRepository` y `createDiaryService` inyectando `userModel`, y después crea `createDiaryRouter` con el servicio y `authMiddleware`. Así `diaryService.js` no importa Express ni Mongoose, y `diaryRouter.js` no accede a la base de datos.
+
+El borrado usa `DiaryRepository.deleteByIdForUser(id, userId)`, que ejecuta `findOneAndDelete({ _id: id, userId })`. La consulta incluye la propiedad del eco, de modo que un usuario no puede borrar entradas ajenas. Si el eco no existe o pertenece a otro usuario, la API responde `404` sin distinguir ambos casos.
+
+En el frontend, `diario.html` no llama a `fetch` directamente: usa `api.listarDiario()` al cargar la página, `api.crearEntradaDiario(text, title)` al enviar el formulario y `api.eliminarEntradaDiario(id)` al borrar un eco. `api.js` usa rutas relativas `/api` y `fetchAutenticado`, que añade `Authorization: Bearer` desde `localStorage` y gestiona el `401`.
 
 ## Endpoints
 
@@ -39,6 +43,7 @@ En el diario, `server.js` actúa como composición: crea `DiaryRepository` y `cr
 | GET | `/api/admin/dashboard` | Administrador con sesión |
 | DELETE | `/api/users/:email` | Administrador con sesión |
 | GET | `/api/users` | Administrador con sesión |
-| POST | `/api/diario` | Usuario con sesión; crea una entrada propia |
+| POST | `/api/diario` | Usuario con sesión; crea una entrada propia con título opcional |
 | GET | `/api/diario` | Usuario con sesión; lista solo sus entradas |
+| DELETE | `/api/diario/:id` | Usuario con sesión; elimina solo un eco propio |
 | POST | `/api/prueba/dominio` | Cualquiera |
