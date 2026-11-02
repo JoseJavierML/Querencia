@@ -163,6 +163,17 @@
             opacity: 0.8;
         }
 
+        .wall-status {
+            opacity: 0;
+            transform: translateY(-4px);
+            transition: opacity 0.35s ease, transform 0.35s ease;
+        }
+
+        .wall-status.is-visible {
+            opacity: 0.9;
+            transform: translateY(0);
+        }
+
         .debate-grid {
             display: grid;
             grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
@@ -333,7 +344,7 @@
             cursor: pointer;
         }
 
-        .debate-toggle {
+        .debate-read-more {
             display: inline-block;
             margin-top: 0.85rem;
             padding: 0;
@@ -348,7 +359,7 @@
             transition: color 0.3s ease;
         }
 
-        .debate-toggle::after {
+        .debate-read-more::after {
             content: '';
             display: block;
             width: 100%;
@@ -360,14 +371,14 @@
             transition: transform 0.3s ease;
         }
 
-        .debate-toggle:hover,
-        .debate-toggle:focus-visible {
+        .debate-read-more:hover,
+        .debate-read-more:focus-visible {
             color: var(--gold-light);
             outline: none;
         }
 
-        .debate-toggle:hover::after,
-        .debate-toggle:focus-visible::after {
+        .debate-read-more:hover::after,
+        .debate-read-more:focus-visible::after {
             transform: scaleX(1);
         }
 
@@ -777,6 +788,172 @@
             color: #d98b8b;
         }
 
+        .reading-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 120;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 1.5rem;
+        }
+
+        .reading-modal[hidden] {
+            display: none;
+        }
+
+        .reading-modal-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(3, 3, 5, 0.82);
+            backdrop-filter: blur(8px);
+            animation: readingBackdropIn 0.3s ease;
+        }
+
+        .reading-dialog {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            width: min(720px, 100%);
+            max-height: min(82vh, 780px);
+            padding: 2.4rem;
+            border: 1px solid rgba(184, 147, 69, 0.28);
+            border-top: 1px solid rgba(234, 221, 179, 0.5);
+            border-radius: 10px;
+            background: linear-gradient(145deg, rgba(18, 18, 22, 0.9), rgba(8, 8, 10, 0.95));
+            backdrop-filter: blur(20px);
+            box-shadow: 0 30px 90px rgba(0, 0, 0, 0.8), 0 0 70px rgba(184, 147, 69, 0.08);
+            animation: readingDialogIn 0.35s ease;
+        }
+
+        .reading-dialog::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 2.4rem;
+            right: 2.4rem;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(234, 221, 179, 0.7), transparent);
+            pointer-events: none;
+        }
+
+        .reading-modal-close {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 2rem;
+            height: 2rem;
+            border: 1px solid transparent;
+            border-radius: 50%;
+            background: transparent;
+            color: var(--text-muted);
+            font-size: 1.35rem;
+            line-height: 1;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .reading-modal-close:hover,
+        .reading-modal-close:focus-visible {
+            color: var(--gold-light);
+            border-color: rgba(184, 147, 69, 0.4);
+            background: rgba(184, 147, 69, 0.08);
+            outline: none;
+        }
+
+        .reading-eyebrow {
+            margin-bottom: 0.75rem;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 0.7rem;
+            font-weight: 500;
+            letter-spacing: 3px;
+            text-transform: uppercase;
+            color: var(--gold-dark);
+        }
+
+        .reading-title {
+            padding-right: 2rem;
+            margin-bottom: 0.75rem;
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            font-weight: 600;
+            line-height: 1.25;
+            color: var(--text-main);
+        }
+
+        .reading-meta {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            margin-bottom: 1.4rem;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            font-size: 0.72rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: var(--gold-dark);
+        }
+
+        .reading-meta::before {
+            content: '';
+            display: block;
+            width: 20px;
+            height: 1px;
+            background-color: var(--gold-dark);
+        }
+
+        .reading-body {
+            flex: 1;
+            min-height: 0;
+            overflow-y: auto;
+            padding-right: 0.75rem;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(184, 147, 69, 0.35) transparent;
+        }
+
+        .reading-body::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .reading-body::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .reading-body::-webkit-scrollbar-thumb {
+            border-radius: 999px;
+            background: rgba(184, 147, 69, 0.35);
+        }
+
+        .reading-body::-webkit-scrollbar-thumb:hover {
+            background: rgba(184, 147, 69, 0.55);
+        }
+
+        .reading-text {
+            font-family: 'Lora', serif;
+            font-size: 1.08rem;
+            line-height: 1.85;
+            color: rgba(244, 244, 245, 0.82);
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+        }
+
+        html.reading-modal-open,
+        body.reading-modal-open {
+            overflow: hidden;
+        }
+
+        @keyframes readingBackdropIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        @keyframes readingDialogIn {
+            from { opacity: 0; transform: translateY(16px) scale(0.97); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
         @media (max-width: 768px) {
             nav { padding: 1.2rem 1.5rem; flex-wrap: wrap; gap: 1rem; }
             .nav-links { gap: 1.5rem; order: 3; width: 100%; justify-content: center; }
@@ -786,6 +963,10 @@
             .admin-modal { padding: 0.75rem; }
             .admin-dialog { padding: 1.5rem; }
             .admin-dialog::before { left: 1.5rem; right: 1.5rem; }
+            .reading-modal { padding: 0.75rem; }
+            .reading-dialog { padding: 1.6rem; max-height: 86vh; }
+            .reading-dialog::before { left: 1.6rem; right: 1.6rem; }
+            .reading-title { font-size: 1.6rem; }
         }
     </style>
 </head>
@@ -811,7 +992,7 @@
 <div class="debate-grid" id="debateGrid">
 <!-- Las tarjetas se generan dinámicamente mediante js/muro.js -->
 </div>
-<p class="subtitle" id="wallStatus" hidden style="text-align: center; margin-top: 2.5rem;">Cargando los ecos del muro...</p>
+<p class="subtitle wall-status" id="wallStatus" role="status" aria-live="polite" aria-atomic="true" hidden style="text-align: center; margin-top: 2.5rem;">Cargando los ecos del muro...</p>
 </main>
 <script>
         const canvas = document.getElementById('soulCanvas');

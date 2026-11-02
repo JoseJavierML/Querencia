@@ -1,8 +1,14 @@
 # Cronología
 
+## 2026-11-02 — Modal de lectura profunda y avisos temporales
+
+La expansión en línea del muro se sustituye por un modal de lectura profunda. Las tarjetas de más de 250 caracteres conservan el recorte con `...` y el botón “Leer más”; al pulsarlo, o al hacer clic en la tarjeta, se abre un diálogo centrado de 720 px como máximo sobre un backdrop oscurecido. El modal usa fondo translúcido con `backdrop-filter`, bordes y acentos dorados, muestra título, autor, fecha y contenido completo con `textContent`, se cierra con la “X”, el backdrop o `Escape` y restaura el scroll previo. Los clics en reacciones y papelera no abren la lectura.
+
+Los avisos de `mostrarEstado` incorporan una transición CSS de opacidad y desplazamiento y un `setTimeout` de 3,5 segundos para desaparecer. Los estados de carga, error de carga y muro vacío se mantienen visibles. Cada nueva llamada cancela los temporizadores anteriores.
+
 ## 2026-11-01 — Scrollbar del formulario, autor anónimo y redirección al muro
 
-Se pule el diálogo de creación del muro. Solo el `<textarea>` usa el scrollbar fino dorado del Diario (`scrollbar-width`, `::-webkit-scrollbar`, track transparente sobre el fondo oscuro y thumb dorado), de modo que desaparece la barra blanca nativa. El contenedor `.admin-dialog` deja de limitar su altura y de tener `overflow-y`; no introduce scroll propio. Las reflexiones de más de 250 caracteres se muestran colapsadas con `...` y “Leer más”, y la tarjeta o el control alternan el texto completo con “Mostrar menos”.
+Se pule el diálogo de creación del muro. En el formulario, solo el `<textarea>` usa el scrollbar fino dorado del Diario (`scrollbar-width`, `::-webkit-scrollbar`, track transparente sobre el fondo oscuro y thumb dorado), de modo que desaparece la barra blanca nativa. El contenedor `.admin-dialog` deja de limitar su altura y de tener `overflow-y`; no introduce scroll propio. Las reflexiones de más de 250 caracteres se muestran colapsadas con `...` y “Leer más”, y la tarjeta o el control alternan el texto completo con “Mostrar menos”. Este comportamiento se sustituyó después por el modal de lectura profunda.
 
 El modelo `Debate` incorpora `isAnonymous` como booleano con `false` por defecto. El servicio solo acepta booleanos y normaliza la ausencia del campo; el router devuelve el flag y fuerza `authorEmail: null` cuando la reflexión es anónima. En el muro, el autor no anónimo se muestra sin el dominio del correo (`admin@querencia.es` → `admin`) y el anónimo como “Publicado por Anónimo”. El diálogo de administración añade una casilla “Publicar como anónimo” con checkbox personalizado en dorado.
 

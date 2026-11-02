@@ -16,6 +16,8 @@ const AURAS = [
 const PLACEHOLDER_COVER = 'https://www.gstatic.com/labs-code/stitch/stitch-placeholder-300x300.svg';
 
 const MAX_TEXTO_COLAPSADO = 250;
+const ESTADO_DURACION_MS = 3500;
+const ESTADO_TRANSICION_MS = 350;
 
 const PENCIL_ICON_PATH = 'M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25ZM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83Z';
 const TRASH_ICON_PATH = 'M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-1 12H7L6 9Zm4 2v8h1v-8h-1Zm3 0v8h1v-8h-1Z';
@@ -30,10 +32,43 @@ function esAdministrador() {
     return Boolean(usuario && usuario.rol === 'admin');
 }
 
-function mostrarEstado(mensaje, visible = true) {
+let estadoTimeout = null;
+let estadoOcultarTimeout = null;
+
+function mostrarEstado(mensaje, visible = true, { persistente = false } = {}) {
     if (!status) return;
+
+    clearTimeout(estadoTimeout);
+    clearTimeout(estadoOcultarTimeout);
+
+    if (!visible || !mensaje) {
+        status.classList.remove('is-visible');
+        estadoOcultarTimeout = window.setTimeout(() => {
+            if (!status.classList.contains('is-visible')) {
+                status.hidden = true;
+                status.textContent = '';
+            }
+        }, ESTADO_TRANSICION_MS);
+        return;
+    }
+
     status.textContent = mensaje;
-    status.hidden = !visible;
+    status.hidden = false;
+    status.classList.remove('is-visible');
+    void status.offsetWidth;
+    status.classList.add('is-visible');
+
+    if (persistente) return;
+
+    estadoTimeout = window.setTimeout(() => {
+        status.classList.remove('is-visible');
+        estadoOcultarTimeout = window.setTimeout(() => {
+            if (!status.classList.contains('is-visible')) {
+                status.hidden = true;
+                status.textContent = '';
+            }
+        }, ESTADO_TRANSICION_MS);
+    }, ESTADO_DURACION_MS);
 }
 
 function formatearFecha(fechaISO) {
@@ -70,6 +105,16 @@ function recortarEmail(email) {
     return nombre || email.trim();
 }
 
+function obtenerAutorVisible(debate) {
+    if (debate.isAnonymous) {
+        return 'Publicado por Anónimo';
+    }
+    if (debate.authorEmail) {
+        return `Abierto por ${recortarEmail(debate.authorEmail)}`;
+    }
+    return 'Abierto por la Administración';
+}
+
 function crearIcono(pathData, className) {
     const svg = document.createElementNS(SVG_NAMESPACE, 'svg');
     svg.setAttribute('viewBox', '0 0 24 24');
@@ -86,6 +131,135 @@ function crearIcono(pathData, className) {
 
     return svg;
 }
+
+function crearModalLectura() {
+    const overlay = document.createElement('div');
+    overlay.className = 'reading-modal';
+    overlay.id = 'readingModal';
+    overlay.hidden = true;
+
+    const backdrop = document.createElement('div');
+    backdrop.className = 'reading-modal-backdrop';
+    backdrop.setAttribute('aria-hidden', 'true');
+
+    const dialog = document.createElement('section');
+    dialog.className = 'reading-dialog';
+    dialog.setAttribute('role', 'dialog');
+    dialog.setAttribute('aria-modal', 'true');
+    dialog.setAttribute('aria-labelledby', 'readingModalTitle');
+
+    const close = document.createElement('button');
+    close.type = 'button';
+    close.className = 'reading-modal-close';
+    close.setAttribute('aria-label', 'Cerrar lectura');
+    close.title = 'Cerrar lectura';
+    close.textContent = '×';
+
+    const eyebrow = document.createElement('p');
+    eyebrow.className = 'reading-eyebrow';
+    eyebrow.textContent = 'Lectura profunda';
+
+    const title = document.createElement('h2');
+    title.className = 'reading-title';
+    title.id = 'readingModalTitle';
+
+    const meta = document.createElement('p');
+    meta.className = 'reading-meta';
+
+    const body = document.createElement('div');
+    body.className = 'reading-body';
+
+    const text = document.createElement('p');
+    text.className = 'reading-text';
+    body.appendChild(text);
+
+    dialog.append(close, eyebrow, title, meta, body);
+    overlay.append(backdrop, dialog);
+    document.body.appendChild(overlay);
+
+    let elementoConFoco = null;
+    let scrollPrevio = 0;
+    let paddingPrevio = '';
+
+    const cerrar = () => {
+        if (overlay.hidden) return;
+
+        overlay.hidden = true;
+        document.documentElement.classList.remove('reading-modal-open');
+        document.body.classList.remove('reading-modal-open');
+        document.body.style.paddingRight = paddingPrevio;
+        window.scrollTo(0, scrollPrevio);
+
+        if (elementoConFoco && typeof elementoConFoco.focus === 'function') {
+            elementoConFoco.focus({ preventScroll: true });
+        }
+        elementoConFoco = null;
+    };
+
+    const abrir = (debate) => {
+        if (!overlay.hidden) return;
+
+        elementoConFoco = document.activeElement instanceof HTMLElement
+            ? document.activeElement
+            : null;
+        scrollPrevio = window.scrollY;
+        paddingPrevio = document.body.style.paddingRight;
+
+        const scrollbarWidth = window.innerWidth - document.documentElement.clientWidth;
+        if (scrollbarWidth > 0) {
+            document.body.style.paddingRight = `${scrollbarWidth}px`;
+        }
+
+        title.textContent = debate.title || 'Reflexión sin título';
+        meta.textContent = `${obtenerAutorVisible(debate)} • ${formatearFecha(debate.createdAt)}`;
+        text.textContent = typeof debate.content === 'string' ? debate.content : '';
+
+        overlay.hidden = false;
+        document.documentElement.classList.add('reading-modal-open');
+        document.body.classList.add('reading-modal-open');
+
+        window.requestAnimationFrame(() => {
+            if (overlay.hidden) return;
+            body.scrollTop = 0;
+            close.focus({ preventScroll: true });
+        });
+    };
+
+    close.addEventListener('click', cerrar);
+    backdrop.addEventListener('click', cerrar);
+
+    document.addEventListener('keydown', (event) => {
+        if (overlay.hidden) return;
+
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            cerrar();
+            return;
+        }
+
+        if (event.key !== 'Tab') return;
+
+        const focusables = dialog.querySelectorAll(
+            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        if (focusables.length === 0) return;
+
+        const primero = focusables[0];
+        const ultimo = focusables[focusables.length - 1];
+
+        if (event.shiftKey && document.activeElement === primero) {
+            event.preventDefault();
+            ultimo.focus();
+        } else if (!event.shiftKey && document.activeElement === ultimo) {
+            event.preventDefault();
+            primero.focus();
+        }
+    });
+
+    return { abrir };
+}
+
+const modalLectura = crearModalLectura();
 
 function normalizarReacciones(debate) {
     const reacciones = debate && debate.reactions && typeof debate.reactions === 'object'
@@ -212,12 +386,7 @@ function crearTarjeta(debate, esAdmin) {
 
     const meta = document.createElement('div');
     meta.className = 'debate-meta';
-    const autor = debate.isAnonymous
-        ? 'Publicado por Anónimo'
-        : debate.authorEmail
-            ? `Abierto por ${recortarEmail(debate.authorEmail)}`
-            : 'Abierto por la Administración';
-    meta.textContent = `${autor} • ${formatearFecha(debate.createdAt)}`;
+    meta.textContent = `${obtenerAutorVisible(debate)} • ${formatearFecha(debate.createdAt)}`;
 
     const titulo = document.createElement('h2');
     titulo.className = 'debate-title';
@@ -225,7 +394,6 @@ function crearTarjeta(debate, esAdmin) {
 
     const texto = document.createElement('p');
     texto.className = 'debate-text';
-    texto.id = `debate-text-${debate._id}`;
 
     const contenido = typeof debate.content === 'string' ? debate.content : '';
     const esLargo = contenido.length > MAX_TEXTO_COLAPSADO;
@@ -239,35 +407,27 @@ function crearTarjeta(debate, esAdmin) {
     cuerpo.appendChild(texto);
 
     if (esLargo) {
-        const alternar = document.createElement('button');
-        alternar.type = 'button';
-        alternar.className = 'debate-toggle';
-        alternar.textContent = 'Leer más';
-        alternar.setAttribute('aria-expanded', 'false');
-        alternar.setAttribute('aria-controls', texto.id);
+        const leerMas = document.createElement('button');
+        leerMas.type = 'button';
+        leerMas.className = 'debate-read-more';
+        leerMas.textContent = 'Leer más';
+        leerMas.setAttribute('aria-haspopup', 'dialog');
+        leerMas.setAttribute('aria-controls', 'readingModal');
 
-        const alternarTexto = () => {
-            const expandido = !texto.classList.contains('is-expanded');
-            texto.classList.toggle('is-expanded', expandido);
-            texto.textContent = expandido ? contenido : contenidoTruncado;
-            alternar.textContent = expandido ? 'Mostrar menos' : 'Leer más';
-            alternar.setAttribute('aria-expanded', String(expandido));
-        };
-
-        alternar.addEventListener('click', (event) => {
+        leerMas.addEventListener('click', (event) => {
             event.stopPropagation();
-            alternarTexto();
+            modalLectura.abrir(debate);
         });
 
         tarjeta.addEventListener('click', (event) => {
-            if (event.target.closest('.reactions-container, .debate-delete, .debate-toggle')) {
+            if (event.target.closest('.reactions-container, .debate-delete, .debate-read-more')) {
                 return;
             }
-            alternarTexto();
+            modalLectura.abrir(debate);
         });
 
         tarjeta.classList.add('is-collapsible');
-        cuerpo.appendChild(alternar);
+        cuerpo.appendChild(leerMas);
     }
 
     const reacciones = document.createElement('div');
@@ -298,7 +458,7 @@ function renderizarDebates(debates) {
     grid.replaceChildren();
 
     if (!Array.isArray(debates) || debates.length === 0) {
-        mostrarEstado('Todavía no hay debates en el muro. La administración abrirá el primero pronto.');
+        mostrarEstado('Todavía no hay debates en el muro. La administración abrirá el primero pronto.', true, { persistente: true });
         return;
     }
 
@@ -310,7 +470,7 @@ function renderizarDebates(debates) {
 }
 
 async function cargarDebates() {
-    mostrarEstado('Cargando los ecos del muro...');
+    mostrarEstado('Cargando los ecos del muro...', true, { persistente: true });
 
     try {
         const debates = await api.listarDebates();
@@ -318,7 +478,7 @@ async function cargarDebates() {
         return true;
     } catch (error) {
         console.error('No se pudieron cargar los debates:', error);
-        mostrarEstado('No se pudieron cargar los debates. Inténtalo de nuevo.');
+        mostrarEstado('No se pudieron cargar los debates. Inténtalo de nuevo.', true, { persistente: true });
         return false;
     }
 }

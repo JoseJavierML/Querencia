@@ -77,7 +77,9 @@ Cada reacción se guarda en MongoDB como un array de `ObjectId` de usuarios, no 
 
 La creación y el borrado de reflexiones están reservados a `admin`. En `muro.js`, el botón flotante con el lápiz y el diálogo de creación solo se insertan en el DOM cuando la sesión tiene rol `admin`; para un `oyente` no existen. El icono de la papelera de cada tarjeta también se genera únicamente para administradores. El diálogo incluye una casilla “Publicar como anónimo” que envía `isAnonymous: true`; en ese caso la API no expone el correo del autor. El textarea usa el scrollbar fino dorado del Diario, mientras que el contenedor del diálogo no define scroll propio. La autorización real no depende del navegador: `POST /api/debates` y `DELETE /api/debates/:id` exigen `authMiddleware` e `isAdminMiddleware`, y devuelven `403` a cualquier usuario que no sea administrador.
 
-Las reflexiones de más de 250 caracteres aparecen colapsadas con puntos suspensivos y un control “Leer más”. Al pulsar la tarjeta o el control, el texto se expande y el enlace cambia a “Mostrar menos”; un nuevo clic lo vuelve a colapsar. Los clics en reacciones y en la papelera no alteran el estado del texto.
+Las reflexiones de más de 250 caracteres aparecen colapsadas con puntos suspensivos y un control “Leer más”. Al pulsarlo, o al hacer clic en la tarjeta, se abre un modal de lectura profunda centrado sobre un fondo oscurecido. El modal muestra la reflexión completa con el mismo lenguaje visual del muro —tonos oscuros, acentos dorados y glassmorphism—, se cierra con la “X”, con el fondo o con `Escape`, y devuelve al mismo punto de scroll. Los clics en reacciones y en la papelera no abren la lectura.
+
+Los avisos del muro, como “Reflexión publicada” o “Reflexión eliminada”, se desvanecen automáticamente a los 3,5 segundos. Los mensajes de carga, error de carga y muro vacío se mantienen visibles hasta que cambia el estado.
 
 ### API del Muro
 
@@ -123,6 +125,7 @@ También puede ejecutarse con `cd backend && npm run seed`. El script requiere `
 - [x] **RF-MVP-Muro-Frontend:** tarjetas dinámicas, reacciones autenticadas, portadas por URL y borrado visible solo para administradores.
 - [x] **RF-MVP-Muro-Admin-UX:** botón flotante con lápiz y diálogo de creación que solo se renderizan para administradores.
 - [x] **RF-MVP-Muro-Autor:** autor sin dominio de correo, casilla de anonimato y ocultación del correo en la API.
-- [x] **RF-MVP-Muro-Lectura:** reflexiones de más de 250 caracteres colapsadas con “Leer más” y expansión desde la tarjeta o el control.
+- [x] **RF-MVP-Muro-Lectura:** reflexiones de más de 250 caracteres colapsadas con “Leer más”, modal de lectura completa y retorno al mismo punto del muro.
+- [x] **RF-MVP-Muro-Notificaciones:** avisos del muro con desvanecimiento automático y transición suave.
 - [x] **RF-MVP-Auth-Redirect:** login y callback de Google redirigen al muro; el registro intenta iniciar sesión automáticamente.
 - [x] **RF-MVP-Muro-Seed:** script `seedDebate.js` con un hilo inicial idempotente, portada musical y comando `npm run seed`.

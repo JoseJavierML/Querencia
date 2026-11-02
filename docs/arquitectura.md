@@ -2,7 +2,7 @@
 type: Arquitectura
 title: Arquitectura del Sprint 1
 description: Capas comprobables del backend y del frontend, con su frontera HTTP.
-timestamp: 2026-11-01
+timestamp: 2026-11-02
 ---
 
 # Arquitectura
@@ -17,7 +17,7 @@ timestamp: 2026-11-01
 
 ## Frontend
 
-- **Presentación:** las páginas HTML de [backend/frontend/](../backend/frontend/) contienen las vistas pública, privada y de administración; [diario.html](../backend/frontend/diario.html) renderiza el historial “Ecos”, el formulario de escritura con título opcional y la vista de lectura de cada eco; [muro.html](../backend/frontend/muro.html) y [muro.js](../backend/frontend/js/muro.js) renderizan las tarjetas de debate, sus portadas, sus reacciones, el autor sin dominio de correo, el botón flotante con el lápiz y el diálogo de creación que solo existen para administradores. El diálogo incluye la casilla “Publicar como anónimo”; solo el textarea usa el scrollbar fino dorado del Diario, sin scroll propio en el contenedor del diálogo. Las reflexiones largas se muestran colapsadas y pueden expandirse desde la tarjeta o desde “Leer más”.
+- **Presentación:** las páginas HTML de [backend/frontend/](../backend/frontend/) contienen las vistas pública, privada y de administración; [diario.html](../backend/frontend/diario.html) renderiza el historial “Ecos”, el formulario de escritura con título opcional y la vista de lectura de cada eco; [muro.html](../backend/frontend/muro.html) y [muro.js](../backend/frontend/js/muro.js) renderizan las tarjetas de debate, sus portadas, sus reacciones, el autor sin dominio de correo, el botón flotante con el lápiz y el diálogo de creación que solo existen para administradores. El diálogo incluye la casilla “Publicar como anónimo”; en el formulario de creación, solo el textarea usa el scrollbar fino dorado del Diario, sin scroll propio en el contenedor del diálogo. Las reflexiones largas se muestran colapsadas y “Leer más” abre un modal de lectura completa sobre un backdrop oscurecido.
 - **Comunicación:** [api.js](../backend/frontend/js/api.js) centraliza las peticiones de negocio, incluidas `crearEntradaDiario`, `listarDiario`, `eliminarEntradaDiario`, `crearDebate`, `eliminarDebate`, `listarDebates` y `reaccionarDebate`, y [auth.js](../backend/frontend/js/auth.js) añade el token, comprueba la sesión y cierra sesión.
 
 ## Frontera exacta
@@ -34,7 +34,9 @@ En el muro, `server.js` compone `DebateRepository` y `createDebateService` inyec
 
 Las reacciones se guardan como arrays de `ObjectId` por tipo. El catálogo vive en `debateConstants.js` con tres claves y sus etiquetas exactas: `profundo` (“Profundo”), `melancolico` (“Melancólico”) y `rompeEsquemas` (“Rompe esquemas”). Si el usuario ya había reaccionado, `DebateRepository.toggleReaction` ejecuta `$pull`; si no, `$addToSet`. La respuesta expone `label`, `count`, `reactedByMe`, `coverImageUrl` e `isAnonymous`, nunca la lista de identificadores. En el frontend, `muro.html` usa `api.listarDebates()` al cargar, `api.reaccionarDebate(id, reaction)` al pulsar un botón, `api.crearDebate(title, content, coverImageUrl, isAnonymous)` desde el diálogo del botón flotante y `api.eliminarDebate(id)` desde la papelera de cada tarjeta. `muro.js` reutiliza las clases existentes, actualiza solo el contenedor de reacciones y construye el botón flotante, el diálogo y las papeleras solo cuando `obtenerUsuarioActual()` devuelve rol `admin`; para un oyente no inserta ninguno de esos nodos.
 
-Las reflexiones de más de 250 caracteres se renderizan colapsadas: `muro.js` guarda el contenido completo en el cierre de `crearTarjeta`, muestra un recorte de 250 caracteres con `...` y añade un botón “Leer más”. La tarjeta y el botón alternan la clase `is-expanded` y el texto entre “Leer más” y “Mostrar menos”; los clics en `.reactions-container` y `.debate-delete` se excluyen para no interferir con las reacciones ni con el borrado.
+Las reflexiones de más de 250 caracteres se renderizan colapsadas: `muro.js` muestra un recorte de 250 caracteres con `...` y añade un botón “Leer más”. La tarjeta y el botón abren `crearModalLectura`, un diálogo único creado al cargar el módulo que muestra título, autor, fecha y contenido completo. El modal bloquea el scroll del documento, guarda la posición previa y la restaura al cerrar mediante la “X”, el backdrop o `Escape`; los clics en `.reactions-container` y `.debate-delete` se excluyen para no interferir con las reacciones ni con el borrado.
+
+Los avisos de `mostrarEstado` usan la clase `is-visible` y una transición CSS de opacidad y desplazamiento. Salvo los mensajes persistentes de carga, error de carga y muro vacío, cada aviso se oculta con `setTimeout` a los 3,5 segundos y se marca como `hidden` al terminar la transición de 350 ms.
 
 La portada se guarda como `coverImageUrl` opcional. El servicio recorta la URL, limita su longitud y exige los protocolos `http` o `https`; el modelo aplica además `trim` y `maxlength`. Si la tarjeta no tiene portada o la imagen falla, el frontend usa el placeholder existente.
 

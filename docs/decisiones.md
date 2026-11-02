@@ -2,7 +2,7 @@
 type: Decisiones
 title: Decisiones técnicas detectadas
 description: Decisiones observables en el código, el README y el historial.
-timestamp: 2026-11-01
+timestamp: 2026-11-02
 ---
 
 # Decisiones
@@ -167,10 +167,18 @@ timestamp: 2026-11-01
 
 **Estado:** vigente.
 
-## D-21 — Colapso de reflexiones largas en el muro
+## D-21 — Lectura profunda en modal para reflexiones largas
 
-**Qué se decidió:** las tarjetas cuyo `content` supera los 250 caracteres se muestran con un recorte de 250 caracteres y puntos suspensivos, acompañadas de un botón “Leer más”. La tarjeta completa y el botón alternan la expansión mediante la clase `is-expanded` del párrafo `.debate-text`; al expandirse, el botón pasa a “Mostrar menos”. El contenido completo se conserva en el cierre de `crearTarjeta` y se sustituye con `textContent`, sin interpretar HTML. Los clics sobre `.reactions-container`, `.debate-delete` y el propio botón se excluyen del manejador de la tarjeta para no activar reacciones ni borrados por accidente.
+**Qué se decidió:** las tarjetas cuyo `content` supera los 250 caracteres se muestran con un recorte de 250 caracteres y puntos suspensivos, acompañadas de un botón “Leer más”. La tarjeta y el botón abren un modal centrado con backdrop oscurecido, borde y acentos dorados, fondo translúcido con `backdrop-filter` y ancho máximo de 720 px. El modal muestra título, autor, fecha y contenido completo con `textContent`, sin interpretar HTML, y se cierra con la “X”, el backdrop o `Escape`. Al abrir guarda `window.scrollY`, bloquea el scroll del documento y lo restaura al cerrar para volver al mismo punto del muro. Los clics sobre `.reactions-container` y `.debate-delete` se excluyen para no interferir con reacciones ni borrados.
 
-**Por qué:** evita que reflexiones extensas dominen la altura del muro y mantiene la lectura rápida sin perder el texto completo. La exclusión de reacciones y papelera conserva el comportamiento existente de esas acciones.
+**Por qué:** expandir el texto dentro de la tarjeta deformaba la cuadrícula y obligaba a desplazar el muro. El modal concentra la lectura completa sin alterar la altura de las tarjetas y conserva la estética del proyecto. La restauración del scroll evita perder la posición de lectura.
+
+**Estado:** vigente.
+
+## D-22 — Avisos temporales con desvanecimiento
+
+**Qué se decidió:** `mostrarEstado` aplica la clase `is-visible` para animar opacidad y desplazamiento, y programa un `setTimeout` de 3,5 segundos para retirar los avisos de publicación, borrado o error. Tras 350 ms de transición, el elemento recibe `hidden`. Los mensajes de carga, error de carga y muro vacío se marcan como persistentes y no se autodescartan. Cada nueva llamada cancela los temporizadores anteriores.
+
+**Por qué:** los avisos ya no se acumulan indefinidamente en la pantalla, pero los estados estructurales del muro siguen visibles mientras sean relevantes.
 
 **Estado:** vigente.
