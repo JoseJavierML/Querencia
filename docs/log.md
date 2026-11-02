@@ -2,7 +2,7 @@
 
 ## 2026-11-01 — Scrollbar del formulario, autor anónimo y redirección al muro
 
-Se pule el diálogo de creación del muro. El `<textarea>` y el propio diálogo usan el mismo scrollbar fino dorado que el Diario (`scrollbar-width`, `::-webkit-scrollbar`, track transparente sobre el fondo oscuro y thumb dorado), de modo que desaparece la barra blanca nativa.
+Se pule el diálogo de creación del muro. Solo el `<textarea>` usa el scrollbar fino dorado del Diario (`scrollbar-width`, `::-webkit-scrollbar`, track transparente sobre el fondo oscuro y thumb dorado), de modo que desaparece la barra blanca nativa. El contenedor `.admin-dialog` deja de limitar su altura y de tener `overflow-y`; no introduce scroll propio. Las reflexiones de más de 250 caracteres se muestran colapsadas con `...` y “Leer más”, y la tarjeta o el control alternan el texto completo con “Mostrar menos”.
 
 El modelo `Debate` incorpora `isAnonymous` como booleano con `false` por defecto. El servicio solo acepta booleanos y normaliza la ausencia del campo; el router devuelve el flag y fuerza `authorEmail: null` cuando la reflexión es anónima. En el muro, el autor no anónimo se muestra sin el dominio del correo (`admin@querencia.es` → `admin`) y el anónimo como “Publicado por Anónimo”. El diálogo de administración añade una casilla “Publicar como anónimo” con checkbox personalizado en dorado.
 

@@ -137,7 +137,7 @@ timestamp: 2026-11-01
 
 ## D-17 — Botón flotante de administración y autorización en servidor
 
-**Qué se decidió:** `muro.js` construye un botón flotante fijo en la esquina inferior derecha, con el mismo icono de lápiz del Diario, y un diálogo modal de creación solo cuando `obtenerUsuarioActual()` devuelve `rol === 'admin'`. El botón no forma parte del flujo normal de la página ni del HTML estático. El diálogo incluye una casilla “Publicar como anónimo” con estilo propio y el textarea usa el mismo scrollbar fino dorado que el Diario. Para un oyente no se inserta ningún nodo del botón, del diálogo ni de las papeleras de las tarjetas en el DOM; `muro.html` solo aporta los estilos. La autorización real sigue en `POST /api/debates` y `DELETE /api/debates/:id` mediante `authMiddleware` e `isAdminMiddleware`, de modo que manipular `localStorage` solo produce un `403`.
+**Qué se decidió:** `muro.js` construye un botón flotante fijo en la esquina inferior derecha, con el mismo icono de lápiz del Diario, y un diálogo modal de creación solo cuando `obtenerUsuarioActual()` devuelve `rol === 'admin'`. El botón no forma parte del flujo normal de la página ni del HTML estático. El diálogo incluye una casilla “Publicar como anónimo” con estilo propio y solo el textarea usa el scrollbar fino dorado del Diario; el contenedor del diálogo no añade `max-height` ni `overflow-y`. Para un oyente no se inserta ningún nodo del botón, del diálogo ni de las papeleras de las tarjetas en el DOM; `muro.html` solo aporta los estilos. La autorización real sigue en `POST /api/debates` y `DELETE /api/debates/:id` mediante `authMiddleware` e `isAdminMiddleware`, de modo que manipular `localStorage` solo produce un `403`.
 
 **Por qué:** se evita dejar markup oculto o formularios inactivos para usuarios sin permiso, se mantiene el flujo de lectura limpio y no se confía en una comprobación de rol hecha en el navegador. El backend sigue siendo la única frontera de autorización.
 
@@ -164,5 +164,13 @@ timestamp: 2026-11-01
 **Qué se decidió:** el formulario de login de `index.html` y el callback de Google redirigen a `muro.html`, no a `diario.html`. Tras un registro correcto, el frontend intenta iniciar sesión con las mismas credenciales y, si la cuenta ya está activa, entra al muro. Si el backend la mantiene pendiente de verificación, se muestra el aviso y no se crea una sesión ficticia. El login usa `skipAuthRedirect` para que un `401` de credenciales no borre la sesión ni recargue la landing antes de mostrar el error.
 
 **Por qué:** el muro es la entrada principal de la plataforma. El registro no puede garantizar una sesión válida porque `UserModel` exige verificar el correo; intentar el login automático cubre el caso de cuentas activas y deja explícito el caso pendiente sin debilitar la verificación.
+
+**Estado:** vigente.
+
+## D-21 — Colapso de reflexiones largas en el muro
+
+**Qué se decidió:** las tarjetas cuyo `content` supera los 250 caracteres se muestran con un recorte de 250 caracteres y puntos suspensivos, acompañadas de un botón “Leer más”. La tarjeta completa y el botón alternan la expansión mediante la clase `is-expanded` del párrafo `.debate-text`; al expandirse, el botón pasa a “Mostrar menos”. El contenido completo se conserva en el cierre de `crearTarjeta` y se sustituye con `textContent`, sin interpretar HTML. Los clics sobre `.reactions-container`, `.debate-delete` y el propio botón se excluyen del manejador de la tarjeta para no activar reacciones ni borrados por accidente.
+
+**Por qué:** evita que reflexiones extensas dominen la altura del muro y mantiene la lectura rápida sin perder el texto completo. La exclusión de reacciones y papelera conserva el comportamiento existente de esas acciones.
 
 **Estado:** vigente.

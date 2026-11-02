@@ -15,6 +15,8 @@ const AURAS = [
 
 const PLACEHOLDER_COVER = 'https://www.gstatic.com/labs-code/stitch/stitch-placeholder-300x300.svg';
 
+const MAX_TEXTO_COLAPSADO = 250;
+
 const PENCIL_ICON_PATH = 'M3 17.25V21h3.75L17.81 9.94l-3.75-3.75L3 17.25ZM20.71 7.04a1 1 0 0 0 0-1.41l-2.34-2.34a1 1 0 0 0-1.41 0l-1.83 1.83 3.75 3.75 1.83-1.83Z';
 const TRASH_ICON_PATH = 'M9 3h6l1 2h4v2H4V5h4l1-2Zm-3 6h12l-1 12H7L6 9Zm4 2v8h1v-8h-1Zm3 0v8h1v-8h-1Z';
 
@@ -223,13 +225,56 @@ function crearTarjeta(debate, esAdmin) {
 
     const texto = document.createElement('p');
     texto.className = 'debate-text';
-    texto.textContent = debate.content || '';
+    texto.id = `debate-text-${debate._id}`;
+
+    const contenido = typeof debate.content === 'string' ? debate.content : '';
+    const esLargo = contenido.length > MAX_TEXTO_COLAPSADO;
+    const contenidoTruncado = esLargo
+        ? `${contenido.slice(0, MAX_TEXTO_COLAPSADO).trimEnd()}...`
+        : contenido;
+    texto.textContent = contenidoTruncado;
+
+    const cuerpo = document.createElement('div');
+    cuerpo.className = 'debate-content';
+    cuerpo.appendChild(texto);
+
+    if (esLargo) {
+        const alternar = document.createElement('button');
+        alternar.type = 'button';
+        alternar.className = 'debate-toggle';
+        alternar.textContent = 'Leer más';
+        alternar.setAttribute('aria-expanded', 'false');
+        alternar.setAttribute('aria-controls', texto.id);
+
+        const alternarTexto = () => {
+            const expandido = !texto.classList.contains('is-expanded');
+            texto.classList.toggle('is-expanded', expandido);
+            texto.textContent = expandido ? contenido : contenidoTruncado;
+            alternar.textContent = expandido ? 'Mostrar menos' : 'Leer más';
+            alternar.setAttribute('aria-expanded', String(expandido));
+        };
+
+        alternar.addEventListener('click', (event) => {
+            event.stopPropagation();
+            alternarTexto();
+        });
+
+        tarjeta.addEventListener('click', (event) => {
+            if (event.target.closest('.reactions-container, .debate-delete, .debate-toggle')) {
+                return;
+            }
+            alternarTexto();
+        });
+
+        tarjeta.classList.add('is-collapsible');
+        cuerpo.appendChild(alternar);
+    }
 
     const reacciones = document.createElement('div');
     reacciones.className = 'reactions-container';
     renderizarReacciones(reacciones, debate);
 
-    tarjeta.append(portada, meta, titulo, texto, reacciones);
+    tarjeta.append(portada, meta, titulo, cuerpo, reacciones);
 
     if (esAdmin) {
         const borrar = document.createElement('button');
