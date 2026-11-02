@@ -1,9 +1,11 @@
 const mongoose = require('mongoose');
 const { Debate, DebateRepository } = require('./debateModel');
 const {
+    REACTION_DEFINITIONS,
     REACTION_TYPES,
     MAX_TITLE_LENGTH,
-    MAX_CONTENT_LENGTH
+    MAX_CONTENT_LENGTH,
+    MAX_COVER_URL_LENGTH
 } = require('./debateConstants');
 
 const validAuthorId = () => new mongoose.Types.ObjectId();
@@ -56,11 +58,67 @@ describe('Esquema Debate', () => {
         });
     });
 
-    test('crea las seis reacciones como arrays vacíos de ObjectId', () => {
+    test('coverImageUrl es opcional y por defecto vale null', () => {
+        const debate = createValidDebate();
+
+        expect(debate.coverImageUrl).toBeNull();
+    });
+
+    test('recorta la URL de portada cuando se proporciona', async () => {
+        const debate = createValidDebate({
+            coverImageUrl: '  https://example.com/portada.jpg  '
+        });
+
+        await expect(debate.validate()).resolves.toBeUndefined();
+        expect(debate.coverImageUrl).toBe('https://example.com/portada.jpg');
+    });
+
+    test(`rechaza una portada de más de ${MAX_COVER_URL_LENGTH} caracteres`, async () => {
+        const debate = createValidDebate({
+            coverImageUrl: `https://example.com/${'a'.repeat(MAX_COVER_URL_LENGTH)}`
+        });
+
+        await expect(debate.validate()).rejects.toMatchObject({
+            errors: { coverImageUrl: expect.anything() }
+        });
+    });
+
+    test('isAnonymous es opcional y por defecto vale false', () => {
+        const debate = createValidDebate();
+
+        expect(debate.isAnonymous).toBe(false);
+    });
+
+    test('acepta isAnonymous verdadero', async () => {
+        const debate = createValidDebate({ isAnonymous: true });
+
+        await expect(debate.validate()).resolves.toBeUndefined();
+        expect(debate.isAnonymous).toBe(true);
+    });
+
+    test('define exactamente las tres reacciones del alma con sus etiquetas', () => {
+        expect(REACTION_DEFINITIONS).toEqual([
+            { key: 'profundo', label: 'Profundo' },
+            { key: 'melancolico', label: 'Melancólico' },
+            { key: 'rompeEsquemas', label: 'Rompe esquemas' }
+        ]);
+        expect(REACTION_TYPES).toEqual(['profundo', 'melancolico', 'rompeEsquemas']);
+    });
+
+    test('crea las tres reacciones como arrays vacíos de ObjectId', () => {
         const debate = createValidDebate();
 
         REACTION_TYPES.forEach((reaction) => {
             expect(Array.from(debate.reactions[reaction])).toEqual([]);
+        });
+    });
+
+    test('no conserva las claves de reacciones retiradas', () => {
+        const debate = createValidDebate();
+
+        ['intimo', 'inquietante', 'tecnologico'].forEach((reaction) => {
+            expect(Debate.schema.path(`reactions.${reaction}`)).toBeUndefined();
+            expect(debate.reactions[reaction]).toBeUndefined();
         });
     });
 
@@ -90,11 +148,15 @@ describe('Repositorio de debates', () => {
         const debate = await DebateRepository.create({
             title: '  Título  ',
             content: '  Contenido  ',
+            coverImageUrl: '  https://example.com/portada.jpg  ',
+            isAnonymous: true,
             authorId
         });
 
         expect(debate.title).toBe('Título');
         expect(debate.content).toBe('Contenido');
+        expect(debate.coverImageUrl).toBe('https://example.com/portada.jpg');
+        expect(debate.isAnonymous).toBe(true);
         expect(debate.authorId.toString()).toBe(authorId.toString());
         expect(save).toHaveBeenCalled();
     });
@@ -181,5 +243,26 @@ describe('Repositorio de debates', () => {
         )).resolves.toBeNull();
 
         expect(findOneAndUpdate).not.toHaveBeenCalled();
+    });
+
+    test('elimina un debate por id y devuelve el documento', async () => {
+        const id = new mongoose.Types.ObjectId().toString();
+        const debate = { _id: id };
+        const findByIdAndDelete = jest
+            .spyOn(Debate, 'findByIdAndDelete')
+            .mockResolvedValue(debate);
+
+        const result = await DebateRepository.deleteById(id);
+
+        expect(findByIdAndDelete).toHaveBeenCalledWith(id);
+        expect(result).toBe(debate);
+    });
+
+    test('no consulta al eliminar si el id no es válido', async () => {
+        const findByIdAndDelete = jest.spyOn(Debate, 'findByIdAndDelete');
+
+        await expect(DebateRepository.deleteById('no-es-un-id')).resolves.toBeNull();
+
+        expect(findByIdAndDelete).not.toHaveBeenCalled();
     });
 });

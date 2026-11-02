@@ -60,6 +60,7 @@ const createService = (overrides = {}) => ({
     createDebate: jest.fn(),
     listDebates: jest.fn(),
     reactToDebate: jest.fn(),
+    deleteDebate: jest.fn(),
     ...overrides
 });
 
@@ -67,15 +68,13 @@ const createDebate = (overrides = {}) => ({
     _id: 'debate-1',
     title: 'La ruptura temporal en Omega',
     content: 'Un debate con alma.',
+    coverImageUrl: 'https://example.com/portada.jpg',
     createdAt: new Date('2026-11-01T10:00:00.000Z'),
     authorId: { email: 'admin@querencia.es' },
     reactions: {
-        rompeEsquemas: ['usuario-1'],
         profundo: ['usuario-1', 'usuario-2'],
         melancolico: [],
-        intimo: [],
-        inquietante: [],
-        tecnologico: []
+        rompeEsquemas: ['usuario-1']
     },
     ...overrides
 });
@@ -91,7 +90,9 @@ describe('Rutas del muro de debates', () => {
             headers: jsonHeaders(ADMIN_TOKEN),
             body: JSON.stringify({
                 title: 'La ruptura temporal en Omega',
-                content: 'Un debate con alma.'
+                content: 'Un debate con alma.',
+                coverImageUrl: 'https://example.com/portada.jpg',
+                isAnonymous: false
             })
         });
 
@@ -100,15 +101,63 @@ describe('Rutas del muro de debates', () => {
             _id: 'debate-1',
             title: 'La ruptura temporal en Omega',
             content: 'Un debate con alma.',
+            coverImageUrl: 'https://example.com/portada.jpg',
+            isAnonymous: false,
             createdAt: '2026-11-01T10:00:00.000Z',
             authorEmail: 'admin@querencia.es'
         });
-        expect(body.reactions.rompeEsquemas).toEqual({ count: 1, reactedByMe: false });
-        expect(body.reactions.profundo).toEqual({ count: 2, reactedByMe: false });
+        expect(body.reactions.profundo).toEqual({
+            label: 'Profundo',
+            count: 2,
+            reactedByMe: false
+        });
+        expect(body.reactions.melancolico).toEqual({
+            label: 'Melancólico',
+            count: 0,
+            reactedByMe: false
+        });
+        expect(body.reactions.rompeEsquemas).toEqual({
+            label: 'Rompe esquemas',
+            count: 1,
+            reactedByMe: false
+        });
+        expect(body.reactions.intimo).toBeUndefined();
         expect(createDebateMock).toHaveBeenCalledWith({
             email: 'admin@querencia.es',
             title: 'La ruptura temporal en Omega',
-            content: 'Un debate con alma.'
+            content: 'Un debate con alma.',
+            coverImageUrl: 'https://example.com/portada.jpg',
+            isAnonymous: false
+        });
+    });
+
+    test('POST crea un debate anónimo sin exponer el correo del autor', async () => {
+        const debate = createDebate({ isAnonymous: true, authorId: { email: 'admin@querencia.es' } });
+        const createDebateMock = jest.fn().mockResolvedValue(debate);
+        server = await startServer(createService({ createDebate: createDebateMock }));
+
+        const { status, body } = await request('/api/debates', {
+            method: 'POST',
+            headers: jsonHeaders(ADMIN_TOKEN),
+            body: JSON.stringify({
+                title: 'La ruptura temporal en Omega',
+                content: 'Un debate con alma.',
+                isAnonymous: true
+            })
+        });
+
+        expect(status).toBe(201);
+        expect(body).toMatchObject({
+            _id: 'debate-1',
+            isAnonymous: true,
+            authorEmail: null
+        });
+        expect(createDebateMock).toHaveBeenCalledWith({
+            email: 'admin@querencia.es',
+            title: 'La ruptura temporal en Omega',
+            content: 'Un debate con alma.',
+            coverImageUrl: undefined,
+            isAnonymous: true
         });
     });
 
@@ -183,9 +232,41 @@ describe('Rutas del muro de debates', () => {
             _id: 'debate-1',
             authorEmail: 'admin@querencia.es'
         });
-        expect(body[0].reactions.rompeEsquemas).toEqual({ count: 1, reactedByMe: false });
-        expect(body[0].reactions.profundo).toEqual({ count: 2, reactedByMe: false });
+        expect(body[0].reactions.profundo).toEqual({
+            label: 'Profundo',
+            count: 2,
+            reactedByMe: false
+        });
+        expect(body[0].reactions.melancolico).toEqual({
+            label: 'Melancólico',
+            count: 0,
+            reactedByMe: false
+        });
+        expect(body[0].reactions.rompeEsquemas).toEqual({
+            label: 'Rompe esquemas',
+            count: 1,
+            reactedByMe: false
+        });
+        expect(body[0].reactions.intimo).toBeUndefined();
         expect(listDebates).toHaveBeenCalledWith({ email: undefined });
+    });
+
+    test('GET oculta el correo del autor en los debates anónimos', async () => {
+        const debate = createDebate({
+            isAnonymous: true,
+            authorId: { email: 'admin@querencia.es' }
+        });
+        const listDebates = jest.fn().mockResolvedValue({ debates: [debate], viewerId: null });
+        server = await startServer(createService({ listDebates }));
+
+        const { status, body } = await request('/api/debates', { method: 'GET' });
+
+        expect(status).toBe(200);
+        expect(body[0]).toMatchObject({
+            _id: 'debate-1',
+            isAnonymous: true,
+            authorEmail: null
+        });
     });
 
     test('GET marca las reacciones del usuario autenticado', async () => {
@@ -199,9 +280,9 @@ describe('Rutas del muro de debates', () => {
         });
 
         expect(status).toBe(200);
-        expect(body[0].reactions.rompeEsquemas.reactedByMe).toBe(true);
         expect(body[0].reactions.profundo.reactedByMe).toBe(true);
         expect(body[0].reactions.melancolico.reactedByMe).toBe(false);
+        expect(body[0].reactions.rompeEsquemas.reactedByMe).toBe(true);
         expect(listDebates).toHaveBeenCalledWith({ email: 'ana@uclm.es' });
     });
 
@@ -247,12 +328,9 @@ describe('Rutas del muro de debates', () => {
         expect(body).toEqual({
             _id: 'debate-1',
             reactions: {
-                rompeEsquemas: { count: 1, reactedByMe: true },
-                profundo: { count: 2, reactedByMe: true },
-                melancolico: { count: 0, reactedByMe: false },
-                intimo: { count: 0, reactedByMe: false },
-                inquietante: { count: 0, reactedByMe: false },
-                tecnologico: { count: 0, reactedByMe: false }
+                profundo: { label: 'Profundo', count: 2, reactedByMe: true },
+                melancolico: { label: 'Melancólico', count: 0, reactedByMe: false },
+                rompeEsquemas: { label: 'Rompe esquemas', count: 1, reactedByMe: true }
             }
         });
         expect(reactToDebate).toHaveBeenCalledWith({
@@ -331,5 +409,71 @@ describe('Rutas del muro de debates', () => {
 
         expect(status).toBe(500);
         expect(body).toEqual({ message: 'No se pudo registrar la reacción' });
+    });
+
+    test('DELETE elimina un debate cuando el usuario es administrador', async () => {
+        const deleteDebate = jest.fn().mockResolvedValue({ _id: 'debate-1' });
+        server = await startServer(createService({ deleteDebate }));
+
+        const { status, body } = await request('/api/debates/debate-1', {
+            method: 'DELETE',
+            headers: jsonHeaders(ADMIN_TOKEN)
+        });
+
+        expect(status).toBe(200);
+        expect(body).toEqual({ deleted: true, _id: 'debate-1' });
+        expect(deleteDebate).toHaveBeenCalledWith({ id: 'debate-1' });
+    });
+
+    test('DELETE devuelve 403 si el usuario no es administrador', async () => {
+        const deleteDebate = jest.fn();
+        server = await startServer(createService({ deleteDebate }));
+
+        const { status } = await request('/api/debates/debate-1', {
+            method: 'DELETE',
+            headers: jsonHeaders(USER_TOKEN)
+        });
+
+        expect(status).toBe(403);
+        expect(deleteDebate).not.toHaveBeenCalled();
+    });
+
+    test('DELETE exige autenticación', async () => {
+        const deleteDebate = jest.fn();
+        server = await startServer(createService({ deleteDebate }));
+
+        const { status } = await request('/api/debates/debate-1', {
+            method: 'DELETE',
+            headers: jsonHeaders()
+        });
+
+        expect(status).toBe(401);
+        expect(deleteDebate).not.toHaveBeenCalled();
+    });
+
+    test('DELETE devuelve 404 si el debate no existe', async () => {
+        const deleteDebate = jest.fn().mockRejectedValue(new DebateNotFoundError());
+        server = await startServer(createService({ deleteDebate }));
+
+        const { status, body } = await request('/api/debates/debate-inexistente', {
+            method: 'DELETE',
+            headers: jsonHeaders(ADMIN_TOKEN)
+        });
+
+        expect(status).toBe(404);
+        expect(body).toEqual({ message: 'Debate no encontrado' });
+    });
+
+    test('DELETE devuelve 500 ante un error inesperado', async () => {
+        const deleteDebate = jest.fn().mockRejectedValue(new Error('fallo interno'));
+        server = await startServer(createService({ deleteDebate }));
+
+        const { status, body } = await request('/api/debates/debate-1', {
+            method: 'DELETE',
+            headers: jsonHeaders(ADMIN_TOKEN)
+        });
+
+        expect(status).toBe(500);
+        expect(body).toEqual({ message: 'No se pudo eliminar el debate' });
     });
 });

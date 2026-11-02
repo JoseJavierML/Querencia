@@ -494,7 +494,7 @@
             try {
                 const respuesta = await api.login(email, password);
                 console.log('Login exitoso:', respuesta);
-                window.location.href = 'diario.html';
+                window.location.href = 'muro.html';
             } catch (error) {
                 alert('Fallo de acceso al tablao: ' + error.message);
             }
@@ -509,7 +509,17 @@
             try {
                 const respuesta = await api.registro(email, password);
                 console.log('Registro exitoso:', respuesta);
-                alert('¡Bienvenido! Tu cuenta ha sido creada. Ya puedes iniciar sesión.');
+
+                // Si la cuenta ya puede iniciar sesión, entramos directamente al muro.
+                try {
+                    await api.login(email, password);
+                    window.location.href = 'muro.html';
+                    return;
+                } catch (loginError) {
+                    console.warn('La cuenta necesita verificación antes de entrar:', loginError);
+                }
+
+                alert('¡Bienvenido! Tu cuenta ha sido creada. Revisa tu correo para verificarla y poder entrar al muro.');
                 registerForm.reset();
             } catch (error) {
                 alert('Error al crear la cuenta: ' + error.message);

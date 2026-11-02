@@ -54,11 +54,15 @@ export function cerrarSesion() {
 }
 
 export async function fetchAutenticado(url, options = {}) {
+    const { skipAuthRedirect = false, ...fetchOptions } = options;
     const token = obtenerToken();
-    const headers = { ...(token ? { Authorization: 'Bearer ' + token } : {}), ...options.headers };
-    const response = await fetch(url, { ...options, headers });
+    const headers = {
+        ...(token ? { Authorization: 'Bearer ' + token } : {}),
+        ...fetchOptions.headers
+    };
+    const response = await fetch(url, { ...fetchOptions, headers });
 
-    if (response.status === 401) {
+    if (response.status === 401 && !skipAuthRedirect) {
         cerrarSesion();
         throw new Error('La sesión ha caducado. Inicia sesión de nuevo.');
     }

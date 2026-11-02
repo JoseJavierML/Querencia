@@ -1,5 +1,39 @@
 # Cronología
 
+## 2026-11-02 — Modal de lectura profunda y avisos temporales
+
+La expansión en línea del muro se sustituye por un modal de lectura profunda. Las tarjetas de más de 250 caracteres conservan el recorte con `...` y el botón “Leer más”; al pulsarlo, o al hacer clic en la tarjeta, se abre un diálogo centrado de 720 px como máximo sobre un backdrop oscurecido. El modal usa fondo translúcido con `backdrop-filter`, bordes y acentos dorados, muestra título, autor, fecha y contenido completo con `textContent`, se cierra con la “X”, el backdrop o `Escape` y restaura el scroll previo. Los clics en reacciones y papelera no abren la lectura.
+
+Los avisos de `mostrarEstado` incorporan una transición CSS de opacidad y desplazamiento y un `setTimeout` de 3,5 segundos para desaparecer. Los estados de carga, error de carga y muro vacío se mantienen visibles. Cada nueva llamada cancela los temporizadores anteriores.
+
+## 2026-11-01 — Scrollbar del formulario, autor anónimo y redirección al muro
+
+Se pule el diálogo de creación del muro. En el formulario, solo el `<textarea>` usa el scrollbar fino dorado del Diario (`scrollbar-width`, `::-webkit-scrollbar`, track transparente sobre el fondo oscuro y thumb dorado), de modo que desaparece la barra blanca nativa. El contenedor `.admin-dialog` deja de limitar su altura y de tener `overflow-y`; no introduce scroll propio. Las reflexiones de más de 250 caracteres se muestran colapsadas con `...` y “Leer más”, y la tarjeta o el control alternan el texto completo con “Mostrar menos”. Este comportamiento se sustituyó después por el modal de lectura profunda.
+
+El modelo `Debate` incorpora `isAnonymous` como booleano con `false` por defecto. El servicio solo acepta booleanos y normaliza la ausencia del campo; el router devuelve el flag y fuerza `authorEmail: null` cuando la reflexión es anónima. En el muro, el autor no anónimo se muestra sin el dominio del correo (`admin@querencia.es` → `admin`) y el anónimo como “Publicado por Anónimo”. El diálogo de administración añade una casilla “Publicar como anónimo” con checkbox personalizado en dorado.
+
+El login de `index.html` y el callback de Google redirigen ahora a `muro.html`. El registro intenta iniciar sesión automáticamente para entrar al muro; si la cuenta sigue pendiente de verificación, muestra el aviso correspondiente sin crear una sesión ficticia.
+
+La suite queda en **8 suites y 117 tests pasados** (`npm test -- --runInBand`), con pruebas nuevas para el flag de anonimato en modelo, servicio y router, incluida la ocultación de `authorEmail`.
+
+## 2026-11-01 — Rediseño UX del muro, borrado y portadas por URL
+
+Sobre la rama `feature/RF-MVP-muro-admin-seed` se retira el botón de creación del flujo normal del muro. En su lugar, `muro.js` construye un botón flotante fijo en la esquina inferior derecha con el mismo icono de lápiz del Diario y un diálogo modal para publicar. Ambos nodos, junto con la papelera de cada tarjeta, solo se insertan en el DOM cuando `obtenerUsuarioActual()` devuelve rol `admin`; un oyente no tiene ningún punto de entrada de administración.
+
+El backend incorpora `DELETE /api/debates/:id` con `authMiddleware` e `isAdminMiddleware`. `DebateRepository.deleteById` valida el `ObjectId` y usa `findByIdAndDelete`; el servicio traduce la ausencia del debate a `DebateNotFoundError` y el router responde `200` con `{ deleted: true, _id }` o `404`. El frontend añade `api.eliminarDebate(id)`, muestra una papelera por tarjeta solo a administradores y recarga el muro tras confirmar el borrado.
+
+El modelo `Debate` incorpora `coverImageUrl` opcional, recortado y limitado a 2048 caracteres. El servicio exige `http` o `https`, el formulario del diálogo incluye un campo de URL y la tarjeta renderiza esa imagen como portada, con el placeholder existente como respaldo si falta o falla. El seed incluye una portada de Camarón de la Isla y Paco de Lucía, completa la portada si el debate ya existía sin ella y carga `backend/.env` por ruta absoluta para poder ejecutarse desde la raíz.
+
+La suite queda en **8 suites y 111 tests pasados** (`npm test -- --runInBand`), con pruebas nuevas para el campo de portada, el borrado en modelo, servicio y router, y los permisos del endpoint.
+
+## 2026-11-01 — UI de administración, reacciones semánticas y seed del muro
+
+Rama `feature/RF-MVP-muro-admin-seed`. El muro pasa de seis reacciones a tres etiquetas semánticas exactas: `profundo` (“Profundo”), `melancolico` (“Melancólico”) y `rompeEsquemas` (“Rompe esquemas”). `debateConstants.js` centraliza claves y etiquetas; `debateRouter.js` devuelve `label`, `count` y `reactedByMe`; el modelo mantiene cada reacción como un array de `ObjectId` y el toggle sigue resolviéndose con `$pull` y `$addToSet`. Las claves retiradas `intimo`, `inquietante` y `tecnologico` dejan de exponerse y no se ejecuta una migración destructiva.
+
+En el frontend, `muro.js` construye el botón “Crear nueva reflexión” y su formulario solo cuando `obtenerUsuarioActual()` devuelve rol `admin`; para un oyente no existen nodos del panel en el DOM. El formulario usa `api.crearDebate(title, content)` y el backend mantiene la autorización real con `authMiddleware` e `isAdminMiddleware`. `muro.html` solo añade los estilos del panel, con glassmorphism oscuro y acentos dorados, sin iconos ni emojis.
+
+Se añade `seedDebate.js` y el comando `npm run seed`. El seed crea un debate sobre el duende, Camarón de la Isla y el consumo musical inmediato, es idempotente por título y resuelve el autor con `SEED_AUTHOR_EMAIL`, el primer administrador o un autor técnico si la base está vacía. Se registran las decisiones D-17 y D-18 y se actualizan D-14 y D-16. La suite queda en **8 suites y 97 tests pasados** (`npm test -- --runInBand`).
+
 ## 2026-11-01 — MVP del Muro de Debates (RF-MVP-Muro)
 
 Rama `feature/RF-MVP-muro-debates`. Se añade el modelo `Debate` con título, contenido, autor, fecha generada por el servidor y seis reacciones del alma (`rompeEsquemas`, `profundo`, `melancolico`, `intimo`, `inquietante`, `tecnologico`) almacenadas como arrays de `ObjectId` de `User`. El repositorio resuelve el toggle con `$pull` y `$addToSet`, de modo que cada usuario puede votar o retirar su voto sin duplicados. Se incorporan `POST /api/debates` con `authMiddleware` e `isAdminMiddleware`, `GET /api/debates` público con autenticación opcional y `POST /api/debates/:id/react` protegido. Se registran las decisiones D-14, D-15 y D-16.

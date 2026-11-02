@@ -2,7 +2,8 @@ const mongoose = require('mongoose');
 const {
     REACTION_TYPES,
     MAX_TITLE_LENGTH,
-    MAX_CONTENT_LENGTH
+    MAX_CONTENT_LENGTH,
+    MAX_COVER_URL_LENGTH
 } = require('./debateConstants');
 
 const reactionSchema = new mongoose.Schema(
@@ -30,6 +31,16 @@ const debateSchema = new mongoose.Schema(
             trim: true,
             maxlength: MAX_CONTENT_LENGTH
         },
+        coverImageUrl: {
+            type: String,
+            trim: true,
+            maxlength: MAX_COVER_URL_LENGTH,
+            default: null
+        },
+        isAnonymous: {
+            type: Boolean,
+            default: false
+        },
         authorId: {
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User',
@@ -52,8 +63,8 @@ const debateSchema = new mongoose.Schema(
 const Debate = mongoose.models.Debate || mongoose.model('Debate', debateSchema);
 
 const DebateRepository = {
-    create: async ({ title, content, authorId }) => {
-        const debate = new Debate({ title, content, authorId });
+    create: async ({ title, content, coverImageUrl = null, isAnonymous = false, authorId }) => {
+        const debate = new Debate({ title, content, coverImageUrl, isAnonymous, authorId });
         await debate.save();
         return debate;
     },
@@ -63,6 +74,14 @@ const DebateRepository = {
             .sort({ createdAt: -1 })
             .populate('authorId', 'email')
             .lean();
+    },
+
+    deleteById: async (id) => {
+        if (!mongoose.isValidObjectId(id)) {
+            return null;
+        }
+
+        return Debate.findByIdAndDelete(id);
     },
 
     toggleReaction: async (id, reaction, userId) => {

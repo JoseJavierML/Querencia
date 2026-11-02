@@ -55,6 +55,63 @@ curl -X POST http://localhost:3000/api/diario \
   -d '{"text":"Primera escucha del día","title":"Mañana"}'
 ```
 
+## Muro de Debates
+
+El muro es el espacio público de reflexión de Querencia. Cualquier visitante puede leer las reflexiones publicadas; para reaccionar es necesario iniciar sesión. Las reacciones no usan iconos ni emojis: son etiquetas semánticas y filosóficas que se activan y desactivan con un clic. Cada reflexión puede llevar una portada propia mediante una URL de imagen. El autor se muestra sin el dominio del correo y, si la reflexión es anónima, aparece como “Publicado por Anónimo”.
+
+| Reacción | Clave interna | Comportamiento |
+|---|---|---|
+| Profundo | `profundo` | Alterna el voto del usuario |
+| Melancólico | `melancolico` | Alterna el voto del usuario |
+| Rompe esquemas | `rompeEsquemas` | Alterna el voto del usuario |
+
+Cada reacción se guarda en MongoDB como un array de `ObjectId` de usuarios, no como un contador. Si el usuario vuelve a pulsar la misma reacción, su voto se retira. La API devuelve `count`, `reactedByMe` y `label` para que la interfaz muestre siempre el texto exacto.
+
+### Roles
+
+| Rol | Estado | Permisos en el muro |
+|---|---|---|
+| `oyente` | Implementado en backend como `usuario`; la interfaz lo muestra como “Oyente” | Leer y reaccionar |
+| `editor` | No implementado en este MVP; reservado para trabajo futuro | Sin permisos ni UI propia |
+| `admin` | Implementado | Crear y eliminar reflexiones, leer y reaccionar |
+
+La creación y el borrado de reflexiones están reservados a `admin`. En `muro.js`, el botón flotante con el lápiz y el diálogo de creación solo se insertan en el DOM cuando la sesión tiene rol `admin`; para un `oyente` no existen. El icono de la papelera de cada tarjeta también se genera únicamente para administradores. El diálogo incluye una casilla “Publicar como anónimo” que envía `isAnonymous: true`; en ese caso la API no expone el correo del autor. El textarea usa el scrollbar fino dorado del Diario, mientras que el contenedor del diálogo no define scroll propio. La autorización real no depende del navegador: `POST /api/debates` y `DELETE /api/debates/:id` exigen `authMiddleware` e `isAdminMiddleware`, y devuelven `403` a cualquier usuario que no sea administrador.
+
+Las reflexiones de más de 250 caracteres aparecen colapsadas con puntos suspensivos y un control “Leer más”. Al pulsarlo, o al hacer clic en la tarjeta, se abre un modal de lectura profunda centrado sobre un fondo oscurecido. El modal muestra la reflexión completa con el mismo lenguaje visual del muro —tonos oscuros, acentos dorados y glassmorphism—, se cierra con la “X”, con el fondo o con `Escape`, y devuelve al mismo punto de scroll. Los clics en reacciones y en la papelera no abren la lectura.
+
+Los avisos del muro, como “Reflexión publicada” o “Reflexión eliminada”, se desvanecen automáticamente a los 3,5 segundos. Los mensajes de carga, error de carga y muro vacío se mantienen visibles hasta que cambia el estado.
+
+### API del Muro
+
+| Método | Ruta | Cuerpo | Respuesta |
+|---|---|---|---|
+| POST | `/api/debates` | `{ "title": "...", "content": "...", "coverImageUrl": "https://...", "isAnonymous": false }` | `201` con la reflexión creada; solo administradores |
+| GET | `/api/debates` | — | `200` con las reflexiones, de la más reciente a la más antigua; público, con `reactedByMe` si hay token |
+| POST | `/api/debates/:id/react` | `{ "reaction": "profundo" }` | `200` con `{ "_id", "reactions" }`; requiere sesión |
+| DELETE | `/api/debates/:id` | — | `200` con `{ "deleted": true, "_id": "..." }`; solo administradores |
+
+- `title` es obligatorio, se recorta y admite hasta 120 caracteres.
+- `content` es obligatorio, se recorta y admite hasta 5000 caracteres.
+- `coverImageUrl` es opcional, se recorta y admite hasta 2048 caracteres. Solo se aceptan URLs `http` o `https`; si se omite, la tarjeta usa la portada por defecto.
+- `isAnonymous` es opcional y booleano; por defecto vale `false`. Si es `true`, `authorEmail` se devuelve como `null` y el muro muestra “Publicado por Anónimo”.
+- Las reacciones válidas son `profundo`, `melancolico` y `rompeEsquemas`.
+- `createdAt` lo genera el servidor.
+- No hay edición de reflexiones en este MVP. El borrado queda reservado a administradores.
+
+### Redirección tras autenticación
+
+El inicio de sesión desde `index.html` redirige a `muro.html`, igual que el callback de Google. Tras un registro, el frontend intenta iniciar sesión automáticamente y, si la cuenta ya está activa, entra al muro; si sigue pendiente de verificación, muestra el aviso correspondiente. `cerrarSesion()` vuelve a `index.html`.
+
+### Datos de prueba
+
+El script `backend/seedDebate.js` crea una reflexión inicial sobre el duende, Camarón de la Isla y el consumo musical inmediato, con una portada de Camarón y Paco de Lucía. Es idempotente: si el título ya existe, no crea un duplicado y completa la portada si faltaba.
+
+```bash
+node backend/seedDebate.js
+```
+
+También puede ejecutarse con `cd backend && npm run seed`. El script requiere `MONGO_URI` en `backend/.env`. Para elegir el autor, usa `SEED_AUTHOR_EMAIL`; si no se define, reutiliza el primer usuario con rol `admin`. Si no hay ningún administrador, crea un autor técnico `seed@querencia.local` con rol `admin`, estado activo y una contraseña aleatoria que no se imprime. Ese autor es solo para datos de desarrollo y no está pensado para iniciar sesión.
+
 ## Estado Actual (Sprint 1)
 - [x] **Hito 1:** Esqueleto, backend (lógica en memoria), API, pruebas automatizadas, pipeline de Integración Continua (CI) y Despliegue Continuo (CD).
 - [x] **Hito 2:** Interfaz frontend, registro e inicio de sesión, mantenimiento de sesión.
@@ -64,3 +121,11 @@ curl -X POST http://localhost:3000/api/diario \
 ## Estado Actual (Sprint 2)
 - [x] **RF-MVP-Diario:** backend del diario íntimo con esquema `DiaryEntry`, endpoints protegidos y pruebas unitarias con dobles.
 - [x] **RF-MVP-Diario-Frontend:** guardado, historial “Ecos”, título opcional, lectura completa y borrado de ecos propios.
+- [x] **RF-MVP-Muro:** backend del muro con reacciones `Profundo`, `Melancólico` y `Rompe esquemas`, toggle sin doble voto y creación reservada a administradores.
+- [x] **RF-MVP-Muro-Frontend:** tarjetas dinámicas, reacciones autenticadas, portadas por URL y borrado visible solo para administradores.
+- [x] **RF-MVP-Muro-Admin-UX:** botón flotante con lápiz y diálogo de creación que solo se renderizan para administradores.
+- [x] **RF-MVP-Muro-Autor:** autor sin dominio de correo, casilla de anonimato y ocultación del correo en la API.
+- [x] **RF-MVP-Muro-Lectura:** reflexiones de más de 250 caracteres colapsadas con “Leer más”, modal de lectura completa y retorno al mismo punto del muro.
+- [x] **RF-MVP-Muro-Notificaciones:** avisos del muro con desvanecimiento automático y transición suave.
+- [x] **RF-MVP-Auth-Redirect:** login y callback de Google redirigen al muro; el registro intenta iniciar sesión automáticamente.
+- [x] **RF-MVP-Muro-Seed:** script `seedDebate.js` con un hilo inicial idempotente, portada musical y comando `npm run seed`.

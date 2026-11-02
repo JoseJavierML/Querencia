@@ -1,5 +1,5 @@
 const express = require('express');
-const { REACTION_TYPES } = require('./debateConstants');
+const { REACTION_DEFINITIONS } = require('./debateConstants');
 const {
     DebateValidationError,
     DebateUserNotFoundError,
@@ -7,9 +7,10 @@ const {
 } = require('./debateService');
 
 const toReactionsResponse = (reactions = {}, viewerId = null) => {
-    return REACTION_TYPES.reduce((response, reaction) => {
-        const users = Array.isArray(reactions[reaction]) ? reactions[reaction] : [];
-        response[reaction] = {
+    return REACTION_DEFINITIONS.reduce((response, { key, label }) => {
+        const users = Array.isArray(reactions[key]) ? reactions[key] : [];
+        response[key] = {
+            label,
             count: users.length,
             reactedByMe: Boolean(
                 viewerId && users.some((userId) => String(userId) === String(viewerId))
@@ -32,14 +33,20 @@ const getAuthorEmail = (debate, fallback = null) => {
     return null;
 };
 
-const toDebateResponse = (debate, viewerId = null, authorEmail = null) => ({
-    _id: debate._id,
-    title: debate.title,
-    content: debate.content,
-    createdAt: debate.createdAt,
-    authorEmail: getAuthorEmail(debate, authorEmail),
-    reactions: toReactionsResponse(debate.reactions, viewerId)
-});
+const toDebateResponse = (debate, viewerId = null, authorEmail = null) => {
+    const isAnonymous = Boolean(debate.isAnonymous);
+
+    return {
+        _id: debate._id,
+        title: debate.title,
+        content: debate.content,
+        coverImageUrl: debate.coverImageUrl || null,
+        isAnonymous,
+        createdAt: debate.createdAt,
+        authorEmail: isAnonymous ? null : getAuthorEmail(debate, authorEmail),
+        reactions: toReactionsResponse(debate.reactions, viewerId)
+    };
+};
 
 const toReactionResponse = (debate, viewerId) => ({
     _id: debate._id,
@@ -84,7 +91,9 @@ const createDebateRouter = ({ debateService, authMiddleware, adminMiddleware }) 
             const debate = await debateService.createDebate({
                 email: req.user.email,
                 title: req.body ? req.body.title : undefined,
-                content: req.body ? req.body.content : undefined
+                content: req.body ? req.body.content : undefined,
+                coverImageUrl: req.body ? req.body.coverImageUrl : undefined,
+                isAnonymous: req.body ? req.body.isAnonymous : undefined
             });
 
             return res.status(201).json(toDebateResponse(debate, null, req.user.email));
@@ -104,6 +113,19 @@ const createDebateRouter = ({ debateService, authMiddleware, adminMiddleware }) 
             );
         } catch (error) {
             return respondWithError(res, error, 'No se pudieron obtener los debates');
+        }
+    });
+
+    router.delete('/:id', authMiddleware, adminMiddleware, async (req, res) => {
+        try {
+            const debate = await debateService.deleteDebate({ id: req.params.id });
+
+            return res.status(200).json({
+                deleted: true,
+                _id: debate._id
+            });
+        } catch (error) {
+            return respondWithError(res, error, 'No se pudo eliminar el debate');
         }
     });
 
