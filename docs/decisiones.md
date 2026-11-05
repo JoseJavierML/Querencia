@@ -1,8 +1,8 @@
 ---
 type: Decisiones
 title: Decisiones técnicas detectadas
-description: Decisiones observables en el código, el README y el historial.
-timestamp: 2026-11-02
+description: Decisiones observables en el código, el README y el historial, con las incorporaciones del Sprint 2.
+timestamp: 2026-11-05
 ---
 
 # Decisiones
@@ -39,13 +39,13 @@ timestamp: 2026-11-02
 
 **Estado:** vigente. La especificación indicaba que el cambio debía conservar la capa lógica; la equivalencia completa queda por verificar.
 
-## D-05 — Sesiones mediante tokens en memoria del proceso
+## D-05 — Sesiones mediante tokens JWT stateless
 
-**Qué se decidió:** gUtilizar tokens JWT stateless validados criptográficamente en el backend y almacenados en el localStorage del cliente (querencia_user y querencia_token), abandonando cualquier gestión de sesión en la memoria de Node.js.
+**Qué se decidió:** utilizar tokens JWT stateless validados criptográficamente en el backend y almacenados en el `localStorage` del cliente (`querencia_user` y `querencia_token`), abandonando cualquier gestión de sesión en la memoria de Node.js.
 
-**Por qué:** es lo que implementan `authMiddleware.js`, `api.js` y `auth.js`. : Google App Engine utiliza un entorno efímero y auto-escalable. Si almacenamos la sesión en la memoria de un proceso de Node.js, las sesiones de los usuarios se perderían cada vez que el servidor se reinicia, se suspende por inactividad o levanta una instancia nueva. Un JWT permite que cualquier instancia valide al usuario sin depender de una memoria local.
+**Por qué:** Google App Engine utiliza un entorno efímero y autoescalable. Si almacenamos la sesión en la memoria de un proceso de Node.js, las sesiones de los usuarios se perderían cada vez que el servidor se reinicia, se suspende por inactividad o levanta una instancia nueva. Un JWT permite que cualquier instancia valide al usuario sin depender de una memoria local.
 
-**Estado:** vigente.
+**Estado:** decisión vigente, pendiente de conciliar con la implementación. `authMiddleware.js` todavía guarda las sesiones en un `Map` en memoria del proceso mediante `generateToken` y `deleteToken`; la validación JWT stateless descrita aquí queda como deuda técnica registrada en el Sprint 2.
 
 ## D-06 — CI y despliegue desde GitHub Actions
 
@@ -59,9 +59,9 @@ timestamp: 2026-11-02
 
 **Qué se decidió:** el workflow actual despliega en Google App Engine.
 
-**Por qué:** `ci.yml` reconstruye `app.yaml` y ejecuta `gcloud app deploy`; el historial contiene `27b848b` con el cambio hacia GCP. El README aún menciona Render.
+**Por qué:** `ci.yml` reconstruye `app.yaml` y ejecuta `gcloud app deploy`; el historial contiene `27b848b` con el cambio hacia GCP. El README ya documenta App Engine como destino.
 
-**Estado:** vigente en el workflow; la documentación pública del destino queda **Por verificar**.
+**Estado:** vigente en el workflow; la disponibilidad de la URL pública sigue **Por verificar**.
 
 ## D-08 — Diario privado por usuario
 
@@ -89,9 +89,9 @@ timestamp: 2026-11-02
 
 ## D-11 — Consumo de la API con rutas relativas
 
-**Qué se decidió:** el frontend consumirá la API mediante `fetch` a rutas relativas que empiezan por `/api`, sin URL absoluta ni configuración de CORS en el cliente.
+**Qué se decidió:** el frontend consume la API mediante `fetch` a rutas relativas que empiezan por `/api`, sin URL absoluta ni configuración de CORS en el cliente.
 
-**Por qué:** TODO (alumno)
+**Por qué:** el mismo código funciona en local y en el despliegue sin cambiar la URL base; `express.static` sirve el frontend desde el mismo origen y se evita depender de CORS o de variables de entorno en el navegador.
 
 **Estado:** vigente.
 
@@ -182,3 +182,27 @@ timestamp: 2026-11-02
 **Por qué:** los avisos ya no se acumulan indefinidamente en la pantalla, pero los estados estructurales del muro siguen visibles mientras sean relevantes.
 
 **Estado:** vigente.
+
+## D-23 — Rol `editor` documentado pero no implementado (YAGNI)
+
+**Qué se decidió:** reconocer en la documentación la posibilidad futura de un rol `editor`, pero no implementarlo en el MVP. El código solo distingue `usuario` (mostrado como “Oyente”) y `admin`; `adminMiddleware.js` autoriza exclusivamente `req.user.role === 'admin'`. No existe una interfaz, una ruta ni una asignación de rol `editor` en la API.
+
+**Por qué:** no hay un caso de uso aprobado que requiera un rol intermedio entre oyente y administrador. Aplicar YAGNI evita permisos sin probar, condicionales adicionales y una UI que no aporta valor al MVP. Documentar la intención conserva la idea para una iteración futura sin convertirla en deuda de código.
+
+**Estado:** vigente. `editor` no se asigna ni se comprueba en el código actual.
+
+## D-24 — Portadas mediante URL externa en lugar de subida multipart
+
+**Qué se decidió:** `Debate.coverImageUrl` y `VeloTrack.coverUrl` almacenan una URL `http` o `https`, recortada y limitada a 2048 caracteres. No se implementa subida física de archivos, `multipart/form-data`, `multer` ni almacenamiento propio de imágenes. El frontend usa la URL como origen de la imagen y muestra el placeholder correspondiente si falta o falla.
+
+**Por qué:** el MVP solo necesita mostrar una portada, no gestionarla. Depender de una URL externa evita administrar binarios, permisos, cuotas, carpetas y limpieza, mantiene el backend ligero y no exige un volumen persistente en App Engine. Si en el futuro se requiere subida física, se podrá añadir un servicio de almacenamiento manteniendo la URL como contrato de la API.
+
+**Estado:** vigente.
+
+## D-25 — Anonimato de las publicaciones administrativas con `isAnonymous`
+
+**Qué se decidió:** el diálogo de creación del muro, disponible solo para `admin`, ofrece la casilla “Publicar como anónimo” y envía `isAnonymous`. El backend lo persiste como booleano con `false` por defecto, lo devuelve en cada debate y, cuando es `true`, fuerza `authorEmail: null`. El frontend muestra “Publicado por Anónimo” y no recibe el correo del autor.
+
+**Por qué:** permite que el administrador publique sin exponer su identidad, algo útil para hilos de prueba o contenidos que deben leerse sin sesgo de autor. El anonimato se aplica en la respuesta HTTP, no solo en la vista, para que el dato no se filtre. Se limita al formulario administrativo porque en el MVP solo `admin` puede publicar; no se crea un sistema de identidad anónima separado ni se permite elegir autor.
+
+**Estado:** vigente. Ver también D-19, que detalla el contrato y la normalización del campo.

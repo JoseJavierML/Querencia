@@ -1,7 +1,7 @@
 ---
 type: Arquitectura
-title: Arquitectura del Sprint 1
-description: Capas comprobables del backend y del frontend, con su frontera HTTP.
+title: Arquitectura del MVP (Sprint 2 en curso)
+description: Capas comprobables del backend y del frontend, modelos de Mongoose y endpoints consolidados.
 timestamp: 2026-11-05
 ---
 
@@ -14,6 +14,15 @@ timestamp: 2026-11-05
 - **Datos:** [database.js](../backend/database.js) conecta Mongoose con MongoDB; `userModel.js` usa el modelo persistente `User`, [diaryModel.js](../backend/diaryModel.js) define `DiaryEntry` con referencia a `User`, [debateModel.js](../backend/debateModel.js) define `Debate` con autor, portada opcional (`coverImageUrl`), flag de anonimato (`isAnonymous`) y reacciones como arrays de `ObjectId`, y [veloTrackModel.js](../backend/veloTrackModel.js) define `VeloTrack` con una pista única por fecha, metadatos musicales y un array de reflexiones con `userId` y `text`.
 - **Datos de desarrollo:** [seedDebate.js](../backend/seedDebate.js) crea un debate inicial idempotente con portada musical. Reutiliza un administrador existente o crea un autor técnico si la base de datos todavía no tiene ninguno.
 - **Servicios transversales:** [logger.js](../backend/logger.js) registra actividad y [mailer.js](../backend/mailer.js) prepara el correo de confirmación.
+
+## Modelos de datos
+
+Mongoose define las colecciones persistentes del MVP. Los repositorios encapsulan las consultas y los servicios de dominio no importan Express ni Mongoose.
+
+- **`User`** ([userModel.js](../backend/userModel.js)): `email` único, contraseña hasheada con bcrypt, `role` (`usuario` por defecto), `status` y `verificationToken`.
+- **`DiaryEntry`** ([diaryModel.js](../backend/diaryModel.js)): `userId` como `ObjectId` de `User`, `text`, `title` opcional y `createdAt` generado por el servidor. La consulta por `userId` sostiene el aislamiento del diario.
+- **`Debate`** ([debateModel.js](../backend/debateModel.js)): `title` y `content` obligatorios, `coverImageUrl` opcional, `isAnonymous` booleano con `false` por defecto, `authorId` como `ObjectId` de `User` y `createdAt`. `reactions` es un subesquema con tres arrays de `ObjectId`: `profundo`, `melancolico` y `rompeEsquemas`.
+- **`VeloTrack`** ([veloTrackModel.js](../backend/veloTrackModel.js)): `releaseDate` obligatoria y única, `audioUrl`, `title`, `artist`, `coverUrl` opcional y `createdAt`. `reflections` es un array de subdocumentos con `userId` como `ObjectId` de `User`, `text` y `createdAt`; la unicidad de `releaseDate` impide dos pistas para el mismo día.
 
 ## Frontend
 
@@ -56,6 +65,10 @@ El seed se ejecuta con `node backend/seedDebate.js` desde la raíz o con `npm ru
 
 ## Endpoints
 
+`server.js` monta tres routers de dominio bajo `/api/diario`, `/api/debates` y `/api/velo`. Las rutas de autenticación, usuarios y administración siguen definidas directamente en `server.js`.
+
+### Autenticación, usuarios y administración
+
 | Método | Ruta | Quién puede |
 |---|---|---|
 | GET | `/api/auth/google` | Cualquiera |
@@ -66,18 +79,33 @@ El seed se ejecuta con `node backend/seedDebate.js` desde la raíz o con `npm ru
 | POST | `/api/logout` | Cualquiera; elimina el token si se envía |
 | GET | `/api/session` | Usuario con sesión |
 | GET | `/api/admin/dashboard` | Administrador con sesión |
-| DELETE | `/api/users/:email` | Administrador con sesión |
 | GET | `/api/users` | Administrador con sesión |
+| DELETE | `/api/users/:email` | Administrador con sesión |
+| POST | `/api/prueba/dominio` | Cualquiera |
+
+### Diario
+
+| Método | Ruta | Quién puede |
+|---|---|---|
 | POST | `/api/diario` | Usuario con sesión; crea una entrada propia con título opcional |
 | GET | `/api/diario` | Usuario con sesión; lista solo sus entradas |
 | DELETE | `/api/diario/:id` | Usuario con sesión; elimina solo un eco propio |
+
+### Muro
+
+| Método | Ruta | Quién puede |
+|---|---|---|
 | POST | `/api/debates` | Administrador con sesión; crea un debate con portada opcional y anonimato opcional |
 | GET | `/api/debates` | Público; con token válido añade `reactedByMe`; cada reacción incluye `label` y el debate incluye `coverImageUrl` e `isAnonymous`; `authorEmail` es `null` si es anónimo |
 | DELETE | `/api/debates/:id` | Administrador con sesión; elimina un debate |
 | POST | `/api/debates/:id/react` | Usuario con sesión; alterna su reacción y devuelve `label`, `count` y `reactedByMe` |
+
+### El Velo
+
+| Método | Ruta | Quién puede |
+|---|---|---|
 | GET | `/api/velo/today` | Usuario con sesión; devuelve solo `audioUrl` si no ha reflexionado, o la pista revelada con las reflexiones si ya participó; `404` si no hay pista hoy |
 | POST | `/api/velo/today/reflect` | Usuario con sesión; guarda una reflexión de 1 a 5000 caracteres y devuelve la pista revelada; `409` si ya había participado |
 | POST | `/api/velo/tracks` | Administrador con sesión; programa una pista única para una fecha de hoy o futura |
 | GET | `/api/velo/tracks` | Administrador con sesión; lista la cola con estado y número de reflexiones |
 | PUT | `/api/velo/tracks/:id` | Administrador con sesión; edita una pista de hoy o futura; las pasadas son inmutables |
-| POST | `/api/prueba/dominio` | Cualquiera |

@@ -1,5 +1,11 @@
 # Cronología
 
+## 2026-11-05 — Actualización documental intermedia del Sprint 2
+
+Rama `docs/progreso-sprint2`. Se actualiza la documentación de progreso sin cambiar el código de producción. `sprint-2.md` deja de ser un stub y registra los PBIs ya integrados de Diario (aislamiento por usuario), Muro (roles, UI administrativa, modal de lectura y reacciones semánticas) y El Velo (escucha ciega y cola administrativa), además del trabajo abierto. `requisitos.md` incorpora las filas de El Velo y del rol `editor` como decisión YAGNI, y actualiza la suite a 11 suites y 169 tests. `arquitectura.md` añade una sección de modelos de Mongoose (`Debate` y `VeloTrack`) y reorganiza los endpoints por dominio. `decisiones.md` registra D-23 (YAGNI del rol editor), D-24 (portadas por URL externa sin multipart) y D-25 (anonimato administrativo con `isAnonymous`), y corrige el estado de D-05 y D-07. `README.md` presenta las tres experiencias del MVP y su estado actual; `index.md` y `procesos.md` se alinean con el Sprint 2.
+
+La suite se mantiene en **11 suites y 169 tests pasados** (`npm test -- --runInBand`); esta actualización no modifica el código de producción.
+
 ## 2026-11-05 — El Velo (escucha ciega diaria) y cola musical administrativa
 
 Rama `feature/velo-escucha-ciega`. Se añade El Velo, una pista diaria que permanece oculta hasta que el usuario envía su reflexión. El modelo `VeloTrack` guarda `releaseDate`, `audioUrl`, `title`, `artist`, `coverUrl` y un array de reflexiones con `userId`, `text` y `createdAt`; `releaseDate` es único y se normaliza a medianoche UTC a partir del día calculado en `Europe/Madrid`. De este modo solo puede existir una pista por fecha y el “día actual” no depende de la zona horaria del proceso.
