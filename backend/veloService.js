@@ -1,0 +1,411 @@
+const {
+    MAX_TITLE_LENGTH,
+    MAX_ARTIST_LENGTH,
+    MAX_AUDIO_URL_LENGTH,
+    MAX_COVER_URL_LENGTH,
+    MAX_REFLECTION_LENGTH,
+    VELO_TIME_ZONE
+} = require('./veloConstants');
+
+class VeloValidationError extends Error {
+    constructor(message) {
+        super(message);
+        this.name = 'VeloValidationError';
+    }
+}
+
+class VeloUserNotFoundError extends Error {
+    constructor(message = 'No existe un usuario asociado a la sesión') {
+        super(message);
+        this.name = 'VeloUserNotFoundError';
+    }
+}
+
+class VeloTrackNotFoundError extends Error {
+    constructor(message = 'No hay una pista programada para hoy') {
+        super(message);
+        this.name = 'VeloTrackNotFoundError';
+    }
+}
+
+class VeloAlreadyReflectedError extends Error {
+    constructor(message = 'Ya has enviado tu reflexión para la pista de hoy') {
+        super(message);
+        this.name = 'VeloAlreadyReflectedError';
+    }
+}
+
+class VeloDuplicateDateError extends Error {
+    constructor(message = 'Ya existe una pista programada para esa fecha') {
+        super(message);
+        this.name = 'VeloDuplicateDateError';
+    }
+}
+
+const DATE_KEY_PATTERN = /^(\d{4})-(\d{2})-(\d{2})$/;
+
+const getDateKeyInTimeZone = (date, timeZone) => {
+    if (!(date instanceof Date) || Number.isNaN(date.getTime())) {
+        throw new VeloValidationError('La fecha de publicación no es válida');
+    }
+
+    const parts = new Intl.DateTimeFormat('en-US', {
+        timeZone,
+        year: 'numeric',
+        month: '2-digit',
+        day: '2-digit'
+    }).formatToParts(date);
+
+    const year = parts.find((part) => part.type === 'year').value;
+    const month = parts.find((part) => part.type === 'month').value;
+    const day = parts.find((part) => part.type === 'day').value;
+
+    return `${year}-${month}-${day}`;
+};
+
+const toUtcMidnight = (dateKey) => {
+    const match = DATE_KEY_PATTERN.exec(dateKey);
+    if (!match) {
+        throw new VeloValidationError('La fecha de publicación no es válida');
+    }
+
+    const year = Number(match[1]);
+    const month = Number(match[2]);
+    const day = Number(match[3]);
+    const date = new Date(Date.UTC(year, month - 1, day));
+
+    if (
+        date.getUTCFullYear() !== year ||
+        date.getUTCMonth() !== month - 1 ||
+        date.getUTCDate() !== day
+    ) {
+        throw new VeloValidationError('La fecha de publicación no es válida');
+    }
+
+    return date;
+};
+
+const normalizeReleaseDate = (releaseDate, timeZone) => {
+    if (releaseDate instanceof Date) {
+        if (Number.isNaN(releaseDate.getTime())) {
+            throw new VeloValidationError('La fecha de publicación no es válida');
+        }
+        return toUtcMidnight(getDateKeyInTimeZone(releaseDate, timeZone));
+    }
+
+    if (typeof releaseDate !== 'string') {
+        throw new VeloValidationError('La fecha de publicación es obligatoria');
+    }
+
+    const normalized = releaseDate.trim();
+    if (normalized.length === 0) {
+        throw new VeloValidationError('La fecha de publicación es obligatoria');
+    }
+
+    if (DATE_KEY_PATTERN.test(normalized)) {
+        return toUtcMidnight(normalized);
+    }
+
+    const parsedDate = new Date(normalized);
+    if (Number.isNaN(parsedDate.getTime())) {
+        throw new VeloValidationError('La fecha de publicación no es válida');
+    }
+
+    return toUtcMidnight(getDateKeyInTimeZone(parsedDate, timeZone));
+};
+
+const normalizeText = (value, { field, maxLength }) => {
+    if (typeof value !== 'string') {
+        throw new VeloValidationError(`${field} es obligatorio`);
+    }
+
+    const normalized = value.trim();
+    if (normalized.length === 0) {
+        throw new VeloValidationError(`${field} no puede estar vacío`);
+    }
+    if (normalized.length > maxLength) {
+        throw new VeloValidationError(`${field} no puede superar los ${maxLength} caracteres`);
+    }
+
+    return normalized;
+};
+
+const normalizeUrl = (value, { field, maxLength, required }) => {
+    if (value === undefined || value === null) {
+        if (required) {
+            throw new VeloValidationError(`${field} es obligatorio`);
+        }
+        return null;
+    }
+    if (typeof value !== 'string') {
+        throw new VeloValidationError(`${field} no es válido`);
+    }
+
+    const normalized = value.trim();
+    if (normalized.length === 0) {
+        if (required) {
+            throw new VeloValidationError(`${field} es obligatorio`);
+        }
+        return null;
+    }
+    if (normalized.length > maxLength) {
+        throw new VeloValidationError(`${field} no puede superar los ${maxLength} caracteres`);
+    }
+
+    let parsedUrl;
+    try {
+        parsedUrl = new URL(normalized);
+    } catch (error) {
+        throw new VeloValidationError(`${field} no es válido`);
+    }
+
+    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
+        throw new VeloValidationError(`${field} debe empezar por http o https`);
+    }
+
+    return normalized;
+};
+
+const normalizeTitle = (title) => normalizeText(title, {
+    field: 'El título',
+    maxLength: MAX_TITLE_LENGTH
+});
+
+const normalizeArtist = (artist) => normalizeText(artist, {
+    field: 'El artista',
+    maxLength: MAX_ARTIST_LENGTH
+});
+
+const normalizeAudioUrl = (audioUrl) => normalizeUrl(audioUrl, {
+    field: 'La URL del audio',
+    maxLength: MAX_AUDIO_URL_LENGTH,
+    required: true
+});
+
+const normalizeCoverUrl = (coverUrl) => normalizeUrl(coverUrl, {
+    field: 'La URL de la portada',
+    maxLength: MAX_COVER_URL_LENGTH,
+    required: false
+});
+
+const normalizeReflection = (text) => normalizeText(text, {
+    field: 'La reflexión',
+    maxLength: MAX_REFLECTION_LENGTH
+});
+
+const createVeloService = ({
+    veloRepository,
+    userRepository,
+    now = () => new Date(),
+    timeZone = VELO_TIME_ZONE
+} = {}) => {
+    if (!veloRepository) {
+        throw new Error('veloRepository es obligatorio');
+    }
+    if (!userRepository) {
+        throw new Error('userRepository es obligatorio');
+    }
+
+    const getTodayStart = () => toUtcMidnight(getDateKeyInTimeZone(now(), timeZone));
+
+    const normalizeDateAgainstToday = (releaseDate, todayStart) => {
+        const normalizedDate = normalizeReleaseDate(releaseDate, timeZone);
+        if (normalizedDate.getTime() < todayStart.getTime()) {
+            throw new VeloValidationError('La fecha de publicación no puede ser anterior a hoy');
+        }
+        return normalizedDate;
+    };
+
+    const getTrackStatus = (releaseDate, todayStart) => {
+        const trackDate = new Date(releaseDate);
+        if (Number.isNaN(trackDate.getTime())) {
+            throw new VeloValidationError('La fecha de la pista no es válida');
+        }
+
+        const trackStart = toUtcMidnight(getDateKeyInTimeZone(trackDate, timeZone));
+        if (trackStart.getTime() === todayStart.getTime()) {
+            return 'today';
+        }
+        return trackStart.getTime() < todayStart.getTime() ? 'past' : 'future';
+    };
+
+    const resolveUserId = async (email) => {
+        const user = await userRepository.findByEmail(email);
+        if (!user) {
+            throw new VeloUserNotFoundError();
+        }
+        return user._id;
+    };
+
+    const getToday = async ({ email } = {}) => {
+        const viewerId = await resolveUserId(email);
+        const todayStart = getTodayStart();
+        const track = await veloRepository.findByReleaseDate(todayStart);
+
+        if (!track) {
+            throw new VeloTrackNotFoundError();
+        }
+
+        const hasReflected = (track.reflections || []).some(
+            (reflection) => String(reflection.userId) === String(viewerId)
+        );
+
+        return { track, hasReflected, viewerId };
+    };
+
+    const reflect = async ({ email, text } = {}) => {
+        const normalizedText = normalizeReflection(text);
+        const viewerId = await resolveUserId(email);
+        const todayStart = getTodayStart();
+        const track = await veloRepository.findByReleaseDate(todayStart);
+
+        if (!track) {
+            throw new VeloTrackNotFoundError();
+        }
+
+        const alreadyReflected = (track.reflections || []).some(
+            (reflection) => String(reflection.userId) === String(viewerId)
+        );
+        if (alreadyReflected) {
+            throw new VeloAlreadyReflectedError();
+        }
+
+        const result = await veloRepository.addReflection(track._id, viewerId, normalizedText);
+        if (!result || (!result.track && !result.alreadyReflected)) {
+            throw new VeloTrackNotFoundError();
+        }
+        if (result.alreadyReflected) {
+            throw new VeloAlreadyReflectedError();
+        }
+
+        return { track: result.track, viewerId };
+    };
+
+    const createTrack = async ({
+        releaseDate,
+        audioUrl,
+        title,
+        artist,
+        coverUrl
+    } = {}) => {
+        const todayStart = getTodayStart();
+        const normalizedReleaseDate = normalizeDateAgainstToday(releaseDate, todayStart);
+        const normalizedTitle = normalizeTitle(title);
+        const normalizedArtist = normalizeArtist(artist);
+        const normalizedAudioUrl = normalizeAudioUrl(audioUrl);
+        const normalizedCoverUrl = normalizeCoverUrl(coverUrl);
+
+        const existingTrack = await veloRepository.findByReleaseDate(normalizedReleaseDate);
+        if (existingTrack) {
+            throw new VeloDuplicateDateError();
+        }
+
+        let track;
+        try {
+            track = await veloRepository.create({
+                releaseDate: normalizedReleaseDate,
+                audioUrl: normalizedAudioUrl,
+                title: normalizedTitle,
+                artist: normalizedArtist,
+                coverUrl: normalizedCoverUrl
+            });
+        } catch (error) {
+            if (error && error.code === 11000) {
+                throw new VeloDuplicateDateError();
+            }
+            throw error;
+        }
+
+        return {
+            track,
+            status: getTrackStatus(normalizedReleaseDate, todayStart)
+        };
+    };
+
+    const listTracks = async () => {
+        const tracks = await veloRepository.findAll();
+        const todayStart = getTodayStart();
+
+        return tracks.map((track) => ({
+            ...track,
+            status: getTrackStatus(track.releaseDate, todayStart)
+        }));
+    };
+
+    const updateTrack = async ({
+        id,
+        releaseDate,
+        audioUrl,
+        title,
+        artist,
+        coverUrl
+    } = {}) => {
+        const track = await veloRepository.findById(id);
+        if (!track) {
+            throw new VeloTrackNotFoundError('La pista no existe');
+        }
+
+        const todayStart = getTodayStart();
+        const currentDate = new Date(track.releaseDate);
+        if (currentDate.getTime() < todayStart.getTime()) {
+            throw new VeloValidationError('No se puede editar una pista pasada');
+        }
+
+        const nextReleaseDate = releaseDate === undefined
+            ? currentDate
+            : normalizeDateAgainstToday(releaseDate, todayStart);
+        const nextTitle = title === undefined ? normalizeTitle(track.title) : normalizeTitle(title);
+        const nextArtist = artist === undefined ? normalizeArtist(track.artist) : normalizeArtist(artist);
+        const nextAudioUrl = audioUrl === undefined ? normalizeAudioUrl(track.audioUrl) : normalizeAudioUrl(audioUrl);
+        const nextCoverUrl = coverUrl === undefined ? (track.coverUrl || null) : normalizeCoverUrl(coverUrl);
+
+        const existingTrack = await veloRepository.findByReleaseDate(nextReleaseDate);
+        if (existingTrack && String(existingTrack._id) !== String(track._id)) {
+            throw new VeloDuplicateDateError();
+        }
+
+        let updatedTrack;
+        try {
+            updatedTrack = await veloRepository.updateById(id, {
+                releaseDate: nextReleaseDate,
+                audioUrl: nextAudioUrl,
+                title: nextTitle,
+                artist: nextArtist,
+                coverUrl: nextCoverUrl
+            });
+        } catch (error) {
+            if (error && error.code === 11000) {
+                throw new VeloDuplicateDateError();
+            }
+            throw error;
+        }
+
+        if (!updatedTrack) {
+            throw new VeloTrackNotFoundError('La pista no existe');
+        }
+
+        return {
+            track: updatedTrack,
+            status: getTrackStatus(nextReleaseDate, todayStart)
+        };
+    };
+
+    return {
+        getToday,
+        reflect,
+        createTrack,
+        listTracks,
+        updateTrack
+    };
+};
+
+module.exports = {
+    createVeloService,
+    VeloValidationError,
+    VeloUserNotFoundError,
+    VeloTrackNotFoundError,
+    VeloAlreadyReflectedError,
+    VeloDuplicateDateError,
+    getDateKeyInTimeZone,
+    normalizeReleaseDate
+};

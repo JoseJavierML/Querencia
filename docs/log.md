@@ -1,5 +1,17 @@
 # Cronología
 
+## 2026-11-05 — El Velo (escucha ciega diaria) y cola musical administrativa
+
+Rama `feature/velo-escucha-ciega`. Se añade El Velo, una pista diaria que permanece oculta hasta que el usuario envía su reflexión. El modelo `VeloTrack` guarda `releaseDate`, `audioUrl`, `title`, `artist`, `coverUrl` y un array de reflexiones con `userId`, `text` y `createdAt`; `releaseDate` es único y se normaliza a medianoche UTC a partir del día calculado en `Europe/Madrid`. De este modo solo puede existir una pista por fecha y el “día actual” no depende de la zona horaria del proceso.
+
+El backend incorpora `GET /api/velo/today` y `POST /api/velo/today/reflect` con `authMiddleware`. Mientras el usuario no haya participado, el primer endpoint devuelve exclusivamente `{ audioUrl }`; cuando ya existe una reflexión suya, devuelve los metadatos y todas las voces. La segunda ruta recorta el texto, exige entre 1 y 5000 caracteres, impide un segundo envío con `409` y registra la reflexión con una actualización atómica que filtra por `reflections.userId: { $ne: userId }`. El muro de voces usa `text`, `userId` e `isMine`, sin exponer correos.
+
+La administración de la cola se resuelve con `POST /api/velo/tracks`, `GET /api/velo/tracks` y `PUT /api/velo/tracks/:id`, todos protegidos por `authMiddleware` e `isAdminMiddleware`. El listado devuelve el estado `past`, `today` o `future` y el número de reflexiones; la edición bloquea las pistas pasadas y devuelve `409` si la nueva fecha ya está ocupada. `admin.html` y `admin.js` añaden la sección “La Cola del Velo”, con formulario de alta, edición y tabla de estados.
+
+El frontend añade `velo.html` y `velo.js`. El estado ciego solo monta el reproductor y el textarea; no inserta título, artista ni portada. El estado revelado muestra la portada, los metadatos, el reproductor y el muro de reflexiones, con la propia marcada como “Tu reflexión” y las demás numeradas como “Voz 01”, “Voz 02”, etc. El reproductor usa `<audio controls>` para archivos directos y transforma enlaces conocidos de YouTube, Spotify, SoundCloud, Vimeo y Bandcamp en iframes embebibles. `api.js` centraliza `obtenerVeloDelDia`, `reflexionarVelo`, `crearPistaVelo`, `listarPistasVelo` y `actualizarPistaVelo`. La navegación de muro, diario y administración incorpora el enlace a El Velo.
+
+La suite queda en **11 suites y 169 tests pasados** (`npm test -- --runInBand`), con pruebas nuevas de esquema, repositorio, servicio, contrato HTTP, capado de la respuesta y permisos administrativos.
+
 ## 2026-11-02 — Modal de lectura profunda y avisos temporales
 
 La expansión en línea del muro se sustituye por un modal de lectura profunda. Las tarjetas de más de 250 caracteres conservan el recorte con `...` y el botón “Leer más”; al pulsarlo, o al hacer clic en la tarjeta, se abre un diálogo centrado de 720 px como máximo sobre un backdrop oscurecido. El modal usa fondo translúcido con `backdrop-filter`, bordes y acentos dorados, muestra título, autor, fecha y contenido completo con `textContent`, se cierra con la “X”, el backdrop o `Escape` y restaura el scroll previo. Los clics en reacciones y papelera no abren la lectura.

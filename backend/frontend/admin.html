@@ -503,14 +503,271 @@
             font-style: italic;
         }
 
+        /* --- La Cola del Velo --- */
+        .velo-admin-section {
+            margin-top: 4rem;
+            padding-top: 2.5rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.04);
+        }
+
+        .section-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-end;
+            gap: 1.5rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .section-heading h2 {
+            font-family: 'Playfair Display', serif;
+            font-size: 2rem;
+            font-weight: 400;
+            color: var(--text-main);
+            margin-bottom: 0.45rem;
+        }
+
+        .section-heading p {
+            font-family: 'Lora', serif;
+            color: var(--text-muted);
+            font-style: italic;
+            line-height: 1.6;
+        }
+
+        .queue-status {
+            font-family: 'Lora', serif;
+            font-size: 0.82rem;
+            font-style: italic;
+            color: var(--gold-dark);
+            border: 1px solid rgba(184, 147, 69, 0.22);
+            background: rgba(184, 147, 69, 0.05);
+            border-radius: 999px;
+            padding: 0.4rem 0.95rem;
+            white-space: nowrap;
+        }
+
+        .velo-form {
+            padding: 2rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .velo-form .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 1.2rem;
+        }
+
+        .velo-form label {
+            display: flex;
+            flex-direction: column;
+            gap: 0.55rem;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.7rem;
+            letter-spacing: 1.6px;
+            text-transform: uppercase;
+            color: var(--gold-dark);
+        }
+
+        .velo-form input {
+            width: 100%;
+            background: rgba(10, 10, 12, 0.8);
+            border: 1px solid rgba(184, 147, 69, 0.2);
+            border-radius: 6px;
+            padding: 0.7rem 0.9rem;
+            color: var(--text-main);
+            font-family: 'Lora', serif;
+            font-size: 0.92rem;
+            letter-spacing: normal;
+            text-transform: none;
+            outline: none;
+            transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
+        }
+
+        .velo-form input:focus {
+            border-color: rgba(234, 221, 179, 0.55);
+            background: rgba(16, 16, 20, 0.95);
+            box-shadow: 0 0 18px rgba(184, 147, 69, 0.12);
+        }
+
+        .velo-form input::placeholder {
+            color: rgba(255, 255, 255, 0.24);
+            font-style: italic;
+        }
+
+        .form-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.9rem;
+            margin-top: 1.5rem;
+            flex-wrap: wrap;
+        }
+
+        .btn-primary,
+        .btn-secondary {
+            border-radius: 999px;
+            padding: 0.7rem 1.4rem;
+            font-family: 'Lora', serif;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-primary {
+            border: 1px solid rgba(234, 221, 179, 0.42);
+            background: linear-gradient(135deg, rgba(184, 147, 69, 0.24), rgba(58, 10, 10, 0.35));
+            color: var(--gold-light);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            border-color: var(--gold-light);
+            background: linear-gradient(135deg, rgba(184, 147, 69, 0.34), rgba(107, 20, 20, 0.45));
+            box-shadow: 0 0 22px rgba(184, 147, 69, 0.15);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.45;
+            cursor: wait;
+        }
+
+        .btn-secondary {
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            background: transparent;
+            color: var(--text-muted);
+        }
+
+        .btn-secondary:hover {
+            border-color: var(--gold-dark);
+            color: var(--gold-light);
+            background: rgba(184, 147, 69, 0.05);
+        }
+
+        .form-message {
+            margin-top: 1rem;
+            font-family: 'Lora', serif;
+            font-size: 0.88rem;
+            font-style: italic;
+            line-height: 1.6;
+            color: var(--text-muted);
+        }
+
+        .form-message.is-error {
+            color: #ff9b9b;
+        }
+
+        .form-message.is-success {
+            color: var(--gold-light);
+        }
+
+        .velo-table-card {
+            overflow-x: auto;
+        }
+
+        table#veloTracksTable {
+            width: 100%;
+            border-collapse: collapse;
+            text-align: left;
+        }
+
+        table#veloTracksTable thead {
+            background: rgba(6, 6, 8, 0.6);
+            border-bottom: 1px solid rgba(184, 147, 69, 0.2);
+        }
+
+        table#veloTracksTable th {
+            padding: 1.1rem 1.4rem;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.7rem;
+            text-transform: uppercase;
+            letter-spacing: 1.8px;
+            color: var(--gold-dark);
+            font-weight: 500;
+            white-space: nowrap;
+        }
+
+        table#veloTracksTable tbody tr {
+            border-bottom: 1px solid rgba(255, 255, 255, 0.025);
+            transition: background-color 0.25s ease;
+        }
+
+        table#veloTracksTable tbody tr:hover {
+            background-color: rgba(184, 147, 69, 0.04);
+        }
+
+        table#veloTracksTable td {
+            padding: 1rem 1.4rem;
+            font-family: 'Lora', serif;
+            font-size: 0.9rem;
+            color: rgba(244, 244, 245, 0.85);
+            vertical-align: middle;
+        }
+
+        table#veloTracksTable td:last-child {
+            text-align: right;
+            white-space: nowrap;
+        }
+
+        .track-cell strong {
+            display: block;
+            font-weight: 500;
+            color: var(--text-main);
+        }
+
+        .track-cell span {
+            display: block;
+            margin-top: 0.2rem;
+            font-size: 0.82rem;
+            font-style: italic;
+            color: var(--text-muted);
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 0.25rem 0.7rem;
+            border-radius: 999px;
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.64rem;
+            letter-spacing: 1.2px;
+            text-transform: uppercase;
+            white-space: nowrap;
+        }
+
+        .status-today {
+            color: var(--gold-light);
+            border: 1px solid rgba(184, 147, 69, 0.42);
+            background: rgba(184, 147, 69, 0.1);
+        }
+
+        .status-future {
+            color: #b8c9b4;
+            border: 1px solid rgba(184, 201, 180, 0.22);
+            background: rgba(184, 201, 180, 0.04);
+        }
+
+        .status-past {
+            color: var(--text-muted);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.02);
+        }
+
+        .queue-empty {
+            padding: 2rem 1.4rem;
+            text-align: center;
+            font-style: italic;
+            color: var(--text-muted);
+        }
+
         @media (max-width: 900px) {
-            nav { padding: 1.5rem 2rem; }
+            nav { padding: 1.5rem 2rem; flex-wrap: wrap; gap: 1rem; }
+            .nav-links { order: 3; width: 100%; justify-content: center; gap: 1.2rem; }
+            .nav-actions { margin-left: auto; }
             main { padding: 2rem; }
             .page-header { flex-direction: column; align-items: flex-start; gap: 1.5rem; }
             .header-metrics { width: 100%; justify-content: space-between; }
             .metric-item { text-align: left; }
             .table-card { overflow-x: auto; }
             table#usersTable th, table#usersTable td { padding: 1rem 1.2rem; }
+            .section-heading { flex-direction: column; align-items: flex-start; }
+            .velo-form .form-grid { grid-template-columns: 1fr; }
+            table#veloTracksTable th, table#veloTracksTable td { padding: 0.9rem 1rem; }
         }
     </style>
 </head>
@@ -529,6 +786,7 @@
             <div class="nav-links">
                 <a href="muro.html" class="nav-link">Muro de Debates</a>
                 <a href="diario.html" class="nav-link">Diario Íntimo</a>
+                <a href="velo.html" class="nav-link">El Velo</a>
             </div>
 
             <div class="nav-actions" data-auth-header>
@@ -585,6 +843,71 @@
                 <span class="">Querencia © 2025</span>
             </div>
         </div>
+
+        <section class="velo-admin-section" aria-labelledby="veloQueueTitle">
+            <div class="section-heading">
+                <div>
+                    <h2 id="veloQueueTitle">La Cola del Velo</h2>
+                    <p>Programa la escucha ciega de hoy y de los próximos días. Una pista por fecha.</p>
+                </div>
+                <span id="veloQueueStatus" class="queue-status">Cargando la cola...</span>
+            </div>
+
+            <form id="veloTrackForm" class="velo-form table-card">
+                <input type="hidden" id="veloTrackId">
+                <div class="form-grid">
+                    <label for="veloReleaseDate">
+                        Fecha de publicación
+                        <input type="date" id="veloReleaseDate" required>
+                    </label>
+                    <label for="veloTitle">
+                        Título
+                        <input type="text" id="veloTitle" maxlength="120" autocomplete="off" required>
+                    </label>
+                    <label for="veloArtist">
+                        Artista
+                        <input type="text" id="veloArtist" maxlength="120" autocomplete="off" required>
+                    </label>
+                    <label for="veloAudioUrl">
+                        URL del audio o iframe
+                        <input type="url" id="veloAudioUrl" maxlength="2048" placeholder="https://.../pista.mp3" autocomplete="off" required>
+                    </label>
+                    <label for="veloCoverUrl">
+                        URL de la portada (opcional)
+                        <input type="url" id="veloCoverUrl" maxlength="2048" placeholder="https://.../portada.jpg" autocomplete="off">
+                    </label>
+                </div>
+                <div class="form-actions">
+                    <button type="submit" id="veloSubmitBtn" class="btn-primary">Programar pista</button>
+                    <button type="button" id="veloCancelEditBtn" class="btn-secondary" hidden>Cancelar edición</button>
+                </div>
+                <p id="veloFormMessage" class="form-message" role="status"></p>
+            </form>
+
+            <div class="table-card velo-table-card">
+                <table id="veloTracksTable">
+                    <thead>
+                        <tr>
+                            <th>Fecha</th>
+                            <th>Pista</th>
+                            <th>Reflexiones</th>
+                            <th>Estado</th>
+                            <th>Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="veloTracksBody">
+                        <tr>
+                            <td colspan="5" class="queue-empty">Cargando la cola del Velo...</td>
+                        </tr>
+                    </tbody>
+                </table>
+
+                <div class="table-footer">
+                    <span id="veloQueueFooter">Sincronizando con la API...</span>
+                    <span>Querencia © 2026</span>
+                </div>
+            </div>
+        </section>
     </main>
 
     <!-- Lienzo dinámico de humo y olas vivas (mismo algoritmo y matices que index/muro) -->
