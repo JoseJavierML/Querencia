@@ -112,6 +112,39 @@ node backend/seedDebate.js
 
 También puede ejecutarse con `cd backend && npm run seed`. El script requiere `MONGO_URI` en `backend/.env`. Para elegir el autor, usa `SEED_AUTHOR_EMAIL`; si no se define, reutiliza el primer usuario con rol `admin`. Si no hay ningún administrador, crea un autor técnico `seed@querencia.local` con rol `admin`, estado activo y una contraseña aleatoria que no se imprime. Ese autor es solo para datos de desarrollo y no está pensado para iniciar sesión.
 
+## El Velo — Escucha Ciega Diaria
+
+El Velo propone una escucha sin prejuicios. Cada día hay una única pista programada y, hasta que el usuario envía su reflexión, la API solo devuelve la URL del audio: ni título, ni artista, ni portada. Al enviarla, se revelan los metadatos y el muro completo de reflexiones de la comunidad.
+
+La página `backend/frontend/velo.html` tiene dos estados:
+
+- **Ciego:** reproductor y textarea. No se muestra ningún metadato de la pista.
+- **Revelado:** portada, título, artista, fecha, reproductor y muro de reflexiones. La reflexión propia se marca como “Tu reflexión”; las demás se muestran como “Voz 01”, “Voz 02”, etc., sin exponer correos.
+
+El reproductor admite tanto archivos de audio directos como enlaces embebibles de YouTube, Spotify, SoundCloud, Vimeo y Bandcamp. Los enlaces directos usan `<audio controls>` y los embebibles se convierten a su URL de inserción.
+
+### API de El Velo
+
+Todas las rutas de lectura y participación requieren `Authorization: Bearer <token>`.
+
+| Método | Ruta | Cuerpo | Respuesta |
+|---|---|---|---|
+| GET | `/api/velo/today` | — | `200` con `{ "audioUrl": "..." }` si el usuario no ha participado; `200` con la pista y las reflexiones si ya participó; `404` si no hay pista hoy |
+| POST | `/api/velo/today/reflect` | `{ "text": "..." }` | `200` con la pista revelada y todas las reflexiones; `400` si el texto no es válido; `409` si ya se había enviado una reflexión |
+| POST | `/api/velo/tracks` | `{ "releaseDate": "2026-11-06", "audioUrl": "https://...", "title": "...", "artist": "...", "coverUrl": "https://..." }` | `201` con la pista creada; solo administradores |
+| GET | `/api/velo/tracks` | — | `200` con la cola ordenada por fecha, su estado (`past`, `today`, `future`) y el número de reflexiones; solo administradores |
+| PUT | `/api/velo/tracks/:id` | Cualquier subconjunto de los campos anteriores | `200` con la pista actualizada; solo administradores; las pistas pasadas son inmutables |
+
+- `releaseDate` se normaliza a medianoche UTC a partir de la fecha administrativa. El “día actual” se calcula en `Europe/Madrid` y solo puede existir una pista por fecha gracias a un índice único.
+- `audioUrl`, `title` y `artist` son obligatorios. `coverUrl` es opcional. Las URLs deben empezar por `http` o `https`.
+- La reflexión se recorta, es obligatoria y admite entre 1 y 5000 caracteres. No se puede editar ni enviar dos veces para la misma pista.
+- Las reflexiones se devuelven con `text`, `userId` e `isMine`; el frontend no muestra los correos.
+- La autorización real está en el servidor: `POST` y `PUT` de `/api/velo/tracks` exigen `authMiddleware` e `isAdminMiddleware`, y devuelven `403` a cualquier usuario que no sea administrador.
+
+### Administración de la cola
+
+`backend/frontend/admin.html` incorpora la sección “La Cola del Velo”. Desde ella se puede programar una pista para hoy o para un día futuro, consultar la cola completa, ver cuántas reflexiones ha recibido cada pista y editar las que todavía no han pasado. El formulario reutiliza la estética del panel: glassmorphism oscuro, acentos dorados y tipografías literarias, sin emojis.
+
 ## Estado Actual (Sprint 1)
 - [x] **Hito 1:** Esqueleto, backend (lógica en memoria), API, pruebas automatizadas, pipeline de Integración Continua (CI) y Despliegue Continuo (CD).
 - [x] **Hito 2:** Interfaz frontend, registro e inicio de sesión, mantenimiento de sesión.
@@ -129,3 +162,4 @@ También puede ejecutarse con `cd backend && npm run seed`. El script requiere `
 - [x] **RF-MVP-Muro-Notificaciones:** avisos del muro con desvanecimiento automático y transición suave.
 - [x] **RF-MVP-Auth-Redirect:** login y callback de Google redirigen al muro; el registro intenta iniciar sesión automáticamente.
 - [x] **RF-MVP-Muro-Seed:** script `seedDebate.js` con un hilo inicial idempotente, portada musical y comando `npm run seed`.
+- [x] **RF-MVP-Velo:** escucha ciega diaria con `VeloTrack`, respuesta capada hasta la reflexión, revelación de metadatos y muro de reflexiones; administración de la cola en `admin.html` y pruebas de modelo, servicio y router.

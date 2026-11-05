@@ -14,7 +14,9 @@ async function fetchAPI(endpoint, options = {}) {
 
         const data = await response.json();
         if (!response.ok) {
-            throw new Error(data.message || 'Error en la petición al servidor');
+            const error = new Error(data.message || 'Error en la petición al servidor');
+            error.status = response.status;
+            throw error;
         }
 
         return data;
@@ -72,6 +74,28 @@ export const api = {
         method: 'POST',
         body: JSON.stringify({ reaction })
     }),
+
+    obtenerVeloDelDia: () => fetchAPI('/velo/today', { method: 'GET' }),
+
+    reflexionarVelo: (text) => fetchAPI('/velo/today/reflect', {
+        method: 'POST',
+        body: JSON.stringify({ text })
+    }),
+
+    crearPistaVelo: ({ releaseDate, audioUrl, title, artist, coverUrl }) => fetchAPI('/velo/tracks', {
+        method: 'POST',
+        body: JSON.stringify({ releaseDate, audioUrl, title, artist, coverUrl })
+    }),
+
+    listarPistasVelo: () => fetchAPI('/velo/tracks', { method: 'GET' }),
+
+    actualizarPistaVelo: (id, { releaseDate, audioUrl, title, artist, coverUrl }) => fetchAPI(
+        `/velo/tracks/${encodeURIComponent(id)}`,
+        {
+            method: 'PUT',
+            body: JSON.stringify({ releaseDate, audioUrl, title, artist, coverUrl })
+        }
+    ),
 
     checkSession: async () => {
         if (!localStorage.getItem('token') && !localStorage.getItem('querencia_token')) {
