@@ -390,12 +390,93 @@ const createVeloService = ({
         };
     };
 
+    const reorderTracks = async ({ trackIds } = {}) => {
+        if (!Array.isArray(trackIds) || trackIds.length === 0) {
+            throw new VeloValidationError('El orden de las pistas es obligatorio');
+        }
+
+        const normalizedIds = trackIds.map((id) => String(id));
+        if (normalizedIds.some((id) => id.length === 0)) {
+            throw new VeloValidationError('El orden de las pistas contiene un identificador no válido');
+        }
+        if (new Set(normalizedIds).size !== normalizedIds.length) {
+            throw new VeloValidationError('El orden de las pistas contiene identificadores duplicados');
+        }
+
+        const todayStart = getTodayStart();
+        const allTracks = await veloRepository.findAll();
+        const futureTracks = allTracks
+            .filter((track) => getTrackStatus(track.releaseDate, todayStart) === 'future')
+            .sort((left, right) => new Date(left.releaseDate).getTime() - new Date(right.releaseDate).getTime());
+
+        if (futureTracks.length === 0) {
+            throw new VeloValidationError('No hay pistas futuras que reordenar');
+        }
+        if (normalizedIds.length !== futureTracks.length) {
+            throw new VeloValidationError('El orden debe incluir todas las pistas futuras');
+        }
+
+        const futureById = new Map(futureTracks.map((track) => [String(track._id), track]));
+        const orderedTracks = normalizedIds.map((id) => {
+            const track = futureById.get(id);
+            if (!track) {
+                throw new VeloValidationError('El orden incluye una pista que no es futura o no existe');
+            }
+            return track;
+        });
+
+        const unchanged = orderedTracks.every(
+            (track, index) => String(track._id) === String(futureTracks[index]._id)
+        );
+        if (unchanged) {
+            return listTracks();
+        }
+
+        const targetDates = futureTracks.map((track) => new Date(track.releaseDate));
+        const originalDates = orderedTracks.map((track) => new Date(track.releaseDate));
+        const dayInMilliseconds = 24 * 60 * 60 * 1000;
+
+        // La fecha es única: se pasa primero por un rango temporal libre para
+        // poder intercambiar dos fechas sin chocar con el índice único.
+        try {
+            for (let index = 0; index < orderedTracks.length; index += 1) {
+                await veloRepository.updateById(orderedTracks[index]._id, {
+                    releaseDate: new Date(Date.UTC(1970, 0, 1) + (index * dayInMilliseconds))
+                });
+            }
+            for (let index = 0; index < orderedTracks.length; index += 1) {
+                await veloRepository.updateById(orderedTracks[index]._id, {
+                    releaseDate: targetDates[index]
+                });
+            }
+        } catch (error) {
+            try {
+                for (let index = 0; index < orderedTracks.length; index += 1) {
+                    await veloRepository.updateById(orderedTracks[index]._id, {
+                        releaseDate: new Date(Date.UTC(1971, 0, 1) + (index * dayInMilliseconds))
+                    });
+                }
+                for (let index = 0; index < orderedTracks.length; index += 1) {
+                    await veloRepository.updateById(orderedTracks[index]._id, {
+                        releaseDate: originalDates[index]
+                    });
+                }
+            } catch (rollbackError) {
+                // La restauración es best effort; se propaga el error original.
+            }
+            throw error;
+        }
+
+        return listTracks();
+    };
+
     return {
         getToday,
         reflect,
         createTrack,
         listTracks,
-        updateTrack
+        updateTrack,
+        reorderTracks
     };
 };
 

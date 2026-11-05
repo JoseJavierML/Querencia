@@ -63,6 +63,7 @@ const createService = (overrides = {}) => ({
     createTrack: jest.fn(),
     listTracks: jest.fn(),
     updateTrack: jest.fn(),
+    reorderTracks: jest.fn(),
     ...overrides
 });
 
@@ -276,6 +277,58 @@ describe('Rutas del Velo', () => {
         expect(body[1]).toMatchObject({ _id: 'pista-2', status: 'future' });
     });
 
+    test('PATCH /tracks/order reordena la cola solo para administradores', async () => {
+        const reorderTracks = jest.fn().mockResolvedValue([
+            createTrack({
+                _id: 'pista-2',
+                releaseDate: new Date('2026-11-06T00:00:00.000Z'),
+                status: 'future'
+            }),
+            createTrack({
+                _id: 'pista-3',
+                releaseDate: new Date('2026-11-07T00:00:00.000Z'),
+                status: 'future'
+            })
+        ]);
+        server = await startServer(createService({ reorderTracks }));
+
+        const denied = await request('/api/velo/tracks/order', {
+            method: 'PATCH',
+            headers: jsonHeaders(USER_TOKEN),
+            body: JSON.stringify({ trackIds: ['pista-3', 'pista-2'] })
+        });
+        expect(denied.status).toBe(403);
+        expect(reorderTracks).not.toHaveBeenCalled();
+
+        const { status, body } = await request('/api/velo/tracks/order', {
+            method: 'PATCH',
+            headers: jsonHeaders(ADMIN_TOKEN),
+            body: JSON.stringify({ trackIds: ['pista-3', 'pista-2'] })
+        });
+
+        expect(status).toBe(200);
+        expect(reorderTracks).toHaveBeenCalledWith({ trackIds: ['pista-3', 'pista-2'] });
+        expect(body).toHaveLength(2);
+        expect(body[0]).toMatchObject({ _id: 'pista-2', status: 'future' });
+        expect(body[1]).toMatchObject({ _id: 'pista-3', status: 'future' });
+    });
+
+    test('PATCH /tracks/order devuelve 400 si el orden no es válido', async () => {
+        const reorderTracks = jest.fn().mockRejectedValue(
+            new VeloValidationError('El orden de las pistas es obligatorio')
+        );
+        server = await startServer(createService({ reorderTracks }));
+
+        const { status, body } = await request('/api/velo/tracks/order', {
+            method: 'PATCH',
+            headers: jsonHeaders(ADMIN_TOKEN),
+            body: JSON.stringify({})
+        });
+
+        expect(status).toBe(400);
+        expect(body).toEqual({ message: 'El orden de las pistas es obligatorio' });
+    });
+
     test('PUT /tracks/:id actualiza una pista existente', async () => {
         const updatedTrack = createTrack({ title: 'Título corregido', reflections: [] });
         const updateTrack = jest.fn().mockResolvedValue({ track: updatedTrack, status: 'today' });
@@ -326,6 +379,11 @@ describe('Rutas del Velo', () => {
             method: 'PUT',
             headers: jsonHeaders(),
             body: JSON.stringify({})
+        })).status).toBe(401);
+        expect((await request('/api/velo/tracks/order', {
+            method: 'PATCH',
+            headers: jsonHeaders(),
+            body: JSON.stringify({ trackIds: [] })
         })).status).toBe(401);
     });
 });
