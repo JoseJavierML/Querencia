@@ -1,6 +1,12 @@
 # Querencia
 
-SaaS de reflexión y debate musical diseñado para ir más allá de la escucha superficial. La plataforma combina un diario de escucha privado con foros de debate donde la comunidad evalúa las obras musicales utilizando "Reacciones del Alma" (acordes emocionales) en lugar de interacciones tradicionales.
+SaaS de reflexión y debate musical diseñado para ir más allá de la escucha superficial. El MVP se organiza en tres experiencias complementarias:
+
+- **Diario Íntimo:** un espacio privado donde cada usuario escribe y conserva sus escuchas. Las entradas están aisladas por usuario: nadie más puede listarlas ni borrarlas.
+- **Muro de Debates:** el espacio público de reflexión musical. Los administradores publican hilos con portada opcional y anonimato; la comunidad los lee y reacciona con tres etiquetas semánticas: Profundo, Melancólico y Rompe esquemas.
+- **El Velo:** una escucha ciega diaria. El usuario recibe solo el audio de la pista del día y, hasta que envía su reflexión, no ve título, artista ni portada. Después se revela la ficha completa y el muro de voces de la comunidad. Los administradores programan la cola desde el panel.
+
+El Sprint 2 sigue en curso. Los tres módulos del MVP ya están implementados e integrados, con **11 suites y 169 tests automatizados**. La documentación de progreso, requisitos, arquitectura y decisiones vive en [docs/index.md](docs/index.md).
 
 Desarrollado para la asignatura Procesos de Ingeniería del Software (Curso 2026-2027).
 
@@ -152,14 +158,20 @@ Todas las rutas de lectura y participación requieren `Authorization: Bearer <to
 - [X] **Hito 4:** Autenticación OAuth externa y confirmación por correo.
 
 ## Estado Actual (Sprint 2)
-- [x] **RF-MVP-Diario:** backend del diario íntimo con esquema `DiaryEntry`, endpoints protegidos y pruebas unitarias con dobles.
+
+El Sprint 2 sigue en curso. Esta lista refleja los PBIs ya completados e integrados, no el cierre del sprint.
+
+- [x] **RF-MVP-Diario:** backend del diario íntimo con esquema `DiaryEntry`, endpoints protegidos, aislamiento por usuario y pruebas unitarias con dobles.
 - [x] **RF-MVP-Diario-Frontend:** guardado, historial “Ecos”, título opcional, lectura completa y borrado de ecos propios.
 - [x] **RF-MVP-Muro:** backend del muro con reacciones `Profundo`, `Melancólico` y `Rompe esquemas`, toggle sin doble voto y creación reservada a administradores.
 - [x] **RF-MVP-Muro-Frontend:** tarjetas dinámicas, reacciones autenticadas, portadas por URL y borrado visible solo para administradores.
-- [x] **RF-MVP-Muro-Admin-UX:** botón flotante con lápiz y diálogo de creación que solo se renderizan para administradores.
+- [x] **RF-MVP-Muro-Admin:** botón flotante con lápiz y diálogo de creación que solo se renderizan para administradores.
 - [x] **RF-MVP-Muro-Autor:** autor sin dominio de correo, casilla de anonimato y ocultación del correo en la API.
 - [x] **RF-MVP-Muro-Lectura:** reflexiones de más de 250 caracteres colapsadas con “Leer más”, modal de lectura completa y retorno al mismo punto del muro.
 - [x] **RF-MVP-Muro-Notificaciones:** avisos del muro con desvanecimiento automático y transición suave.
 - [x] **RF-MVP-Auth-Redirect:** login y callback de Google redirigen al muro; el registro intenta iniciar sesión automáticamente.
 - [x] **RF-MVP-Muro-Seed:** script `seedDebate.js` con un hilo inicial idempotente, portada musical y comando `npm run seed`.
-- [x] **RF-MVP-Velo:** escucha ciega diaria con `VeloTrack`, respuesta capada hasta la reflexión, revelación de metadatos y muro de reflexiones; administración de la cola en `admin.html` y pruebas de modelo, servicio y router.
+- [x] **RF-MVP-Velo:** escucha ciega diaria con `VeloTrack`, respuesta capada hasta la reflexión, revelación de metadatos y muro de reflexiones; pruebas de modelo, servicio y router.
+- [x] **RF-MVP-Velo-Frontend:** estados ciego y revelado en `velo.html` y `velo.js`, reproductor para audio directo y plataformas embebibles, y muro de voces sin correos.
+- [x] **RF-MVP-Velo-Admin:** panel “La Cola del Velo” en `admin.html` y `admin.js`, con alta, listado por estado, edición y bloqueo de pistas pasadas.
+- [ ] **Pendiente de cierre:** verificación manual en navegador, correo real, URL pública y requisitos heredados del Sprint 1.
