@@ -1,6 +1,6 @@
 # Bundle documental del MVP
 
-Este bundle documenta el estado comprobable del MVP de Querencia. El Sprint 2 sigue en curso: Diario, Muro y El Velo ya están integrados, mientras que las verificaciones de correo, despliegue y proceso continúan abiertas. La especificación es el PDF entregado para el proyecto; el tablero de trabajo está en [DoneTonic](https://app.donetonic.com/workspaces/1/projects/1/backlog). Para el contexto general del producto y la ejecución local, consulta el [README](../README.md).
+Este bundle documenta el estado comprobable del MVP de Querencia. El Sprint 2 sigue en curso: Diario, Muro y El Velo ya están integrados en el frontend, y El Archivo cuenta ya con backend, modelo de datos, caché y contrato HTTP, a la espera de su integración visual. Las verificaciones de correo, despliegue y proceso continúan abiertas. La especificación es el PDF entregado para el proyecto; el tablero de trabajo está en [DoneTonic](https://app.donetonic.com/workspaces/1/projects/1/backlog). Para el contexto general del producto y la ejecución local, consulta el [README](../README.md).
 
 - [log.md](log.md): cronología de commits y actualizaciones, de la más reciente a la más antigua.
 - [arquitectura.md](arquitectura.md): capas, modelos de Mongoose, frontera y endpoints consolidados.

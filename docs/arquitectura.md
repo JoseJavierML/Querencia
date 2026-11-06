@@ -1,17 +1,17 @@
 ---
 type: Arquitectura
 title: Arquitectura del MVP (Sprint 2 en curso)
-description: Capas comprobables del backend y del frontend, modelos de Mongoose y endpoints consolidados.
-timestamp: 2026-11-05
+description: Capas comprobables del backend y del frontend, modelos de Mongoose, servicio de caché de El Archivo y endpoints consolidados.
+timestamp: 2026-11-06
 ---
 
 # Arquitectura
 
 ## Backend
 
-- **API/presentación:** [server.js](../backend/server.js) define las rutas HTTP, valida entradas básicas y construye respuestas; [diaryRouter.js](../backend/diaryRouter.js) expone las rutas del diario, [debateRouter.js](../backend/debateRouter.js) expone las del muro y [veloRouter.js](../backend/veloRouter.js) expone la escucha ciega y la administración de su cola, traduciendo errores de dominio a HTTP.
-- **Lógica de aplicación:** [userModel.js](../backend/userModel.js), [authMiddleware.js](../backend/authMiddleware.js), [adminMiddleware.js](../backend/adminMiddleware.js), [domainLogic.js](../backend/domainLogic.js), [diaryService.js](../backend/diaryService.js), [debateService.js](../backend/debateService.js), [debateConstants.js](../backend/debateConstants.js), [veloService.js](../backend/veloService.js) y [veloConstants.js](../backend/veloConstants.js) gestionan usuarios, sesión, roles, dominios, entradas del diario, debates, pistas del Velo y reflexiones a ciegas.
-- **Datos:** [database.js](../backend/database.js) conecta Mongoose con MongoDB; `userModel.js` usa el modelo persistente `User`, [diaryModel.js](../backend/diaryModel.js) define `DiaryEntry` con referencia a `User`, [debateModel.js](../backend/debateModel.js) define `Debate` con autor, portada opcional (`coverImageUrl`), flag de anonimato (`isAnonymous`) y reacciones como arrays de `ObjectId`, y [veloTrackModel.js](../backend/veloTrackModel.js) define `VeloTrack` con una pista única por fecha, metadatos musicales y un array de reflexiones con `userId` y `text`.
+- **API/presentación:** [server.js](../backend/server.js) define las rutas HTTP, valida entradas básicas y construye respuestas; [diaryRouter.js](../backend/diaryRouter.js) expone las rutas del diario, [debateRouter.js](../backend/debateRouter.js) expone las del muro, [veloRouter.js](../backend/veloRouter.js) expone la escucha ciega y la administración de su cola, y [archivoRouter.js](../backend/archivoRouter.js) expone los cajones, el detalle y la búsqueda de El Archivo, traduciendo errores de dominio a HTTP.
+- **Lógica de aplicación:** [userModel.js](../backend/userModel.js), [authMiddleware.js](../backend/authMiddleware.js), [adminMiddleware.js](../backend/adminMiddleware.js), [domainLogic.js](../backend/domainLogic.js), [diaryService.js](../backend/diaryService.js), [debateService.js](../backend/debateService.js), [debateConstants.js](../backend/debateConstants.js), [veloService.js](../backend/veloService.js), [veloConstants.js](../backend/veloConstants.js), [archivoService.js](../backend/archivoService.js), [archivoConstants.js](../backend/archivoConstants.js) y [archivoUtils.js](../backend/archivoUtils.js) gestionan usuarios, sesión, roles, dominios, entradas del diario, debates, pistas del Velo, reflexiones a ciegas, normalización musical y caché de El Archivo.
+- **Datos:** [database.js](../backend/database.js) conecta Mongoose con MongoDB; `userModel.js` usa el modelo persistente `User`, [diaryModel.js](../backend/diaryModel.js) define `DiaryEntry` con referencia a `User`, [debateModel.js](../backend/debateModel.js) define `Debate` con autor, portada opcional (`coverImageUrl`), flag de anonimato (`isAnonymous`) y reacciones como arrays de `ObjectId`, [veloTrackModel.js](../backend/veloTrackModel.js) define `VeloTrack` con una pista única por fecha, metadatos musicales y un array de reflexiones con `userId` y `text`, y [vinylModel.js](../backend/vinylModel.js) define `Vinyl` con la ficha musical, la clave de catálogo única y el repositorio de caché.
 - **Datos de desarrollo:** [seedDebate.js](../backend/seedDebate.js) crea un debate inicial idempotente con portada musical. Reutiliza un administrador existente o crea un autor técnico si la base de datos todavía no tiene ninguno.
 - **Servicios transversales:** [logger.js](../backend/logger.js) registra actividad y [mailer.js](../backend/mailer.js) prepara el correo de confirmación.
 
@@ -23,10 +23,11 @@ Mongoose define las colecciones persistentes del MVP. Los repositorios encapsula
 - **`DiaryEntry`** ([diaryModel.js](../backend/diaryModel.js)): `userId` como `ObjectId` de `User`, `text`, `title` opcional y `createdAt` generado por el servidor. La consulta por `userId` sostiene el aislamiento del diario.
 - **`Debate`** ([debateModel.js](../backend/debateModel.js)): `title` y `content` obligatorios, `coverImageUrl` opcional, `isAnonymous` booleano con `false` por defecto, `authorId` como `ObjectId` de `User` y `createdAt`. `reactions` es un subesquema con tres arrays de `ObjectId`: `profundo`, `melancolico` y `rompeEsquemas`.
 - **`VeloTrack`** ([veloTrackModel.js](../backend/veloTrackModel.js)): `releaseDate` obligatoria y única, `audioUrl`, `title`, `artist`, `coverUrl` opcional y `createdAt`. `reflections` es un array de subdocumentos con `userId` como `ObjectId` de `User`, `text` y `createdAt`; la unicidad de `releaseDate` impide dos pistas para el mismo día.
+- **`Vinyl`** ([vinylModel.js](../backend/vinylModel.js)): `title` y `artist` obligatorios, `album` y `coverUrl` opcionales, `genre` normalizado, `youtubeVideoId` opcional pero validado, `lastFmInfo` como subdocumento sin `_id`, `catalogKey` obligatoria y única, `createdAt`, `updatedAt` y `lastAccessedAt`. El repositorio encapsula la búsqueda por clave, el listado filtrado, el `upsert` atómico, la actualización por identificador y el registro del último acceso.
 
 ## Frontend
 
-- **Presentación:** las páginas HTML de [backend/frontend/](../backend/frontend/) contienen las vistas pública, privada, de administración y de escucha ciega; [diario.html](../backend/frontend/diario.html) renderiza el historial “Ecos”, el formulario de escritura con título opcional y la vista de lectura de cada eco; [muro.html](../backend/frontend/muro.html) y [muro.js](../backend/frontend/js/muro.js) renderizan las tarjetas de debate, sus portadas, sus reacciones, el autor sin dominio de correo, el botón flotante con el lápiz y el diálogo de creación que solo existen para administradores; [velo.html](../backend/frontend/velo.html) y [velo.js](../backend/frontend/js/velo.js) implementan los estados ciego y revelado de la escucha diaria, el reproductor, el formulario de reflexión y el muro de voces. El diálogo del muro incluye la casilla “Publicar como anónimo”; en el formulario de creación, solo el textarea usa el scrollbar fino dorado del Diario, sin scroll propio en el contenedor del diálogo. Las reflexiones largas del muro se muestran colapsadas y “Leer más” abre un modal de lectura completa sobre un backdrop oscurecido.
+- **Presentación:** las páginas HTML de [backend/frontend/](../backend/frontend/) contienen las vistas pública, privada, de administración y de escucha ciega; [diario.html](../backend/frontend/diario.html) renderiza el historial “Ecos”, el formulario de escritura con título opcional y la vista de lectura de cada eco; [muro.html](../backend/frontend/muro.html) y [muro.js](../backend/frontend/js/muro.js) renderizan las tarjetas de debate, sus portadas, sus reacciones, el autor sin dominio de correo, el botón flotante con el lápiz y el diálogo de creación que solo existen para administradores; [velo.html](../backend/frontend/velo.html) y [velo.js](../backend/frontend/js/velo.js) implementan los estados ciego y revelado de la escucha diaria, el reproductor, el formulario de reflexión y el muro de voces. El diálogo del muro incluye la casilla “Publicar como anónimo”; en el formulario de creación, solo el textarea usa el scrollbar fino dorado del Diario, sin scroll propio en el contenedor del diálogo. Las reflexiones largas del muro se muestran colapsadas y “Leer más” abre un modal de lectura completa sobre un backdrop oscurecido. El Archivo se implementa en esta iteración exclusivamente en backend: no se añaden todavía páginas, componentes ni llamadas de `api.js` para sus cajones.
 - **Comunicación:** [api.js](../backend/frontend/js/api.js) centraliza las peticiones de negocio, incluidas `crearEntradaDiario`, `listarDiario`, `eliminarEntradaDiario`, `crearDebate`, `eliminarDebate`, `listarDebates`, `reaccionarDebate`, `obtenerVeloDelDia`, `reflexionarVelo`, `crearPistaVelo`, `listarPistasVelo` y `actualizarPistaVelo`, y [auth.js](../backend/frontend/js/auth.js) añade el token, comprueba la sesión y cierra sesión.
 
 ## Frontera exacta
@@ -63,9 +64,71 @@ El login de `index.html` y el callback de Google redirigen a `muro.html`. El reg
 
 El seed se ejecuta con `node backend/seedDebate.js` desde la raíz o con `npm run seed` desde `backend`. Conecta directamente con Mongoose, busca un debate por título para no duplicarlo, completa la portada si el debate ya existía sin ella y resuelve el autor con `SEED_AUTHOR_EMAIL`, con el primer administrador o con un autor técnico `seed@querencia.local`. No imprime credenciales y cierra la conexión al terminar.
 
+## El Archivo — arquitectura de la discoteca interactiva
+
+### Composición y frontera
+
+`server.js` compone `VinylRepository` y `createArchivoService` sin que el servicio importe Express ni Mongoose. Después construye `createArchivoRouter` con el servicio y `authMiddleware`. El router solo conoce el contrato del servicio, y el servicio solo conoce el contrato del repositorio y un `fetchImpl` inyectable. Esta separación permite probar la lógica de caché con dobles de red y de base de datos, sin levantar MongoDB ni consumir APIs reales.
+
+La frontera HTTP queda fijada en `/api/archivo`. Las tres rutas aplican autenticación mediante `router.use(authMiddleware)`: la búsqueda externa no queda expuesta a visitantes anónimos y los cajones y el detalle conservan el mismo nivel de acceso que El Velo. La autorización de roles no interviene porque El Archivo es una función de consulta y escucha, no de administración.
+
+### Modelo `Vinyl` y repositorio
+
+El esquema `Vinyl` declara dos campos obligatorios de identidad visible (`title` y `artist`), un campo de publicación (`album`), una portada externa (`coverUrl`), un género normalizado (`genre`), el identificador de reproducción (`youtubeVideoId`), un subdocumento `lastFmInfo` y una clave de catálogo (`catalogKey`). El subdocumento `lastFmInfo` usa `_id: false` porque pertenece al vinilo y no necesita identidad propia:
+
+| Campo de `lastFmInfo` | Contenido |
+|---|---|
+| `mbid` | Identificador MusicBrainz devuelto por Last.fm. |
+| `url` | URL canónica de la ficha en Last.fm, validada como `http` o `https`. |
+| `listeners` | Número de oyentes, normalizado a entero no negativo. |
+| `playcount` | Número de reproducciones, normalizado a entero no negativo. |
+| `duration` | Duración en segundos, o `null` si no se conoce. |
+| `published` | Fecha editorial de la ficha de Last.fm. |
+| `summary` | Resumen biográfico o descriptivo sin HTML. |
+| `tags` | Etiquetas normalizadas y limitadas. |
+| `album` | Álbum de referencia. |
+| `fetchedAt` | Momento de la última extracción externa; alimenta el TTL. |
+
+`catalogKey` se calcula con `buildCatalogKey(artist, title)` en [archivoUtils.js](../backend/archivoUtils.js). La función elimina tildes y signos, convierte a minúsculas, separa palabras con guiones y compone `artista::titulo`. El índice único del campo impide duplicados aunque dos peticiones lleguen simultáneamente. El hook `pre('validate')` recalcula la clave a partir de los campos visibles para que un documento creado directamente con `new Vinyl(...)` tampoco pueda quedar sin clave.
+
+`VinylRepository` encapsula las operaciones de persistencia: `findByCatalogKey`, `findById`, `findAll`, `create`, `upsertByCatalogKey`, `updateById` y `touchById`. El `upsert` usa `findOneAndUpdate` con `$set`, `$setOnInsert`, `upsert: true` y `runValidators: true`. El `updatedAt` se renueva en cada escritura, mientras que `createdAt` solo se fija en la inserción. Las actualizaciones de refresco conservan la clave original del documento para no crear una segunda ficha si Last.fm devuelve una variante tipográfica del título.
+
+### Servicio externo y adaptadores
+
+`archivoService.js` define un servicio inyectable con `createArchivoService`. La inyección de `fetchImpl`, `now`, `logger`, las claves y los endpoints permite reproducir escenarios de error sin red. El servicio no persiste ni responde HTTP: normaliza, decide, delega y devuelve un resultado de dominio.
+
+El adaptador de Last.fm construye una URL sobre `LASTFM_API_URL`, añade `method`, `api_key`, `format=json` y los parámetros de cada operación. La búsqueda usa `track.search` con un máximo de cinco candidatos; la selección puntúa coincidencias exactas de artista y título y conserva el orden de relevancia cuando no hay coincidencia exacta. La ficha se completa con `track.getInfo`, que aporta álbum, etiquetas, resumen, duración y portada. Si `track.getInfo` falla pero la búsqueda devolvió un candidato, el servicio continúa con los datos de búsqueda y registra el incidente. Si no hay ningún candidato, devuelve un error de dominio de tipo “no encontrado”.
+
+El adaptador de YouTube tiene dos niveles. El primero es YouTube Data API: si `YOUTUBE_API_KEY` existe, consulta `search` con `part=snippet`, `type=video`, `videoCategoryId=10` y `maxResults=1`, y valida que el identificador tenga once caracteres. El segundo es un fallback de scraping sobre `https://www.youtube.com/results?search_query=...` que solo se ejecuta si `YOUTUBE_SCRAPING_ENABLED` no está desactivado. El fallback busca un `videoId` o un enlace `/watch?v=` en el HTML. Cualquier fallo de YouTube se registra y se traduce en `youtubeVideoId: null`; no invalida la ficha cultural ni impide guardar el vinilo.
+
+Los errores del servicio se clasifican para que el router pueda responder con precisión: `ArchivoValidationError` para entradas inválidas, `ArchivoNotFoundError` para discos inexistentes, `ArchivoConfigurationError` para claves ausentes o rechazadas, `ArchivoTimeoutError` para abortos por tiempo y `ArchivoUpstreamError` para fallos de red, estados HTTP no satisfactorios o respuestas malformadas. El router traduce estas clases a `400`, `404`, `503`, `504` y `502`, respectivamente.
+
+### Flujo de caché
+
+El flujo se diseña como cache-aside con escritura de refresco:
+
+1. Normalización de la entrada y cálculo de la clave cuando el cliente envía artista y título.
+2. Lectura de MongoDB. Si la ficha está vigente, se devuelve sin consultar Last.fm y se actualiza `lastAccessedAt`. Si falta el audio, se intenta resolver con YouTube como máximo una vez al día para no consumir cuota en cada búsqueda.
+3. Si la ficha está caducada, se llama a `track.getInfo` y, si el audio aún no existe, a YouTube. La actualización se hace por `_id`, no por `catalogKey`, para evitar duplicados si cambia la grafía canónica.
+4. Si el refresco falla, se devuelve la ficha anterior con `stale: true`. La lectura sigue disponible aunque Last.fm esté caído o la cuota esté agotada.
+5. Si no hay ficha, se resuelve el candidato en Last.fm, se completa con `track.getInfo`, se intenta YouTube y se ejecuta `upsertByCatalogKey`.
+6. Si el `upsert` choca con el índice único porque otra petición ganó la carrera, el servicio vuelve a leer por `catalogKey` y devuelve la ficha existente. La operación es idempotente desde el punto de vista del cliente.
+
+La vigencia se calcula con `lastFmInfo.fetchedAt` y, si falta, con `updatedAt` o `createdAt`. El TTL por defecto es de treinta días. La decisión de usar un TTL largo se justifica porque los metadatos musicales cambian poco y porque el coste de una ficha obsoleta es menor que el de agotar una cuota gratuita. El detalle completo de la justificación económica está en [decisiones.md](decisiones.md).
+
+### Cajones y contrato de respuesta
+
+El servicio `getDrawers` obtiene los vinilos filtrados por género o artista y construye la agrupación en memoria con un `Map`. La respuesta conserva la forma `{ agrupacion, total, cajones }`; cada cajón contiene `clave`, `etiqueta`, `total` y `vinilos`. La clave es un slug estable, la etiqueta es el valor visible y los vinilos se ordenan por artista y título. La agrupación por género usa el campo normalizado, de modo que Last.fm puede devolver etiquetas como “flamenco”, “copla” o “bulerías” y todas ellas se presentan bajo el cajón “Flamenco” cuando el mapa de géneros las reconoce.
+
+El detalle de un disco devuelve la ficha completa, incluida `lastFmInfo` y `catalogKey`, más `playable`, un booleano derivado de la presencia de `youtubeVideoId`. La búsqueda devuelve `{ disco, cached, created, stale }`. El estado HTTP es `201` cuando se inserta una ficha y `200` cuando se reutiliza una existente, aunque el cuerpo conserva los tres indicadores para que el cliente pueda mostrar el origen del dato.
+
+### Variables y operación
+
+La configuración vive en `backend/.env` y se documenta en `backend/.env.example`. Las claves `LASTFM_API_KEY` y `YOUTUBE_API_KEY` no se envían al navegador ni se guardan en MongoDB. `ARCHIVO_CACHE_TTL_DAYS` y `ARCHIVO_HTTP_TIMEOUT_MS` permiten ajustar la política sin modificar código. `LASTFM_API_URL`, `YOUTUBE_API_URL` y `YOUTUBE_SEARCH_URL` existen para pruebas controladas y para adaptar el servicio a un proxy o a un entorno de integración.
+
 ## Endpoints
 
-`server.js` monta tres routers de dominio bajo `/api/diario`, `/api/debates` y `/api/velo`. Las rutas de autenticación, usuarios y administración siguen definidas directamente en `server.js`.
+`server.js` monta cuatro routers de dominio bajo `/api/diario`, `/api/debates`, `/api/velo` y `/api/archivo`. Las rutas de autenticación, usuarios y administración siguen definidas directamente en `server.js`.
 
 ### Autenticación, usuarios y administración
 
@@ -109,3 +172,11 @@ El seed se ejecuta con `node backend/seedDebate.js` desde la raíz o con `npm ru
 | POST | `/api/velo/tracks` | Administrador con sesión; programa una pista única para una fecha de hoy o futura |
 | GET | `/api/velo/tracks` | Administrador con sesión; lista la cola con estado y número de reflexiones |
 | PUT | `/api/velo/tracks/:id` | Administrador con sesión; edita una pista de hoy o futura; las pasadas son inmutables |
+
+### El Archivo
+
+| Método | Ruta | Quién puede |
+|---|---|---|
+| GET | `/api/archivo/cajones` | Usuario con sesión; agrupa por `genero` (por defecto) o `artista`; admite filtros `genero` y `artista`; devuelve `{ agrupacion, total, cajones }` |
+| GET | `/api/archivo/disco/:id` | Usuario con sesión; devuelve la ficha completa con `lastFmInfo`, `catalogKey` y `playable`; `400` si el identificador no es válido y `404` si no existe |
+| POST | `/api/archivo/buscar` | Usuario con sesión; recibe `{ query }` o `{ artist, title }`; responde `201` si crea la ficha y `200` si reutiliza la caché, con `{ disco, cached, created, stale }`; `400`, `502`, `503` o `504` ante entradas o proveedores no disponibles |

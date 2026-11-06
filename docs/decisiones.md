@@ -2,7 +2,7 @@
 type: Decisiones
 title: Decisiones técnicas detectadas
 description: Decisiones observables en el código, el README y el historial, con las incorporaciones del Sprint 2.
-timestamp: 2026-11-05
+timestamp: 2026-11-06
 ---
 
 # Decisiones
@@ -206,3 +206,27 @@ timestamp: 2026-11-05
 **Por qué:** permite que el administrador publique sin exponer su identidad, algo útil para hilos de prueba o contenidos que deben leerse sin sesgo de autor. El anonimato se aplica en la respuesta HTTP, no solo en la vista, para que el dato no se filtre. Se limita al formulario administrativo porque en el MVP solo `admin` puede publicar; no se crea un sistema de identidad anónima separado ni se permite elegir autor.
 
 **Estado:** vigente. Ver también D-19, que detalla el contrato y la normalización del campo.
+
+## D-26 — Last.fm para los metadatos y YouTube para el audio
+
+**Qué se decidió:** El Archivo separa la ficha cultural del vinilo de su reproducción. Last.fm aporta título, artista, álbum, portada, etiquetas, oyentes, reproducciones, duración, resumen y enlace canónico; YouTube aporta el identificador del vídeo que permite escuchar la obra. El modelo `Vinyl` guarda ambas dimensiones en un único documento, pero las resuelve con adaptadores independientes. Las tres rutas de El Archivo exigen `authMiddleware`, de modo que solo un usuario autenticado puede provocar llamadas externas.
+
+**Por qué:** ninguna de las dos fuentes cubre por sí sola la experiencia completa. Last.fm es una fuente cultural madura y con una API gratuita adecuada para un proyecto académico, pero no ofrece reproducción musical completa; YouTube permite escuchar la obra, pero sus metadatos no están pensados como catálogo. Separar ambas responsabilidades permite sustituir un proveedor sin rehacer el otro, mantener la ficha aunque el audio no se resuelva y proteger las cuotas gratuitas detrás de la autenticación. No se almacena audio ni se descargan vídeos: solo se persiste el identificador de once caracteres.
+
+**Estado:** vigente. La integración visual y la reproducción mediante YouTube Iframe API quedan pendientes.
+
+## D-27 — MongoDB como caché persistente de El Archivo
+
+**Qué se decidió:** cada disco se persiste en la colección de `Vinyl` y se identifica por una `catalogKey` única construida a partir del artista y el título normalizados. Antes de llamar a Last.fm, el servicio busca por esa clave. La ficha se considera vigente mientras `lastFmInfo.fetchedAt` esté dentro de `ARCHIVO_CACHE_TTL_DAYS`, que vale treinta días por defecto. La escritura se hace con `findOneAndUpdate` y `upsert` atómicos; si el refresco de una ficha caducada falla, se devuelve la copia anterior con `stale: true`.
+
+**Por qué:** las APIs gratuitas imponen límites de peticiones y el mismo disco puede buscarse muchas veces. Una caché persistente reduce el consumo, acelera la respuesta y mantiene el catálogo legible cuando el proveedor no está disponible. La clave normalizada evita duplicados por tildes, mayúsculas o signos; el índice único resuelve las carreras entre peticiones concurrentes; el TTL largo es proporcionado porque los metadatos musicales cambian poco. La caché no se usa como excusa para relajar la validación: las entradas siguen limitándose y las respuestas conservan los indicadores `cached`, `created` y `stale`. Los detalles del contrato están en [arquitectura.md](arquitectura.md).
+
+**Estado:** vigente. `ARCHIVO_CACHE_TTL_DAYS` y `ARCHIVO_HTTP_TIMEOUT_MS` permiten ajustar la política sin tocar código.
+
+## D-28 — YouTube Data API como vía principal y scraping como respaldo
+
+**Qué se decidió:** la resolución del audio intenta primero YouTube Data API si `YOUTUBE_API_KEY` está configurada. La consulta usa `part=snippet`, `type=video`, `videoCategoryId=10`, `maxResults=1` y una cadena formada por artista, título, álbum y “official audio”. Si no hay clave, la cuota está agotada o la API falla, se intenta un fallback de búsqueda sobre la página pública de YouTube, condicionado a `YOUTUBE_SCRAPING_ENABLED`. El fallback busca un `videoId` o un enlace `/watch?v=` en el HTML. Cualquier fallo de YouTube se registra y se traduce en `youtubeVideoId: null`, sin impedir que la ficha cultural se guarde.
+
+**Por qué:** la API oficial devuelve una estructura estable y verificable, pero consume cuota y exige una clave. El scraping no consume cuota, pero depende de un HTML cambiante y puede romperse sin aviso. Usar la API como vía principal y el scraping como respaldo ofrece continuidad operativa sin convertir una página no documentada en la única dependencia. Mantener `youtubeVideoId` opcional preserva el valor principal de El Archivo, que es el catálogo, y permite que un fallo temporal de audio se resuelva en una consulta posterior. El fallback se puede desactivar por configuración para cumplir con entornos que no permitan scraping.
+
+**Estado:** vigente. `YOUTUBE_SCRAPING_ENABLED` vale `true` por defecto y puede desactivarse sin cambios de código.

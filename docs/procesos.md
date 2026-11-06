@@ -13,7 +13,7 @@ El historial local muestra ramas de funcionalidad, documentación y corrección 
 
 ## Integración continua
 
-En [ci.yml](../.github/workflows/ci.yml), los eventos `pull_request` contra `main` y `push` a `main` ejecutan un job con Ubuntu y Node.js 22. El job instala dependencias con `npm ci` dentro de `backend` y ejecuta `npm test`. La comprobación local equivalente observada fue: **11 suites pasadas, 169 tests pasados, 0 snapshots**. Las pruebas del diario, del muro y de El Velo usan dobles de repositorios y de autenticación, sin MongoDB ni llamadas externas.
+En [ci.yml](../.github/workflows/ci.yml), los eventos `pull_request` contra `main` y `push` a `main` ejecutan un job con Ubuntu y Node.js 22. El job instala dependencias con `npm ci` dentro de `backend` y ejecuta `npm test`. La última comprobación local observada antes de El Archivo fue: **11 suites pasadas, 169 tests pasados, 0 snapshots**. Las pruebas del diario, del muro, de El Velo y de El Archivo usan dobles de repositorios, autenticación y red, sin MongoDB ni llamadas externas; la ejecución de las nuevas suites de El Archivo queda pendiente de confirmación local.
 
 La integración frontend del diario no añade pruebas de navegador a Jest. Se verifica manualmente con el servidor en local: iniciar sesión, comprobar el `GET /api/diario` al cargar `diario.html`, guardar entradas con y sin título, abrir un eco para leer su contenido completo, comprobar el extracto de 40 caracteres cuando no hay título y borrar un eco con confirmación.
 
