@@ -1,5 +1,13 @@
 # Cronología
 
+## 2026-11-06 — El Archivo: backend, modelo de vinilos y caché musical
+
+Rama `feature/archivo-interactivo`. Se añade el backend de El Archivo, la discoteca interactiva de Querencia. El modelo `Vinyl` vive en `backend/vinylModel.js` y se apoya en `VinylRepository`; guarda título, artista, álbum, portada, género normalizado, `youtubeVideoId`, un subdocumento `lastFmInfo` y una `catalogKey` única calculada desde artista y título. El servicio `archivoService.js` implementa el flujo cache-aside: consulta MongoDB antes de las APIs externas, refresca con Last.fm cuando la ficha supera el TTL, resuelve el audio con YouTube Data API y usa el scraping como respaldo configurable. Un `upsert` atómico y el índice único de `catalogKey` evitan duplicados concurrentes.
+
+El router `archivoRouter.js` expone `GET /api/archivo/cajones`, `GET /api/archivo/disco/:id` y `POST /api/archivo/buscar`, todos protegidos por `authMiddleware`. La respuesta de búsqueda es `{ disco, cached, created, stale }` con `201` si crea y `200` si reutiliza la caché. Los errores de dominio se traducen a `400`, `404`, `502`, `503` o `504`. `server.js` monta el router en `/api/archivo` y `.env.example` declara las claves de Last.fm y YouTube, el TTL y el timeout.
+
+Se añaden pruebas de modelo, repositorio, servicio y router con dobles de red y de base de datos. `README.md`, `docs/arquitectura.md`, `docs/requisitos.md` y `docs/decisiones.md` documentan el modelo, el flujo de caché, los requisitos, los límites de cuota y las decisiones D-26, D-27 y D-28. La integración visual de El Archivo queda pendiente. La ejecución completa de la nueva suite todavía no se ha verificado localmente.
+
 ## 2026-11-05 — Actualización documental intermedia del Sprint 2
 
 Rama `docs/progreso-sprint2`. Se actualiza la documentación de progreso sin cambiar el código de producción. `sprint-2.md` deja de ser un stub y registra los PBIs ya integrados de Diario (aislamiento por usuario), Muro (roles, UI administrativa, modal de lectura y reacciones semánticas) y El Velo (escucha ciega y cola administrativa), además del trabajo abierto. `requisitos.md` incorpora las filas de El Velo y del rol `editor` como decisión YAGNI, y actualiza la suite a 11 suites y 169 tests. `arquitectura.md` añade una sección de modelos de Mongoose (`Debate` y `VeloTrack`) y reorganiza los endpoints por dominio. `decisiones.md` registra D-23 (YAGNI del rol editor), D-24 (portadas por URL externa sin multipart) y D-25 (anonimato administrativo con `isAnonymous`), y corrige el estado de D-05 y D-07. `README.md` presenta las tres experiencias del MVP y su estado actual; `index.md` y `procesos.md` se alinean con el Sprint 2.

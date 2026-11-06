@@ -1,18 +1,20 @@
 # Querencia
 
-SaaS de reflexión y debate musical diseñado para ir más allá de la escucha superficial. El MVP se organiza en tres experiencias complementarias:
+SaaS de reflexión y debate musical diseñado para ir más allá de la escucha superficial. El MVP se organiza en cuatro experiencias complementarias:
 
 - **Diario Íntimo:** un espacio privado donde cada usuario escribe y conserva sus escuchas. Las entradas están aisladas por usuario: nadie más puede listarlas ni borrarlas.
 - **Muro de Debates:** el espacio público de reflexión musical. Los administradores publican hilos con portada opcional y anonimato; la comunidad los lee y reacciona con tres etiquetas semánticas: Profundo, Melancólico y Rompe esquemas.
 - **El Velo:** una escucha ciega diaria. El usuario recibe solo el audio de la pista del día y, hasta que envía su reflexión, no ve título, artista ni portada. Después se revela la ficha completa y el muro de voces de la comunidad. Los administradores programan la cola desde el panel.
+- **El Archivo:** una discoteca interactiva organizada en cajones de vinilos. El usuario busca una obra, el backend enriquece los metadatos con Last.fm, resuelve el audio con YouTube y conserva el resultado en MongoDB para que las siguientes consultas no vuelvan a consultar Last.fm y reaprovechen el audio ya resuelto.
 
-El Sprint 2 sigue en curso. Los tres módulos del MVP ya están implementados e integrados, con **11 suites y 169 tests automatizados**. La documentación de progreso, requisitos, arquitectura y decisiones vive en [docs/index.md](docs/index.md).
+El Sprint 2 sigue en curso. Los cuatro módulos del MVP cuentan ya con backend, modelo y pruebas; Diario, Muro y El Velo están integrados en el frontend, mientras que El Archivo espera su integración visual. La suite automatizada de Jest cubre modelos, servicios y routers. La documentación de progreso, requisitos, arquitectura y decisiones vive en [docs/index.md](docs/index.md).
 
 Desarrollado para la asignatura Procesos de Ingeniería del Software (Curso 2026-2027).
 
 ## Tecnologías Elegidas (Justificación)
 - **Backend (Node.js & Express):** Proporciona un entorno ligero y rápido para construir la API REST requerida, permitiendo mantener un ecosistema unificado en JavaScript.
 - **Frontend (Vanilla JS / HTML):** Asegura una estricta separación de la capa de presentación sin la sobrecarga de compilación de *frameworks* complejos en la etapa inicial.
+- **Metadatos y audio (Last.fm + YouTube):** Last.fm aporta la ficha cultural del vinilo y YouTube resuelve la reproducción sin asumir el coste de un catálogo musical propietario. MongoDB actúa como caché persistente para reducir llamadas y proteger las cuotas gratuitas.
 - **Pruebas (Jest):** Facilita la creación de pruebas unitarias automatizadas con aserciones claras y se integra nativamente con herramientas de CI.
 - **CI/CD (GitHub Actions & Google App Engine):** GitHub Actions automatiza la ejecución de los tests en cada *pull request*, mientras que Google App Engine facilita el despliegue continuo de la rama principal a una URL pública.
 
@@ -151,6 +153,89 @@ Todas las rutas de lectura y participación requieren `Authorization: Bearer <to
 
 `backend/frontend/admin.html` incorpora la sección “La Cola del Velo”. Desde ella se puede programar una pista para hoy o para un día futuro, consultar la cola completa, ver cuántas reflexiones ha recibido cada pista y editar las que todavía no han pasado. El formulario reutiliza la estética del panel: glassmorphism oscuro, acentos dorados y tipografías literarias, sin emojis.
 
+## El Archivo — Discoteca Interactiva
+
+El Archivo convierte el catálogo musical de la plataforma en una experiencia de consulta y escucha. Cada vinilo se presenta como una ficha persistente que reúne título, artista, álbum, portada, género, etiquetas de Last.fm y el identificador del vídeo de YouTube que permite reproducirlo. La unidad de navegación no es una lista plana, sino un conjunto de cajones: agrupaciones por género o por artista que conservan la metáfora física de una discoteca y permiten recorrer el fondo musical sin depender de una búsqueda inmediata.
+
+La implementación de esta iteración es estrictamente de backend y base de datos. El contrato HTTP queda preparado para que el frontend de El Archivo consuma los cajones, abra la ficha de un disco y solicite una búsqueda externa cuando el catálogo local todavía no contiene la obra. No se ha creado todavía una vista pública de El Archivo ni se ha modificado la navegación del cliente en esta entrega.
+
+### Modelo de datos
+
+El modelo `Vinyl` vive en [backend/vinylModel.js](backend/vinylModel.js) y se apoya en `VinylRepository` para encapsular las consultas. Sus campos principales son:
+
+| Campo | Tipo | Función |
+|---|---|---|
+| `title` | `String` | Título de la obra, obligatorio, recortado y limitado a 200 caracteres. |
+| `artist` | `String` | Intérprete o autor, obligatorio, recortado y limitado a 200 caracteres. |
+| `album` | `String` | Álbum o publicación de referencia, opcional. |
+| `coverUrl` | `String` | Portada externa validada; se admite una URL `http` o `https` de hasta 2048 caracteres. |
+| `genre` | `String` | Género normalizado para construir los cajones; por defecto “Sin clasificar”. |
+| `youtubeVideoId` | `String` | Identificador de once caracteres del vídeo de YouTube; puede ser nulo si el audio no se resuelve. |
+| `lastFmInfo` | `Object` | Ficha cultural normalizada: `mbid`, URL de Last.fm, oyentes, reproducciones, duración, publicación, resumen, etiquetas, álbum y fecha de extracción. |
+| `catalogKey` | `String` | Clave estable y única generada a partir de artista y título normalizados. |
+| `createdAt`, `updatedAt` | `Date` | Trazabilidad de la creación y de la última actualización. |
+| `lastAccessedAt` | `Date` | Último acceso al detalle del disco, útil para futuras políticas de depuración. |
+
+La unicidad se apoya en `catalogKey`, no en el título visible. De este modo, “Camarón de la Isla” y “camaron de la isla” producen la misma clave y no generan fichas duplicadas. El campo `youtubeVideoId` se valida con una expresión regular de once caracteres y se mantiene opcional para que un fallo temporal de YouTube no impida conservar la ficha cultural del vinilo.
+
+### Flujo de búsqueda y caché
+
+1. El cliente envía una consulta libre (`query`) o un par `artist` y `title`. El servicio valida y normaliza los textos.
+2. Si dispone de artista y título, calcula `catalogKey` y consulta MongoDB antes de llamar a ninguna API externa.
+3. Si la ficha existe y su `lastFmInfo.fetchedAt` está dentro del TTL configurado, se devuelve sin consultar Last.fm y se actualiza `lastAccessedAt`. Si todavía no tiene `youtubeVideoId`, se intenta completar el audio como máximo una vez al día para no consumir cuota en cada búsqueda.
+4. Si la ficha existe pero está caducada, se intenta refrescar con Last.fm. Si el proveedor falla, se conserva la copia anterior y se marca la respuesta como `stale`; el catálogo sigue siendo legible aunque la API externa no esté disponible.
+5. Si no existe, se consulta `track.search` de Last.fm, se elige el candidato más próximo y se completa la ficha con `track.getInfo`.
+6. El audio se resuelve primero mediante YouTube Data API, si `YOUTUBE_API_KEY` está configurada. Si no hay clave, se supera la cuota o la API falla, se intenta el fallback de búsqueda sobre la página pública de YouTube, siempre que `YOUTUBE_SCRAPING_ENABLED` esté activo.
+7. El documento se guarda con `findOneAndUpdate` y `upsert` sobre `catalogKey`, de forma atómica e idempotente. Si dos peticiones compiten por el mismo disco, el índice único impide duplicados y la segunda reutiliza el documento creado por la primera.
+8. La respuesta indica si el resultado vino de caché (`cached`), si se creó (`created`) y si se sirvió una copia obsoleta (`stale`).
+
+El TTL se controla con `ARCHIVO_CACHE_TTL_DAYS` y vale 30 días por defecto. El tiempo máximo de espera de cada llamada externa se controla con `ARCHIVO_HTTP_TIMEOUT_MS` y vale 8000 milisegundos por defecto. Ninguna clave de API se envía al navegador ni se persiste en MongoDB.
+
+### API de El Archivo
+
+Todas las rutas exigen la cabecera `Authorization: Bearer <token>` y se montan bajo `/api/archivo`.
+
+| Método | Ruta | Cuerpo o parámetros | Respuesta |
+|---|---|---|---|
+| GET | `/api/archivo/cajones` | `?agrupar=genero` o `?agrupar=artista`; también `?genero=...` y `?artista=...` | `200` con `{ agrupacion, total, cajones }`. Cada cajón contiene `clave`, `etiqueta`, `total` y `vinilos`. |
+| GET | `/api/archivo/disco/:id` | Identificador `ObjectId` | `200` con la ficha completa; `400` si el identificador no es válido; `404` si no existe. |
+| POST | `/api/archivo/buscar` | `{ "query": "..." }` o `{ "artist": "...", "title": "..." }` | `201` si crea la ficha; `200` si reutiliza la caché; `400` si la entrada no es válida; `502`, `503` o `504` si falla un proveedor externo. |
+
+La respuesta de búsqueda tiene la forma `{ disco, cached, created, stale }`. El campo `disco` contiene la ficha completa, incluida `lastFmInfo`; `cached` indica que se reutilizó un documento; `created` indica que se insertó uno nuevo; `stale` indica que se devolvió una copia caducada porque el refresco externo no fue posible.
+
+Los cajones se construyen en el servicio, no en el cliente. La agrupación por género usa el campo normalizado `genre`; la agrupación por artista usa `artist`. Dentro de cada cajón los vinilos se ordenan por artista y título, y los cajones se ordenan por su etiqueta visible en español. Esta decisión mantiene el contrato estable si en el futuro se añade paginación o filtros adicionales.
+
+### Variables de entorno
+
+| Variable | Obligatoria | Valor por defecto | Uso |
+|---|---|---|---|
+| `LASTFM_API_KEY` | Sí para consultas externas | — | Clave de Last.fm. Sin ella solo se pueden servir fichas ya cacheadas. |
+| `LASTFM_API_URL` | No | `https://ws.audioscrobbler.com/2.0/` | Endpoint de Last.fm. |
+| `YOUTUBE_API_KEY` | No | — | Clave de YouTube Data API. Si falta, se usa el fallback de scraping. |
+| `YOUTUBE_API_URL` | No | `https://www.googleapis.com/youtube/v3/search` | Endpoint de búsqueda de YouTube Data API. |
+| `YOUTUBE_SEARCH_URL` | No | `https://www.youtube.com/results` | Página utilizada por el fallback de scraping. |
+| `YOUTUBE_SCRAPING_ENABLED` | No | `true` | Permite desactivar el fallback de scraping. |
+| `ARCHIVO_CACHE_TTL_DAYS` | No | `30` | Días de vigencia de la ficha antes de intentar refrescarla. |
+| `ARCHIVO_HTTP_TIMEOUT_MS` | No | `8000` | Tiempo máximo de espera de cada llamada externa. |
+
+### Ejemplo de uso
+
+```bash
+curl -X POST http://localhost:3000/api/archivo/buscar \
+  -H "Authorization: Bearer <token>" \
+  -H "Content-Type: application/json" \
+  -d '{"artist":"Camarón de la Isla","title":"La leyenda del tiempo"}'
+```
+
+La primera llamada consulta Last.fm y YouTube y guarda la ficha. Una segunda llamada con el mismo artista y título, dentro del TTL, devuelve el documento cacheado sin volver a consultar Last.fm; si la ficha ya contiene un `youtubeVideoId`, tampoco consume YouTube. Si el audio no se pudo resolver, el servicio reintenta la búsqueda como máximo una vez al día. Cuando existe `youtubeVideoId`, el cliente puede construir la reproducción con YouTube Iframe API usando ese identificador.
+
+### Límites y criterios de diseño
+
+- El scraping de YouTube es un mecanismo de respaldo, no la vía principal. Su estructura HTML puede cambiar y por eso la aplicación prioriza la API oficial y degrada a `youtubeVideoId: null` cuando no hay una resolución fiable.
+- La caché evita rate-limits y reduce el coste de las APIs, pero no sustituye una política de cuotas por usuario. La autenticación obligatoria del endpoint de búsqueda es la primera barrera contra el abuso, y una ficha sin audio solo reintenta YouTube una vez al día.
+- Los metadatos culturales se guardan normalizados y con el resumen de Last.fm sin HTML; el frontend deberá renderizarlos con `textContent` para no introducir contenido no confiable.
+- La subida física de carátulas no forma parte de esta iteración. Igual que en el Muro y en El Velo, la portada se referencia mediante URL externa.
+
 ## Estado Actual (Sprint 1)
 - [x] **Hito 1:** Esqueleto, backend (lógica en memoria), API, pruebas automatizadas, pipeline de Integración Continua (CI) y Despliegue Continuo (CD).
 - [x] **Hito 2:** Interfaz frontend, registro e inicio de sesión, mantenimiento de sesión.
@@ -174,4 +259,7 @@ El Sprint 2 sigue en curso. Esta lista refleja los PBIs ya completados e integra
 - [x] **RF-MVP-Velo:** escucha ciega diaria con `VeloTrack`, respuesta capada hasta la reflexión, revelación de metadatos y muro de reflexiones; pruebas de modelo, servicio y router.
 - [x] **RF-MVP-Velo-Frontend:** estados ciego y revelado en `velo.html` y `velo.js`, reproductor para audio directo y plataformas embebibles, y muro de voces sin correos.
 - [x] **RF-MVP-Velo-Admin:** panel “La Cola del Velo” en `admin.html` y `admin.js`, con alta, listado por estado, edición y bloqueo de pistas pasadas.
-- [ ] **Pendiente de cierre:** verificación manual en navegador, correo real, URL pública y requisitos heredados del Sprint 1.
+- [x] **RF-MVP-Archivo:** backend de El Archivo con modelo `Vinyl`, caché en MongoDB, búsqueda en Last.fm, resolución de audio en YouTube y endpoints de cajones, detalle y búsqueda.
+- [x] **RF-MVP-Archivo-Cache:** upsert atómico por `catalogKey`, TTL configurable, reutilización de fichas y degradación a copia `stale` cuando Last.fm no responde.
+- [x] **RF-MVP-Archivo-Docs:** documentación académica del modelo, el servicio, el flujo de caché, los requisitos y las decisiones económicas y técnicas.
+- [ ] **Pendiente de cierre:** integración visual de El Archivo en el frontend, verificación manual en navegador, correo real, URL pública y requisitos heredados del Sprint 1.

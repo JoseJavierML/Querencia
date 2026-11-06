@@ -21,6 +21,9 @@ const { createDebateRouter } = require('./debateRouter');
 const { VeloRepository } = require('./veloTrackModel');
 const { createVeloService } = require('./veloService');
 const { createVeloRouter } = require('./veloRouter');
+const { VinylRepository } = require('./vinylModel');
+const { createArchivoService } = require('./archivoService');
+const { createArchivoRouter } = require('./archivoRouter');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
@@ -59,6 +62,15 @@ const veloRouter = createVeloRouter({
     adminMiddleware: isAdminMiddleware
 });
 
+const archivoService = createArchivoService({
+    vinylRepository: VinylRepository
+});
+
+const archivoRouter = createArchivoRouter({
+    archivoService,
+    authMiddleware
+});
+
 app.use(cors());
 app.use(express.json());
 const path = require('path');
@@ -73,6 +85,7 @@ app.use(passport.initialize());
 app.use('/api/diario', diaryRouter);
 app.use('/api/debates', debateRouter);
 app.use('/api/velo', veloRouter);
+app.use('/api/archivo', archivoRouter);
 
 passport.use(new GoogleStrategy({
     clientID: process.env.GOOGLE_CLIENT_ID,
