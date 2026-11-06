@@ -405,6 +405,7 @@ const initVeloPage = () => {
         reflections.forEach((reflection, index) => {
             const card = document.createElement('article');
             card.className = 'reflection-card';
+            card.style.setProperty('--i', String(index));
             if (reflection.isMine) {
                 card.classList.add('is-mine');
             }
