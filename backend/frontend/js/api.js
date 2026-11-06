@@ -102,6 +102,16 @@ export const api = {
         }
     ),
 
+    listarCajonesArchivo: (agrupacion = 'genero') => fetchAPI(
+        `/archivo/cajones?agrupar=${encodeURIComponent(agrupacion)}`,
+        { method: 'GET' }
+    ),
+
+    obtenerDiscoArchivo: (id) => fetchAPI(
+        `/archivo/disco/${encodeURIComponent(id)}`,
+        { method: 'GET' }
+    ),
+
     checkSession: async () => {
         if (!localStorage.getItem('token') && !localStorage.getItem('querencia_token')) {
             return false;
