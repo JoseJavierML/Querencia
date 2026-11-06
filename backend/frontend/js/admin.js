@@ -165,6 +165,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let orderBeforeDrag = [];
     let dropCommitted = false;
     let isSavingOrder = false;
+    let veloTracksById = new Map();
 
     const getFutureRows = () => Array.from(
         veloTracksBody.querySelectorAll('tr[data-status="future"]')
@@ -188,6 +189,34 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
+    const positionDraggedRow = (targetRow, clientY) => {
+        if (!draggedRow || !targetRow || targetRow === draggedRow) {
+            return;
+        }
+
+        const rect = targetRow.getBoundingClientRect();
+        const insertAfter = clientY > rect.top + (rect.height / 2);
+        const referenceNode = insertAfter ? targetRow.nextElementSibling : targetRow;
+
+        if (referenceNode === draggedRow || draggedRow.nextElementSibling === referenceNode) {
+            return;
+        }
+
+        veloTracksBody.insertBefore(draggedRow, referenceNode);
+    };
+
+    const applyReorderedDates = (tracks) => {
+        veloTracksById = new Map(tracks.map((track) => [String(track._id), track]));
+
+        getFutureRows().forEach((row) => {
+            const track = veloTracksById.get(row.dataset.trackId);
+            const dateCell = row.querySelector('.release-date-cell');
+            if (track && dateCell) {
+                dateCell.textContent = formatTrackDate(track.releaseDate);
+            }
+        });
+    };
+
     const handleDragStart = (event) => {
         const row = event.currentTarget;
 
@@ -207,26 +236,29 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
+    const getFutureRowFromEvent = (event) => {
+        const target = event.target instanceof Element
+            ? event.target.closest('tr[data-status="future"]')
+            : null;
+
+        return target && veloTracksBody.contains(target) ? target : null;
+    };
+
     const handleDragOver = (event) => {
-        if (!draggedRow || event.currentTarget === draggedRow) {
+        if (!draggedRow) {
             return;
         }
 
+        // Sin cancelar dragover, el navegador invalida el drop y la fila vuelve sola.
         event.preventDefault();
         if (event.dataTransfer) {
             event.dataTransfer.dropEffect = 'move';
         }
 
-        const targetRow = event.currentTarget;
-        const rect = targetRow.getBoundingClientRect();
-        const insertAfter = event.clientY > rect.top + (rect.height / 2);
-        const referenceNode = insertAfter ? targetRow.nextElementSibling : targetRow;
-
-        if (referenceNode === draggedRow || draggedRow.nextElementSibling === referenceNode) {
-            return;
+        const targetRow = getFutureRowFromEvent(event);
+        if (targetRow) {
+            positionDraggedRow(targetRow, event.clientY);
         }
-
-        veloTracksBody.insertBefore(draggedRow, referenceNode);
     };
 
     const handleDrop = async (event) => {
@@ -235,6 +267,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         event.preventDefault();
+        if (event.dataTransfer) {
+            event.dataTransfer.dropEffect = 'move';
+        }
+
+        // La fila queda insertada en su posición definitiva antes de persistir.
+        const targetRow = getFutureRowFromEvent(event);
+        if (targetRow) {
+            positionDraggedRow(targetRow, event.clientY);
+        }
+
         const previousOrder = [...orderBeforeDrag];
         const orderedIds = getFutureRows().map((row) => row.dataset.trackId);
         const changed = orderedIds.some((trackId, index) => trackId !== previousOrder[index]);
@@ -250,7 +292,7 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             const tracks = await api.reordenarPistasVelo(orderedIds);
             const queue = Array.isArray(tracks) ? tracks : [];
-            renderVeloTracks(queue);
+            applyReorderedDates(queue);
             updateQueueSummary(queue);
             setVeloMessage('Orden de la cola actualizado.', 'success');
         } catch (error) {
@@ -270,6 +312,9 @@ document.addEventListener('DOMContentLoaded', () => {
         cleanupDragState();
     };
 
+    veloTracksBody.addEventListener('dragover', handleDragOver);
+    veloTracksBody.addEventListener('drop', handleDrop);
+
     const renderVeloTracks = (tracks) => {
         veloTracksBody.innerHTML = '';
 
@@ -278,6 +323,7 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        veloTracksById = new Map(tracks.map((track) => [String(track._id), track]));
         const canReorder = tracks.filter((track) => track.status === 'future').length > 1;
 
         tracks.forEach((track) => {
@@ -309,8 +355,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 dragCell.appendChild(handle);
 
                 row.addEventListener('dragstart', handleDragStart);
-                row.addEventListener('dragover', handleDragOver);
-                row.addEventListener('drop', handleDrop);
                 row.addEventListener('dragend', handleDragEnd);
             } else {
                 const locked = document.createElement('span');
@@ -322,6 +366,7 @@ document.addEventListener('DOMContentLoaded', () => {
             row.appendChild(dragCell);
 
             const dateCell = document.createElement('td');
+            dateCell.className = 'release-date-cell';
             dateCell.textContent = formatTrackDate(track.releaseDate);
             row.appendChild(dateCell);
 
@@ -358,7 +403,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 editButton.type = 'button';
                 editButton.className = 'btn-action';
                 editButton.textContent = 'Editar';
-                editButton.addEventListener('click', () => startEditingTrack(track));
+                editButton.addEventListener('click', () => {
+                    startEditingTrack(veloTracksById.get(String(track._id)) || track);
+                });
                 actionsCell.appendChild(editButton);
             }
             row.appendChild(actionsCell);
