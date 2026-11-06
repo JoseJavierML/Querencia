@@ -142,16 +142,178 @@ document.addEventListener('DOMContentLoaded', () => {
         setVeloMessage('');
     };
 
+    const updateQueueSummary = (tracks) => {
+        const activeCount = tracks.filter((track) => track.status !== 'past').length;
+        const reflectionTotal = tracks.reduce((total, track) => total + (track.reflectionCount || 0), 0);
+
+        veloQueueStatus.textContent = `${tracks.length} ${tracks.length === 1 ? 'pista' : 'pistas'} en la cola`;
+        veloQueueFooter.textContent = `${activeCount} ${activeCount === 1 ? 'pista activa o futura' : 'pistas activas o futuras'} · ${reflectionTotal} ${reflectionTotal === 1 ? 'reflexión' : 'reflexiones'}`;
+    };
+
     const renderEmptyQueue = (message) => {
         veloTracksBody.innerHTML = '';
         const row = document.createElement('tr');
         const cell = document.createElement('td');
-        cell.colSpan = 5;
+        cell.colSpan = 6;
         cell.className = 'queue-empty';
         cell.textContent = message;
         row.appendChild(cell);
         veloTracksBody.appendChild(row);
     };
+
+    let draggedRow = null;
+    let orderBeforeDrag = [];
+    let dropCommitted = false;
+    let isSavingOrder = false;
+    let veloTracksById = new Map();
+
+    const getFutureRows = () => Array.from(
+        veloTracksBody.querySelectorAll('tr[data-status="future"]')
+    );
+
+    const cleanupDragState = () => {
+        if (draggedRow) {
+            draggedRow.classList.remove('is-dragging');
+        }
+        draggedRow = null;
+        orderBeforeDrag = [];
+        dropCommitted = false;
+    };
+
+    const restoreFutureRows = (orderedIds) => {
+        orderedIds.forEach((trackId) => {
+            const row = veloTracksBody.querySelector(`tr[data-track-id="${trackId}"]`);
+            if (row) {
+                veloTracksBody.appendChild(row);
+            }
+        });
+    };
+
+    const positionDraggedRow = (targetRow, clientY) => {
+        if (!draggedRow || !targetRow || targetRow === draggedRow) {
+            return;
+        }
+
+        const rect = targetRow.getBoundingClientRect();
+        const insertAfter = clientY > rect.top + (rect.height / 2);
+        const referenceNode = insertAfter ? targetRow.nextElementSibling : targetRow;
+
+        if (referenceNode === draggedRow || draggedRow.nextElementSibling === referenceNode) {
+            return;
+        }
+
+        veloTracksBody.insertBefore(draggedRow, referenceNode);
+    };
+
+    const applyReorderedDates = (tracks) => {
+        veloTracksById = new Map(tracks.map((track) => [String(track._id), track]));
+
+        getFutureRows().forEach((row) => {
+            const track = veloTracksById.get(row.dataset.trackId);
+            const dateCell = row.querySelector('.release-date-cell');
+            if (track && dateCell) {
+                dateCell.textContent = formatTrackDate(track.releaseDate);
+            }
+        });
+    };
+
+    const handleDragStart = (event) => {
+        const row = event.currentTarget;
+
+        if (isSavingOrder || row.dataset.status !== 'future') {
+            event.preventDefault();
+            return;
+        }
+
+        draggedRow = row;
+        orderBeforeDrag = getFutureRows().map((futureRow) => futureRow.dataset.trackId);
+        dropCommitted = false;
+        row.classList.add('is-dragging');
+
+        if (event.dataTransfer) {
+            event.dataTransfer.effectAllowed = 'move';
+            event.dataTransfer.setData('text/plain', row.dataset.trackId);
+        }
+    };
+
+    const getFutureRowFromEvent = (event) => {
+        const target = event.target instanceof Element
+            ? event.target.closest('tr[data-status="future"]')
+            : null;
+
+        return target && veloTracksBody.contains(target) ? target : null;
+    };
+
+    const handleDragOver = (event) => {
+        if (!draggedRow) {
+            return;
+        }
+
+        // Sin cancelar dragover, el navegador invalida el drop y la fila vuelve sola.
+        event.preventDefault();
+        if (event.dataTransfer) {
+            event.dataTransfer.dropEffect = 'move';
+        }
+
+        const targetRow = getFutureRowFromEvent(event);
+        if (targetRow) {
+            positionDraggedRow(targetRow, event.clientY);
+        }
+    };
+
+    const handleDrop = async (event) => {
+        if (!draggedRow) {
+            return;
+        }
+
+        event.preventDefault();
+        if (event.dataTransfer) {
+            event.dataTransfer.dropEffect = 'move';
+        }
+
+        // La fila queda insertada en su posición definitiva antes de persistir.
+        const targetRow = getFutureRowFromEvent(event);
+        if (targetRow) {
+            positionDraggedRow(targetRow, event.clientY);
+        }
+
+        const previousOrder = [...orderBeforeDrag];
+        const orderedIds = getFutureRows().map((row) => row.dataset.trackId);
+        const changed = orderedIds.some((trackId, index) => trackId !== previousOrder[index]);
+
+        if (!changed) {
+            return;
+        }
+
+        dropCommitted = true;
+        isSavingOrder = true;
+        veloQueueStatus.textContent = 'Guardando el orden...';
+
+        try {
+            const tracks = await api.reordenarPistasVelo(orderedIds);
+            const queue = Array.isArray(tracks) ? tracks : [];
+            applyReorderedDates(queue);
+            updateQueueSummary(queue);
+            setVeloMessage('Orden de la cola actualizado.', 'success');
+        } catch (error) {
+            restoreFutureRows(previousOrder);
+            veloQueueStatus.textContent = 'Error al reordenar';
+            veloQueueFooter.textContent = error.message || 'No se pudo guardar el nuevo orden.';
+        } finally {
+            isSavingOrder = false;
+            cleanupDragState();
+        }
+    };
+
+    const handleDragEnd = () => {
+        if (!dropCommitted) {
+            restoreFutureRows(orderBeforeDrag);
+        }
+        cleanupDragState();
+    };
+
+    veloTracksBody.addEventListener('dragover', handleDragOver);
+    veloTracksBody.addEventListener('drop', handleDrop);
 
     const renderVeloTracks = (tracks) => {
         veloTracksBody.innerHTML = '';
@@ -161,10 +323,50 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
+        veloTracksById = new Map(tracks.map((track) => [String(track._id), track]));
+        const canReorder = tracks.filter((track) => track.status === 'future').length > 1;
+
         tracks.forEach((track) => {
             const row = document.createElement('tr');
+            row.dataset.trackId = track._id;
+            row.dataset.status = track.status;
+
+            const dragCell = document.createElement('td');
+            dragCell.className = 'drag-cell';
+
+            if (track.status === 'future' && canReorder) {
+                row.draggable = true;
+                row.classList.add('is-draggable');
+
+                const handle = document.createElement('span');
+                handle.className = 'drag-handle';
+                handle.title = 'Arrastrar para reordenar';
+                handle.setAttribute('aria-hidden', 'true');
+                handle.innerHTML = `
+                    <svg viewBox="0 0 12 20">
+                        <circle cx="4" cy="4" r="1.3"></circle>
+                        <circle cx="8" cy="4" r="1.3"></circle>
+                        <circle cx="4" cy="10" r="1.3"></circle>
+                        <circle cx="8" cy="10" r="1.3"></circle>
+                        <circle cx="4" cy="16" r="1.3"></circle>
+                        <circle cx="8" cy="16" r="1.3"></circle>
+                    </svg>
+                `;
+                dragCell.appendChild(handle);
+
+                row.addEventListener('dragstart', handleDragStart);
+                row.addEventListener('dragend', handleDragEnd);
+            } else {
+                const locked = document.createElement('span');
+                locked.className = 'drag-locked';
+                locked.textContent = '—';
+                locked.setAttribute('aria-hidden', 'true');
+                dragCell.appendChild(locked);
+            }
+            row.appendChild(dragCell);
 
             const dateCell = document.createElement('td');
+            dateCell.className = 'release-date-cell';
             dateCell.textContent = formatTrackDate(track.releaseDate);
             row.appendChild(dateCell);
 
@@ -201,7 +403,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 editButton.type = 'button';
                 editButton.className = 'btn-action';
                 editButton.textContent = 'Editar';
-                editButton.addEventListener('click', () => startEditingTrack(track));
+                editButton.addEventListener('click', () => {
+                    startEditingTrack(veloTracksById.get(String(track._id)) || track);
+                });
                 actionsCell.appendChild(editButton);
             }
             row.appendChild(actionsCell);
@@ -215,10 +419,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const data = await api.listarPistasVelo();
             const tracks = Array.isArray(data) ? data : [];
             renderVeloTracks(tracks);
-
-            const activeCount = tracks.filter((track) => track.status !== 'past').length;
-            veloQueueStatus.textContent = `${tracks.length} ${tracks.length === 1 ? 'pista' : 'pistas'} en la cola`;
-            veloQueueFooter.textContent = `${activeCount} ${activeCount === 1 ? 'pista activa o futura' : 'pistas activas o futuras'} · ${tracks.reduce((total, track) => total + (track.reflectionCount || 0), 0)} reflexiones`;
+            updateQueueSummary(tracks);
         } catch (error) {
             renderEmptyQueue('No se pudo cargar la cola del Velo.');
             veloQueueStatus.textContent = 'Error de sincronización';

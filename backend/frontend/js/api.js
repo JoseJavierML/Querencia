@@ -89,6 +89,11 @@ export const api = {
 
     listarPistasVelo: () => fetchAPI('/velo/tracks', { method: 'GET' }),
 
+    reordenarPistasVelo: (trackIds) => fetchAPI('/velo/tracks/order', {
+        method: 'PATCH',
+        body: JSON.stringify({ trackIds })
+    }),
+
     actualizarPistaVelo: (id, { releaseDate, audioUrl, title, artist, coverUrl }) => fetchAPI(
         `/velo/tracks/${encodeURIComponent(id)}`,
         {

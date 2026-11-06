@@ -131,6 +131,18 @@ const createVeloRouter = ({ veloService, authMiddleware, adminMiddleware }) => {
         }
     });
 
+    router.patch('/tracks/order', authMiddleware, adminMiddleware, async (req, res) => {
+        try {
+            const tracks = await veloService.reorderTracks({
+                trackIds: req.body ? req.body.trackIds : undefined
+            });
+
+            return res.status(200).json(tracks.map((track) => toAdminTrackResponse(track)));
+        } catch (error) {
+            return respondWithError(res, error, 'No se pudo reordenar la cola del Velo');
+        }
+    });
+
     router.put('/tracks/:id', authMiddleware, adminMiddleware, async (req, res) => {
         try {
             const { track, status } = await veloService.updateTrack({

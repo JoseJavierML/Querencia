@@ -320,6 +320,63 @@ describe('Servicio del Velo', () => {
             await expect(service.updateTrack({ id: 'pista-1', title: 'Nuevo' }))
                 .rejects.toBeInstanceOf(VeloTrackNotFoundError);
         });
+
+        test('reordena las pistas futuras intercambiando sus fechas con un paso temporal', async () => {
+            const firstDate = new Date(Date.UTC(2026, 10, 6));
+            const secondDate = new Date(Date.UTC(2026, 10, 8));
+            const today = createTrack({ _id: 'hoy', releaseDate: TODAY, reflections: [] });
+            const first = createTrack({ _id: 'futura-1', releaseDate: firstDate, reflections: [] });
+            const second = createTrack({ _id: 'futura-2', releaseDate: secondDate, reflections: [] });
+
+            veloRepository.findAll
+                .mockResolvedValueOnce([today, first, second])
+                .mockResolvedValueOnce([
+                    today,
+                    { ...second, releaseDate: firstDate },
+                    { ...first, releaseDate: secondDate }
+                ]);
+            veloRepository.updateById.mockResolvedValue(null);
+
+            const result = await service.reorderTracks({ trackIds: ['futura-2', 'futura-1'] });
+
+            expect(veloRepository.updateById).toHaveBeenNthCalledWith(1, 'futura-2', {
+                releaseDate: new Date(Date.UTC(1970, 0, 1))
+            });
+            expect(veloRepository.updateById).toHaveBeenNthCalledWith(2, 'futura-1', {
+                releaseDate: new Date(Date.UTC(1970, 0, 2))
+            });
+            expect(veloRepository.updateById).toHaveBeenNthCalledWith(3, 'futura-2', {
+                releaseDate: firstDate
+            });
+            expect(veloRepository.updateById).toHaveBeenNthCalledWith(4, 'futura-1', {
+                releaseDate: secondDate
+            });
+            expect(result[1]).toMatchObject({ _id: 'futura-2', status: 'future' });
+            expect(result[2]).toMatchObject({ _id: 'futura-1', status: 'future' });
+        });
+
+        test('rechaza un orden que no incluye exactamente las pistas futuras', async () => {
+            veloRepository.findAll.mockResolvedValue([
+                createTrack({ _id: 'hoy', releaseDate: TODAY }),
+                createTrack({ _id: 'futura-1', releaseDate: new Date(Date.UTC(2026, 10, 6)) }),
+                createTrack({ _id: 'futura-2', releaseDate: new Date(Date.UTC(2026, 10, 8)) })
+            ]);
+
+            await expect(service.reorderTracks({ trackIds: ['hoy', 'futura-1'] }))
+                .rejects.toBeInstanceOf(VeloValidationError);
+            expect(veloRepository.updateById).not.toHaveBeenCalled();
+        });
+
+        test('no toca la base si el orden recibido ya es el actual', async () => {
+            const first = createTrack({ _id: 'futura-1', releaseDate: new Date(Date.UTC(2026, 10, 6)) });
+            const second = createTrack({ _id: 'futura-2', releaseDate: new Date(Date.UTC(2026, 10, 8)) });
+            veloRepository.findAll.mockResolvedValue([first, second]);
+
+            const result = await service.reorderTracks({ trackIds: ['futura-1', 'futura-2'] });
+
+            expect(veloRepository.updateById).not.toHaveBeenCalled();
+            expect(result.map((track) => track._id)).toEqual(['futura-1', 'futura-2']);
+        });
     });
 });
 
