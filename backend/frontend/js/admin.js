@@ -1,5 +1,6 @@
 import { fetchAutenticado } from './auth.js';
 import { api } from './api.js';
+import { createVinylPicker } from './vinylPicker.js';
 
 const getTodayKey = () => {
     const parts = new Intl.DateTimeFormat('en-US', {
@@ -126,6 +127,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     veloReleaseDate.min = getTodayKey();
 
+    const veloVinylPicker = createVinylPicker({
+        container: document.getElementById('veloVinylPicker'),
+        label: 'Vinilo de El Archivo (opcional)',
+        hint: 'Enlaza la pista velada con su ficha oficial de El Archivo.',
+        emptyMessage: 'El Archivo aún está vacío. Busca discos en su sección para enlazarlos aquí.'
+    });
+
     const setVeloMessage = (message, type = '') => {
         veloFormMessage.textContent = message;
         veloFormMessage.classList.toggle('is-error', type === 'error');
@@ -136,6 +144,7 @@ document.addEventListener('DOMContentLoaded', () => {
         veloForm.reset();
         veloTrackId.value = '';
         veloReleaseDate.min = getTodayKey();
+        if (veloVinylPicker) veloVinylPicker.clear();
         veloSubmitBtn.textContent = 'Programar pista';
         veloSubmitBtn.disabled = false;
         veloCancelEditBtn.hidden = true;
@@ -434,6 +443,7 @@ document.addEventListener('DOMContentLoaded', () => {
         veloArtist.value = track.artist || '';
         veloAudioUrl.value = track.audioUrl || '';
         veloCoverUrl.value = track.coverUrl || '';
+        veloVinylPicker.setValue(track.vinyl || track.vinylId);
         veloSubmitBtn.textContent = 'Guardar cambios';
         veloCancelEditBtn.hidden = false;
         setVeloMessage(`Editando la pista del ${formatTrackDate(track.releaseDate)}.`, 'success');
@@ -452,7 +462,8 @@ document.addEventListener('DOMContentLoaded', () => {
             title: veloTitle.value.trim(),
             artist: veloArtist.value.trim(),
             audioUrl: veloAudioUrl.value.trim(),
-            coverUrl: veloCoverUrl.value.trim()
+            coverUrl: veloCoverUrl.value.trim(),
+            vinylId: veloVinylPicker.getValue()
         };
 
         if (!payload.releaseDate || !payload.title || !payload.artist || !payload.audioUrl) {

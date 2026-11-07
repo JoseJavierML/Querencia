@@ -4,14 +4,20 @@ const {
     DiaryUserNotFoundError,
     DiaryEntryNotFoundError
 } = require('./diaryService');
+const { resolveVinylSummary } = require('./vinylResponse');
 
-const toEntryResponse = (entry) => ({
-    _id: entry._id,
-    text: entry.text,
-    title: entry.title || '',
-    createdAt: entry.createdAt,
-    userId: entry.userId
-});
+const toEntryResponse = (entry) => {
+    const vinyl = resolveVinylSummary(entry);
+
+    return {
+        _id: entry._id,
+        text: entry.text,
+        title: entry.title || '',
+        createdAt: entry.createdAt,
+        userId: entry.userId,
+        ...(vinyl ? { vinylId: vinyl._id, vinyl } : {})
+    };
+};
 
 const createDiaryRouter = ({ diaryService, authMiddleware }) => {
     if (!diaryService) {
@@ -25,10 +31,12 @@ const createDiaryRouter = ({ diaryService, authMiddleware }) => {
 
     router.post('/', authMiddleware, async (req, res) => {
         try {
+            const body = req.body || {};
             const entry = await diaryService.createEntry({
                 email: req.user.email,
-                text: req.body ? req.body.text : undefined,
-                title: req.body ? req.body.title : undefined
+                text: body.text,
+                title: body.title,
+                ...(body.vinylId !== undefined ? { vinylId: body.vinylId } : {})
             });
             return res.status(201).json(toEntryResponse(entry));
         } catch (error) {

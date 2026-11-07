@@ -32,6 +32,7 @@ connectDB();
 const diaryService = createDiaryService({
     diaryRepository: DiaryRepository,
     userRepository: userModel,
+    vinylRepository: VinylRepository,
     maxTextLength: process.env.DIARY_MAX_TEXT_LENGTH
 });
 
@@ -42,7 +43,8 @@ const diaryRouter = createDiaryRouter({
 
 const debateService = createDebateService({
     debateRepository: DebateRepository,
-    userRepository: userModel
+    userRepository: userModel,
+    vinylRepository: VinylRepository
 });
 
 const debateRouter = createDebateRouter({
@@ -53,7 +55,8 @@ const debateRouter = createDebateRouter({
 
 const veloService = createVeloService({
     veloRepository: VeloRepository,
-    userRepository: userModel
+    userRepository: userModel,
+    vinylRepository: VinylRepository
 });
 
 const veloRouter = createVeloRouter({

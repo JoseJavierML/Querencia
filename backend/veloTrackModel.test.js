@@ -7,6 +7,7 @@ const {
     MAX_COVER_URL_LENGTH,
     MAX_REFLECTION_LENGTH
 } = require('./veloConstants');
+const { VINYL_POPULATE_FIELDS } = require('./vinylResponse');
 
 const releaseDate = () => new Date(Date.UTC(2026, 10, 5));
 const userId = () => new mongoose.Types.ObjectId();
@@ -123,6 +124,7 @@ describe('Esquema VeloTrack', () => {
         expect(VeloTrack.modelName).toBe('VeloTrack');
         expect(VeloTrack.schema.path('releaseDate').options.unique).toBe(true);
         expect(VeloTrack.schema.path('reflections.userId').options.ref).toBe('User');
+        expect(VeloTrack.schema.path('vinylId').options.ref).toBe('Vinyl');
         expect(VeloTrack.schema.path('createdAt').options.immutable).toBe(true);
     });
 });
@@ -152,7 +154,8 @@ describe('Repositorio del Velo', () => {
     test('busca la pista por el rango del día normalizado', async () => {
         const track = { _id: 'pista-1' };
         const lean = jest.fn().mockResolvedValue(track);
-        const findOne = jest.spyOn(VeloTrack, 'findOne').mockReturnValue({ lean });
+        const populate = jest.fn().mockReturnValue({ lean });
+        const findOne = jest.spyOn(VeloTrack, 'findOne').mockReturnValue({ populate });
 
         const result = await VeloRepository.findByReleaseDate(releaseDate());
 
@@ -162,6 +165,7 @@ describe('Repositorio del Velo', () => {
                 $lt: new Date(Date.UTC(2026, 10, 6))
             }
         });
+        expect(populate).toHaveBeenCalledWith('vinylId', VINYL_POPULATE_FIELDS);
         expect(result).toBe(track);
     });
 
@@ -175,13 +179,15 @@ describe('Repositorio del Velo', () => {
     test('lista todas las pistas de la más antigua a la más reciente', async () => {
         const tracks = [{ _id: 'pista-1' }];
         const lean = jest.fn().mockResolvedValue(tracks);
-        const sort = jest.fn().mockReturnValue({ lean });
+        const populate = jest.fn().mockReturnValue({ lean });
+        const sort = jest.fn().mockReturnValue({ populate });
         const find = jest.spyOn(VeloTrack, 'find').mockReturnValue({ sort });
 
         const result = await VeloRepository.findAll();
 
         expect(find).toHaveBeenCalledWith({});
         expect(sort).toHaveBeenCalledWith({ releaseDate: 1 });
+        expect(populate).toHaveBeenCalledWith('vinylId', VINYL_POPULATE_FIELDS);
         expect(result).toBe(tracks);
     });
 
@@ -213,7 +219,8 @@ describe('Repositorio del Velo', () => {
         const authorId = userId();
         const updated = { _id: id, reflections: [{ userId: authorId, text: 'Una reflexión' }] };
         const lean = jest.fn().mockResolvedValue(updated);
-        const findOneAndUpdate = jest.spyOn(VeloTrack, 'findOneAndUpdate').mockReturnValue({ lean });
+        const populate = jest.fn().mockReturnValue({ lean });
+        const findOneAndUpdate = jest.spyOn(VeloTrack, 'findOneAndUpdate').mockReturnValue({ populate });
 
         const result = await VeloRepository.addReflection(id, authorId, 'Una reflexión');
 
@@ -222,6 +229,7 @@ describe('Repositorio del Velo', () => {
             { $push: { reflections: { userId: authorId, text: 'Una reflexión' } } },
             { new: true }
         );
+        expect(populate).toHaveBeenCalledWith('vinylId', VINYL_POPULATE_FIELDS);
         expect(result).toEqual({ track: updated, alreadyReflected: false });
     });
 
@@ -229,7 +237,8 @@ describe('Repositorio del Velo', () => {
         const id = new mongoose.Types.ObjectId().toString();
         const authorId = userId();
         const lean = jest.fn().mockResolvedValue(null);
-        jest.spyOn(VeloTrack, 'findOneAndUpdate').mockReturnValue({ lean });
+        const populate = jest.fn().mockReturnValue({ lean });
+        jest.spyOn(VeloTrack, 'findOneAndUpdate').mockReturnValue({ populate });
         jest.spyOn(VeloTrack, 'exists').mockResolvedValue({ _id: id });
 
         const result = await VeloRepository.addReflection(id, authorId, 'Una reflexión');

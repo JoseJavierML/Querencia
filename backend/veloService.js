@@ -6,6 +6,8 @@ const {
     MAX_REFLECTION_LENGTH,
     VELO_TIME_ZONE
 } = require('./veloConstants');
+const { isValidObjectId } = require('./archivoUtils');
+const { toVinylSummary } = require('./vinylResponse');
 
 class VeloValidationError extends Error {
     constructor(message) {
@@ -193,9 +195,29 @@ const normalizeReflection = (text) => normalizeText(text, {
     maxLength: MAX_REFLECTION_LENGTH
 });
 
+const normalizeVinylId = async (vinylId, vinylRepository) => {
+    if (vinylId === undefined || vinylId === null || vinylId === '') {
+        return null;
+    }
+    if (typeof vinylId !== 'string' || !isValidObjectId(vinylId)) {
+        throw new VeloValidationError('El vinilo seleccionado no es válido');
+    }
+
+    const normalizedVinylId = vinylId.trim();
+    if (vinylRepository) {
+        const vinyl = await vinylRepository.findById(normalizedVinylId);
+        if (!vinyl) {
+            throw new VeloValidationError('El vinilo seleccionado no existe en El Archivo');
+        }
+    }
+
+    return normalizedVinylId;
+};
+
 const createVeloService = ({
     veloRepository,
     userRepository,
+    vinylRepository,
     now = () => new Date(),
     timeZone = VELO_TIME_ZONE
 } = {}) => {
@@ -286,7 +308,8 @@ const createVeloService = ({
         audioUrl,
         title,
         artist,
-        coverUrl
+        coverUrl,
+        vinylId
     } = {}) => {
         const todayStart = getTodayStart();
         const normalizedReleaseDate = normalizeDateAgainstToday(releaseDate, todayStart);
@@ -294,6 +317,7 @@ const createVeloService = ({
         const normalizedArtist = normalizeArtist(artist);
         const normalizedAudioUrl = normalizeAudioUrl(audioUrl);
         const normalizedCoverUrl = normalizeCoverUrl(coverUrl);
+        const normalizedVinylId = await normalizeVinylId(vinylId, vinylRepository);
 
         const existingTrack = await veloRepository.findByReleaseDate(normalizedReleaseDate);
         if (existingTrack) {
@@ -307,13 +331,24 @@ const createVeloService = ({
                 audioUrl: normalizedAudioUrl,
                 title: normalizedTitle,
                 artist: normalizedArtist,
-                coverUrl: normalizedCoverUrl
+                coverUrl: normalizedCoverUrl,
+                ...(normalizedVinylId ? { vinylId: normalizedVinylId } : {})
             });
         } catch (error) {
             if (error && error.code === 11000) {
                 throw new VeloDuplicateDateError();
             }
             throw error;
+        }
+
+        if (normalizedVinylId && vinylRepository && track) {
+            const vinyl = await vinylRepository.findById(normalizedVinylId);
+            if (vinyl) {
+                const plainTrack = typeof track.toObject === 'function'
+                    ? track.toObject()
+                    : track;
+                track = { ...plainTrack, vinyl };
+            }
         }
 
         return {
@@ -338,7 +373,8 @@ const createVeloService = ({
         audioUrl,
         title,
         artist,
-        coverUrl
+        coverUrl,
+        vinylId
     } = {}) => {
         const track = await veloRepository.findById(id);
         if (!track) {
@@ -351,6 +387,10 @@ const createVeloService = ({
             throw new VeloValidationError('No se puede editar una pista pasada');
         }
 
+        const hasVinylUpdate = vinylId !== undefined;
+        const normalizedVinylId = hasVinylUpdate
+            ? await normalizeVinylId(vinylId, vinylRepository)
+            : null;
         const nextReleaseDate = releaseDate === undefined
             ? currentDate
             : normalizeDateAgainstToday(releaseDate, todayStart);
@@ -371,7 +411,8 @@ const createVeloService = ({
                 audioUrl: nextAudioUrl,
                 title: nextTitle,
                 artist: nextArtist,
-                coverUrl: nextCoverUrl
+                coverUrl: nextCoverUrl,
+                ...(hasVinylUpdate ? { vinylId: normalizedVinylId } : {})
             });
         } catch (error) {
             if (error && error.code === 11000) {
@@ -382,6 +423,20 @@ const createVeloService = ({
 
         if (!updatedTrack) {
             throw new VeloTrackNotFoundError('La pista no existe');
+        }
+
+        let vinyl = null;
+        if (hasVinylUpdate && normalizedVinylId && vinylRepository) {
+            vinyl = await vinylRepository.findById(normalizedVinylId);
+        } else if (!hasVinylUpdate && track.vinylId && typeof track.vinylId === 'object') {
+            vinyl = track.vinylId;
+        }
+
+        if (vinyl) {
+            const plainTrack = typeof updatedTrack.toObject === 'function'
+                ? updatedTrack.toObject()
+                : updatedTrack;
+            updatedTrack = { ...plainTrack, vinyl: toVinylSummary(vinyl) };
         }
 
         return {

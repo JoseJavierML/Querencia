@@ -1,0 +1,667 @@
+/* ============================================================
+   El Archivo · vinilos transversales
+   Piezas compartidas por el Muro, el Diario, El Velo y el panel
+   de administración: mini-vinilos, selector y tocadiscos global.
+   ============================================================ */
+
+:root {
+    --qv-gold-light: var(--gold-light, #eaddb3);
+    --qv-gold-dark: var(--gold-dark, #b89345);
+    --qv-text-main: var(--text-main, #f4f4f5);
+    --qv-text-muted: var(--text-muted, #8b8f9e);
+    --qv-border: rgba(184, 147, 69, 0.28);
+    --qv-surface: rgba(12, 12, 15, 0.78);
+}
+
+/* ---------- Mini-vinilo incrustado en una publicación ---------- */
+
+.qv-vinyl-slot:empty {
+    display: none;
+}
+
+.qv-mini-vinyl {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.8rem;
+    max-width: 100%;
+    padding: 0.5rem 0.9rem 0.5rem 0.5rem;
+    border: 1px solid var(--qv-border);
+    border-radius: 999px;
+    background:
+        linear-gradient(120deg, rgba(184, 147, 69, 0.14), rgba(12, 12, 15, 0.65) 55%),
+        rgba(10, 10, 13, 0.55);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(234, 221, 179, 0.18);
+    color: var(--qv-text-main);
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+    transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.qv-mini-vinyl:hover,
+.qv-mini-vinyl:focus-visible {
+    transform: translateY(-2px);
+    border-color: rgba(234, 221, 179, 0.62);
+    box-shadow: 0 16px 38px rgba(0, 0, 0, 0.45), 0 0 26px rgba(184, 147, 69, 0.16);
+    outline: none;
+}
+
+.qv-mini-vinyl:active {
+    transform: translateY(0) scale(0.99);
+}
+
+.qv-mini-vinyl.is-dragging {
+    opacity: 0.55;
+    cursor: grabbing;
+}
+
+.qv-mini-vinyl__disc {
+    position: relative;
+    flex: 0 0 auto;
+    width: 2.55rem;
+    height: 2.55rem;
+    border-radius: 50%;
+    background:
+        repeating-radial-gradient(circle at center, rgba(255, 255, 255, 0.055) 0 1px, transparent 1px 4px),
+        radial-gradient(circle at 32% 26%, #2c2c31 0%, #0a0a0c 42%, #050506 100%);
+    box-shadow:
+        inset 0 0 0 1px rgba(234, 221, 179, 0.26),
+        inset 0 0 10px rgba(0, 0, 0, 0.9),
+        0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+.qv-mini-vinyl__disc::after {
+    content: '';
+    position: absolute;
+    inset: 42%;
+    border-radius: 50%;
+    background: var(--qv-gold-light);
+    box-shadow: 0 0 8px rgba(234, 221, 179, 0.5);
+}
+
+.qv-mini-vinyl__label {
+    position: absolute;
+    inset: 18%;
+    border-radius: 50%;
+    background-color: var(--qv-gold-dark);
+    background-size: cover;
+    background-position: center;
+    opacity: 0.9;
+}
+
+.qv-mini-vinyl__play {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    color: var(--qv-gold-light);
+    background: rgba(5, 5, 7, 0.5);
+    opacity: 0;
+    transition: opacity 0.25s ease;
+}
+
+.qv-mini-vinyl__play svg {
+    width: 1rem;
+    height: 1rem;
+    fill: currentColor;
+}
+
+.qv-mini-vinyl:hover .qv-mini-vinyl__play,
+.qv-mini-vinyl:focus-visible .qv-mini-vinyl__play {
+    opacity: 1;
+}
+
+.qv-mini-vinyl__meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.12rem;
+    min-width: 0;
+}
+
+.qv-mini-vinyl__title {
+    overflow: hidden;
+    font-family: 'Lora', Georgia, serif;
+    font-size: 0.88rem;
+    line-height: 1.25;
+    color: var(--qv-text-main);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.qv-mini-vinyl__artist {
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 0.63rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--qv-gold-dark);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.qv-mini-vinyl__hint {
+    flex: 0 0 auto;
+    padding-left: 0.7rem;
+    border-left: 1px solid rgba(184, 147, 69, 0.25);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 0.58rem;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--qv-text-muted);
+    white-space: nowrap;
+}
+
+.qv-mini-vinyl.is-unplayable .qv-mini-vinyl__hint {
+    color: rgba(217, 139, 139, 0.8);
+}
+
+/* ---------- Selector de vinilos ---------- */
+
+.qv-picker {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 0.55rem;
+    width: 100%;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+.qv-picker__head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.8rem;
+}
+
+.qv-picker__label {
+    font-size: 0.68rem;
+    letter-spacing: 1.6px;
+    text-transform: uppercase;
+    color: var(--qv-gold-dark);
+}
+
+.qv-picker__status {
+    font-size: 0.62rem;
+    letter-spacing: 0.6px;
+    color: var(--qv-text-muted);
+    text-align: right;
+}
+
+.qv-picker__status.is-error {
+    color: #d98b8b;
+}
+
+.qv-picker__search {
+    display: flex;
+    align-items: center;
+    gap: 0.55rem;
+}
+
+.qv-picker__input {
+    flex: 1;
+    width: 100%;
+    min-width: 0;
+    padding: 0.72rem 0.9rem;
+    border: 1px solid rgba(184, 147, 69, 0.22);
+    border-radius: 6px;
+    background: rgba(6, 6, 8, 0.62);
+    color: var(--qv-text-main);
+    font-family: 'Lora', Georgia, serif;
+    font-size: 0.9rem;
+    outline: none;
+    transition: border-color 0.25s ease, box-shadow 0.25s ease;
+}
+
+.qv-picker__input::placeholder {
+    color: rgba(139, 143, 158, 0.7);
+    font-style: italic;
+}
+
+.qv-picker__input:focus {
+    border-color: rgba(234, 221, 179, 0.5);
+    box-shadow: 0 0 0 3px rgba(184, 147, 69, 0.1);
+}
+
+.qv-picker__clear {
+    flex: 0 0 auto;
+    padding: 0.68rem 0.8rem;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 6px;
+    background: transparent;
+    color: var(--qv-text-muted);
+    font: inherit;
+    font-size: 0.62rem;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: color 0.2s ease, border-color 0.2s ease;
+}
+
+.qv-picker__clear:hover,
+.qv-picker__clear:focus-visible {
+    border-color: var(--qv-gold-dark);
+    color: var(--qv-gold-light);
+    outline: none;
+}
+
+.qv-picker__selected {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.6rem 0.7rem;
+    border: 1px solid rgba(184, 147, 69, 0.3);
+    border-radius: 7px;
+    background: linear-gradient(120deg, rgba(184, 147, 69, 0.12), rgba(12, 12, 15, 0.55));
+}
+
+.qv-picker__selected[hidden] {
+    display: none;
+}
+
+.qv-picker__selected-disc {
+    flex: 0 0 auto;
+    width: 2.2rem;
+    height: 2.2rem;
+    border-radius: 50%;
+    background:
+        repeating-radial-gradient(circle at center, rgba(255, 255, 255, 0.05) 0 1px, transparent 1px 4px),
+        radial-gradient(circle at 32% 26%, #2c2c31 0%, #0a0a0c 45%, #050506 100%);
+    background-size: auto, auto;
+    box-shadow: inset 0 0 0 1px rgba(234, 221, 179, 0.24), inset 0 0 8px rgba(0, 0, 0, 0.85);
+}
+
+.qv-picker__selected-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+}
+
+.qv-picker__selected-title {
+    overflow: hidden;
+    font-family: 'Lora', Georgia, serif;
+    font-size: 0.85rem;
+    color: var(--qv-text-main);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.qv-picker__selected-artist {
+    overflow: hidden;
+    font-size: 0.6rem;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--qv-gold-dark);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.qv-picker__selected-clear {
+    margin-left: auto;
+    flex: 0 0 auto;
+    border: none;
+    background: transparent;
+    color: var(--qv-text-muted);
+    font: inherit;
+    font-size: 1.1rem;
+    line-height: 1;
+    cursor: pointer;
+    transition: color 0.2s ease;
+}
+
+.qv-picker__selected-clear:hover,
+.qv-picker__selected-clear:focus-visible {
+    color: var(--qv-gold-light);
+    outline: none;
+}
+
+.qv-picker__results {
+    position: absolute;
+    top: calc(100% + 0.35rem);
+    right: 0;
+    left: 0;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    max-height: 17rem;
+    overflow-y: auto;
+    border: 1px solid rgba(184, 147, 69, 0.3);
+    border-radius: 8px;
+    background: rgba(8, 8, 11, 0.97);
+    box-shadow: 0 24px 60px rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    scrollbar-width: thin;
+    scrollbar-color: rgba(184, 147, 69, 0.4) transparent;
+}
+
+.qv-picker__results[hidden] {
+    display: none;
+}
+
+.qv-picker__result {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    width: 100%;
+    padding: 0.55rem 0.75rem;
+    border: none;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    background: transparent;
+    color: var(--qv-text-main);
+    cursor: pointer;
+    font: inherit;
+    text-align: left;
+    transition: background 0.18s ease;
+}
+
+.qv-picker__result:last-child {
+    border-bottom: none;
+}
+
+.qv-picker__result:hover,
+.qv-picker__result:focus-visible {
+    background: rgba(184, 147, 69, 0.12);
+    outline: none;
+}
+
+.qv-picker__result-cover {
+    flex: 0 0 auto;
+    width: 2rem;
+    height: 2rem;
+    border-radius: 3px;
+    background: linear-gradient(145deg, rgba(184, 147, 69, 0.3), rgba(6, 6, 8, 0.8));
+    background-size: cover;
+    background-position: center;
+    box-shadow: inset 0 0 0 1px rgba(234, 221, 179, 0.16);
+}
+
+.qv-picker__result-meta {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+    min-width: 0;
+}
+
+.qv-picker__result-title {
+    overflow: hidden;
+    font-family: 'Lora', Georgia, serif;
+    font-size: 0.82rem;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.qv-picker__result-artist {
+    overflow: hidden;
+    font-size: 0.58rem;
+    letter-spacing: 1.2px;
+    text-transform: uppercase;
+    color: var(--qv-gold-dark);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.qv-picker__result-genre {
+    margin-left: auto;
+    flex: 0 0 auto;
+    padding: 0.16rem 0.45rem;
+    border: 1px solid rgba(184, 147, 69, 0.22);
+    border-radius: 999px;
+    font-size: 0.54rem;
+    letter-spacing: 0.9px;
+    text-transform: uppercase;
+    color: var(--qv-text-muted);
+    white-space: nowrap;
+}
+
+.qv-picker__message {
+    padding: 0.9rem 0.8rem;
+    font-family: 'Lora', Georgia, serif;
+    font-size: 0.82rem;
+    font-style: italic;
+    color: var(--qv-text-muted);
+    text-align: center;
+}
+
+/* ---------- Tocadiscos global ---------- */
+
+.qv-dock {
+    position: fixed;
+    right: 1.4rem;
+    bottom: 1.4rem;
+    z-index: 200;
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    width: min(23rem, calc(100vw - 2rem));
+    padding: 0.7rem 0.85rem;
+    border: 1px solid rgba(184, 147, 69, 0.36);
+    border-top-color: rgba(234, 221, 179, 0.6);
+    border-radius: 12px;
+    background:
+        linear-gradient(135deg, rgba(30, 24, 14, 0.92), rgba(8, 8, 10, 0.96) 55%),
+        rgba(8, 8, 10, 0.96);
+    box-shadow:
+        0 24px 60px rgba(0, 0, 0, 0.7),
+        0 0 40px rgba(184, 147, 69, 0.12),
+        inset 0 1px 0 rgba(234, 221, 179, 0.16);
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+    animation: qv-dock-in 0.35s cubic-bezier(0.22, 0.8, 0.28, 1);
+}
+
+.qv-dock[hidden] {
+    display: none;
+}
+
+.qv-dock.is-drop-target {
+    border-color: var(--qv-gold-light);
+    box-shadow:
+        0 24px 60px rgba(0, 0, 0, 0.7),
+        0 0 60px rgba(234, 221, 179, 0.28),
+        inset 0 1px 0 rgba(234, 221, 179, 0.3);
+}
+
+.qv-dock__disc {
+    position: relative;
+    flex: 0 0 auto;
+    width: 3.6rem;
+    height: 3.6rem;
+    border-radius: 50%;
+    background:
+        repeating-radial-gradient(circle at center, rgba(255, 255, 255, 0.06) 0 1px, transparent 1px 4px),
+        radial-gradient(circle at 32% 26%, #303036 0%, #0a0a0c 44%, #040405 100%);
+    box-shadow:
+        inset 0 0 0 1px rgba(234, 221, 179, 0.3),
+        inset 0 0 14px rgba(0, 0, 0, 0.9),
+        0 6px 18px rgba(0, 0, 0, 0.55);
+}
+
+.qv-dock.is-playing .qv-dock__disc {
+    animation: qv-spin 3.4s linear infinite;
+}
+
+.qv-dock__disc::before {
+    content: '';
+    position: absolute;
+    inset: 31%;
+    border-radius: 50%;
+    background-color: var(--qv-gold-dark);
+    background-image: var(--qv-dock-cover, none);
+    background-size: cover;
+    background-position: center;
+    box-shadow: 0 0 0 1px rgba(234, 221, 179, 0.4), 0 0 14px rgba(184, 147, 69, 0.3);
+}
+
+.qv-dock__disc::after {
+    content: '';
+    position: absolute;
+    inset: 47.5%;
+    border-radius: 50%;
+    background: #060608;
+    box-shadow: 0 0 0 1px rgba(234, 221, 179, 0.35);
+}
+
+.qv-dock__copy {
+    display: flex;
+    flex-direction: column;
+    gap: 0.18rem;
+    min-width: 0;
+    flex: 1;
+}
+
+.qv-dock__eyebrow {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 0.54rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--qv-gold-dark);
+}
+
+.qv-dock__title {
+    overflow: hidden;
+    font-family: 'Playfair Display', Georgia, serif;
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--qv-text-main);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.qv-dock__artist {
+    overflow: hidden;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    font-size: 0.6rem;
+    letter-spacing: 1.4px;
+    text-transform: uppercase;
+    color: var(--qv-text-muted);
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.qv-dock__message {
+    font-family: 'Lora', Georgia, serif;
+    font-size: 0.72rem;
+    font-style: italic;
+    color: rgba(217, 139, 139, 0.9);
+}
+
+.qv-dock__controls {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    flex: 0 0 auto;
+}
+
+.qv-dock__button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.1rem;
+    height: 2.1rem;
+    padding: 0;
+    border: 1px solid rgba(184, 147, 69, 0.35);
+    border-radius: 50%;
+    background: rgba(184, 147, 69, 0.12);
+    color: var(--qv-gold-light);
+    cursor: pointer;
+    transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+.qv-dock__button:hover,
+.qv-dock__button:focus-visible {
+    border-color: var(--qv-gold-light);
+    background: rgba(184, 147, 69, 0.24);
+    outline: none;
+}
+
+.qv-dock__button:disabled {
+    opacity: 0.45;
+    cursor: not-allowed;
+}
+
+.qv-dock__button svg {
+    width: 0.95rem;
+    height: 0.95rem;
+    fill: currentColor;
+}
+
+.qv-dock__button--close {
+    width: 1.6rem;
+    height: 1.6rem;
+    border-color: transparent;
+    background: transparent;
+    color: var(--qv-text-muted);
+    font-size: 1rem;
+    line-height: 1;
+}
+
+.qv-dock__button--close:hover,
+.qv-dock__button--close:focus-visible {
+    border-color: rgba(255, 255, 255, 0.15);
+    background: transparent;
+    color: var(--qv-gold-light);
+}
+
+.qv-dock__frame {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    opacity: 0;
+    pointer-events: none;
+    clip-path: inset(50%);
+}
+
+@keyframes qv-spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+@keyframes qv-dock-in {
+    from { opacity: 0; transform: translateY(18px) scale(0.97); }
+    to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* ---------- Ajustes de integración ---------- */
+
+.reading-vinyl,
+.track-vinyl {
+    margin: 1rem 0 0.2rem;
+}
+
+.track-vinyl {
+    margin-top: 1.1rem;
+}
+
+@media (max-width: 640px) {
+    .qv-mini-vinyl__hint {
+        display: none;
+    }
+
+    .qv-dock {
+        right: 0.7rem;
+        bottom: 0.7rem;
+        width: calc(100vw - 1.4rem);
+    }
+
+    .qv-dock__disc {
+        width: 3rem;
+        height: 3rem;
+    }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .qv-mini-vinyl,
+    .qv-dock,
+    .qv-dock__disc {
+        animation: none !important;
+        transition: none !important;
+    }
+}

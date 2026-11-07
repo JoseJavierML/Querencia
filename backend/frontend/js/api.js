@@ -48,9 +48,9 @@ export const api = {
         return data;
     },
 
-    crearEntradaDiario: (text, title = '') => fetchAPI('/diario', {
+    crearEntradaDiario: (text, title = '', vinylId = null) => fetchAPI('/diario', {
         method: 'POST',
-        body: JSON.stringify({ text, title })
+        body: JSON.stringify({ text, title, vinylId })
     }),
 
     listarDiario: () => fetchAPI('/diario', { method: 'GET' }),
@@ -59,9 +59,9 @@ export const api = {
         method: 'DELETE'
     }),
 
-    crearDebate: (title, content, coverImageUrl = '', isAnonymous = false) => fetchAPI('/debates', {
+    crearDebate: (title, content, coverImageUrl = '', isAnonymous = false, vinylId = null) => fetchAPI('/debates', {
         method: 'POST',
-        body: JSON.stringify({ title, content, coverImageUrl, isAnonymous })
+        body: JSON.stringify({ title, content, coverImageUrl, isAnonymous, vinylId })
     }),
 
     eliminarDebate: (id) => fetchAPI(`/debates/${encodeURIComponent(id)}`, {
@@ -82,9 +82,9 @@ export const api = {
         body: JSON.stringify({ text })
     }),
 
-    crearPistaVelo: ({ releaseDate, audioUrl, title, artist, coverUrl }) => fetchAPI('/velo/tracks', {
+    crearPistaVelo: ({ releaseDate, audioUrl, title, artist, coverUrl, vinylId }) => fetchAPI('/velo/tracks', {
         method: 'POST',
-        body: JSON.stringify({ releaseDate, audioUrl, title, artist, coverUrl })
+        body: JSON.stringify({ releaseDate, audioUrl, title, artist, coverUrl, vinylId })
     }),
 
     listarPistasVelo: () => fetchAPI('/velo/tracks', { method: 'GET' }),
@@ -94,16 +94,21 @@ export const api = {
         body: JSON.stringify({ trackIds })
     }),
 
-    actualizarPistaVelo: (id, { releaseDate, audioUrl, title, artist, coverUrl }) => fetchAPI(
+    actualizarPistaVelo: (id, { releaseDate, audioUrl, title, artist, coverUrl, vinylId }) => fetchAPI(
         `/velo/tracks/${encodeURIComponent(id)}`,
         {
             method: 'PUT',
-            body: JSON.stringify({ releaseDate, audioUrl, title, artist, coverUrl })
+            body: JSON.stringify({ releaseDate, audioUrl, title, artist, coverUrl, vinylId })
         }
     ),
 
     listarCajonesArchivo: (agrupacion = 'genero') => fetchAPI(
         `/archivo/cajones?agrupar=${encodeURIComponent(agrupacion)}`,
+        { method: 'GET' }
+    ),
+
+    listarVinilosArchivo: () => fetchAPI(
+        '/archivo/cajones?agrupar=artista',
         { method: 'GET' }
     ),
 

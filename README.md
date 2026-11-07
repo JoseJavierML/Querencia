@@ -7,7 +7,7 @@ SaaS de reflexión y debate musical diseñado para ir más allá de la escucha s
 - **El Velo:** una escucha ciega diaria. El usuario recibe solo el audio de la pista del día y, hasta que envía su reflexión, no ve título, artista ni portada. Después se revela la ficha completa y el muro de voces de la comunidad. Los administradores programan la cola desde el panel.
 - **El Archivo:** una discoteca interactiva organizada en cajones de vinilos. El usuario busca una obra, el backend enriquece los metadatos con Last.fm, resuelve el audio con YouTube y conserva el resultado en MongoDB para que las siguientes consultas no vuelvan a consultar Last.fm y reaprovechen el audio ya resuelto.
 
-El Sprint 2 sigue en curso. Los cuatro módulos del MVP cuentan ya con backend, modelo y pruebas; Diario, Muro y El Velo están integrados en el frontend, mientras que El Archivo espera su integración visual. La suite automatizada de Jest cubre modelos, servicios y routers. La documentación de progreso, requisitos, arquitectura y decisiones vive en [docs/index.md](docs/index.md).
+El Sprint 2 sigue en curso. Los cuatro módulos del MVP cuentan con backend, modelo y pruebas, y los cuatro están integrados en el frontend: Diario, Muro, El Velo y El Archivo. El Archivo incorpora ya su vista de cajones, la ficha detallada con Last.fm y un tocadiscos con arrastre nativo. Queda pendiente la verificación manual del flujo completo en navegador con una sesión real. La suite automatizada de Jest cubre modelos, servicios y routers. La documentación de progreso, requisitos, arquitectura y decisiones vive en [docs/index.md](docs/index.md).
 
 Desarrollado para la asignatura Procesos de Ingeniería del Software (Curso 2026-2027).
 
@@ -157,7 +157,14 @@ Todas las rutas de lectura y participación requieren `Authorization: Bearer <to
 
 El Archivo convierte el catálogo musical de la plataforma en una experiencia de consulta y escucha. Cada vinilo se presenta como una ficha persistente que reúne título, artista, álbum, portada, género, etiquetas de Last.fm y el identificador del vídeo de YouTube que permite reproducirlo. La unidad de navegación no es una lista plana, sino un conjunto de cajones: agrupaciones por género o por artista que conservan la metáfora física de una discoteca y permiten recorrer el fondo musical sin depender de una búsqueda inmediata.
 
-La implementación de esta iteración es estrictamente de backend y base de datos. El contrato HTTP queda preparado para que el frontend de El Archivo consuma los cajones, abra la ficha de un disco y solicite una búsqueda externa cuando el catálogo local todavía no contiene la obra. No se ha creado todavía una vista pública de El Archivo ni se ha modificado la navegación del cliente en esta entrega.
+La vista [backend/frontend/archivo.html](backend/frontend/archivo.html), apoyada en [backend/frontend/js/archivo.js](backend/frontend/js/archivo.js), presenta la colección como una estantería de cajones. Las portadas se superponen dentro de cada cajón y la colección puede agruparse por género o por artista. Un clic simple abre la ficha del disco; arrastrar una portada hasta el tocadiscos fijo inicia la reproducción. La navegación de Muro, Diario, El Velo y el panel de administración incorpora ya el enlace a El Archivo.
+
+### La discoteca en el navegador
+
+- **Cajones (T4).** Al cargar la página se consulta `GET /api/archivo/cajones` mediante `api.listarCajonesArchivo(agrupacion)`. Cada cajón muestra su etiqueta, su número de discos y una fila de portadas superpuestas con sombras, `z-index` y transformaciones. El conmutador «Por género» / «Por artista» repite la consulta con `?agrupar=genero` o `?agrupar=artista`. La fila puede recorrerse horizontalmente cuando el cajón contiene muchos vinilos.
+- **Ficha detallada (T5).** Un clic simple, sin arrastre, abre un diálogo con la carátula a un lado y la información de Last.fm al otro. La ficha se solicita con `GET /api/archivo/disco/:id` mediante `api.obtenerDiscoArchivo(id)` y muestra título, artista, álbum, género, sinopsis, etiquetas, oyentes, reproducciones, duración, fecha de publicación y enlace a Last.fm. El modal se cierra con la «X», el fondo o `Escape`, devuelve el foco a la portada de origen y permite reintentar si la consulta falla.
+- **Tocadiscos y arrastre (T6).** Los vinilos son `draggable="true"`. Los eventos nativos `dragstart`, `dragover`, `drop` y `dragend` transportan el identificador y el `youtubeVideoId` del disco. Al soltarlo sobre el plato se carga la YouTube Iframe API en un reproductor oculto, se inicia el vídeo y el disco gira con `@keyframes spin`. El tocadiscos permanece fijo en la esquina inferior derecha, permite pausar y reanudar, y avisa cuando un vinilo no tiene audio disponible.
+- **Estética y accesibilidad.** La vista mantiene el fondo oscuro, el glassmorphism, los acentos dorados y las tipografías con remates de Querencia, sin emojis. Las portadas son botones accesibles por teclado, el modal atrapa el foco mientras está abierto y los datos de Last.fm se insertan con `textContent`.
 
 ### Modelo de datos
 
@@ -227,13 +234,13 @@ curl -X POST http://localhost:3000/api/archivo/buscar \
   -d '{"artist":"Camarón de la Isla","title":"La leyenda del tiempo"}'
 ```
 
-La primera llamada consulta Last.fm y YouTube y guarda la ficha. Una segunda llamada con el mismo artista y título, dentro del TTL, devuelve el documento cacheado sin volver a consultar Last.fm; si la ficha ya contiene un `youtubeVideoId`, tampoco consume YouTube. Si el audio no se pudo resolver, el servicio reintenta la búsqueda como máximo una vez al día. Cuando existe `youtubeVideoId`, el cliente puede construir la reproducción con YouTube Iframe API usando ese identificador.
+La primera llamada consulta Last.fm y YouTube y guarda la ficha. Una segunda llamada con el mismo artista y título, dentro del TTL, devuelve el documento cacheado sin volver a consultar Last.fm; si la ficha ya contiene un `youtubeVideoId`, tampoco consume YouTube. Si el audio no se pudo resolver, el servicio reintenta la búsqueda como máximo una vez al día. Cuando existe `youtubeVideoId`, el tocadiscos de `archivo.html` construye la reproducción con YouTube Iframe API usando ese identificador.
 
 ### Límites y criterios de diseño
 
 - El scraping de YouTube es un mecanismo de respaldo, no la vía principal. Su estructura HTML puede cambiar y por eso la aplicación prioriza la API oficial y degrada a `youtubeVideoId: null` cuando no hay una resolución fiable.
 - La caché evita rate-limits y reduce el coste de las APIs, pero no sustituye una política de cuotas por usuario. La autenticación obligatoria del endpoint de búsqueda es la primera barrera contra el abuso, y una ficha sin audio solo reintenta YouTube una vez al día.
-- Los metadatos culturales se guardan normalizados y con el resumen de Last.fm sin HTML; el frontend deberá renderizarlos con `textContent` para no introducir contenido no confiable.
+- Los metadatos culturales se guardan normalizados y con el resumen de Last.fm sin HTML; el frontend los renderiza con `textContent` para no introducir contenido no confiable.
 - La subida física de carátulas no forma parte de esta iteración. Igual que en el Muro y en El Velo, la portada se referencia mediante URL externa.
 
 ## Estado Actual (Sprint 1)
@@ -262,4 +269,7 @@ El Sprint 2 sigue en curso. Esta lista refleja los PBIs ya completados e integra
 - [x] **RF-MVP-Archivo:** backend de El Archivo con modelo `Vinyl`, caché en MongoDB, búsqueda en Last.fm, resolución de audio en YouTube y endpoints de cajones, detalle y búsqueda.
 - [x] **RF-MVP-Archivo-Cache:** upsert atómico por `catalogKey`, TTL configurable, reutilización de fichas y degradación a copia `stale` cuando Last.fm no responde.
 - [x] **RF-MVP-Archivo-Docs:** documentación académica del modelo, el servicio, el flujo de caché, los requisitos y las decisiones económicas y técnicas.
-- [ ] **Pendiente de cierre:** integración visual de El Archivo en el frontend, verificación manual en navegador, correo real, URL pública y requisitos heredados del Sprint 1.
+- [x] **RF-MVP-Archivo-Frontend:** vista `archivo.html` con cajones agrupables por género o artista, portadas superpuestas y navegación integrada en el resto de la aplicación.
+- [x] **RF-MVP-Archivo-Detalle-Frontend:** modal de ficha con carátula, sinopsis, etiquetas y métricas de Last.fm, estados de carga y error, cierre con `Escape` y retorno del foco.
+- [x] **RF-MVP-Archivo-Reproduccion:** tocadiscos fijo con arrastre nativo, reproductor oculto de YouTube Iframe API, animación de giro, pausa y reanudación.
+- [ ] **Pendiente de cierre:** verificación manual del flujo completo en navegador con una sesión real, correo real, URL pública y requisitos heredados del Sprint 1.

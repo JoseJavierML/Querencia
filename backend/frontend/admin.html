@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400;1,500&amp;family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;display=swap" rel="stylesheet">
     
+    <link rel="stylesheet" href="css/vinilos.css">
     <style>
         :root {
             --bg-base: #060608;
@@ -548,6 +549,13 @@
         .velo-form {
             padding: 2rem;
             margin-bottom: 1.5rem;
+            overflow: visible;
+        }
+
+        .velo-form .velo-vinyl-picker {
+            grid-column: 1 / -1;
+            position: relative;
+            z-index: 5;
         }
 
         .velo-form .form-grid {
@@ -914,7 +922,6 @@
             
             <div class="table-footer">
                 <span id="tableStatusText" class="">Cargando oyentes desde el refugio...</span>
-                <span class="">Querencia © 2025</span>
             </div>
         </div>
 
@@ -950,6 +957,7 @@
                         URL de la portada (opcional)
                         <input type="url" id="veloCoverUrl" maxlength="2048" placeholder="https://.../portada.jpg" autocomplete="off">
                     </label>
+                    <div class="velo-vinyl-picker" id="veloVinylPicker"></div>
                 </div>
                 <div class="form-actions">
                     <button type="submit" id="veloSubmitBtn" class="btn-primary">Programar pista</button>
@@ -981,7 +989,6 @@
 
                 <div class="table-footer">
                     <span id="veloQueueFooter">Sincronizando con la API...</span>
-                    <span>Querencia © 2026</span>
                 </div>
             </div>
         </section>

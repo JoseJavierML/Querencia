@@ -1,4 +1,5 @@
 const mongoose = require('mongoose');
+const { VINYL_POPULATE_FIELDS } = require('./vinylResponse');
 
 const diaryEntrySchema = new mongoose.Schema(
     {
@@ -20,6 +21,12 @@ const diaryEntrySchema = new mongoose.Schema(
             required: true,
             index: true
         },
+        vinylId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Vinyl',
+            default: null,
+            index: true
+        },
         createdAt: {
             type: Date,
             default: Date.now,
@@ -32,14 +39,17 @@ const diaryEntrySchema = new mongoose.Schema(
 const DiaryEntry = mongoose.models.DiaryEntry || mongoose.model('DiaryEntry', diaryEntrySchema);
 
 const DiaryRepository = {
-    create: async ({ text, title = '', userId }) => {
-        const entry = new DiaryEntry({ text, title, userId });
+    create: async ({ text, title = '', userId, vinylId = null }) => {
+        const entry = new DiaryEntry({ text, title, userId, vinylId });
         await entry.save();
         return entry;
     },
 
     findByUserId: async (userId) => {
-        return DiaryEntry.find({ userId }).sort({ createdAt: -1 }).lean();
+        return DiaryEntry.find({ userId })
+            .sort({ createdAt: -1 })
+            .populate('vinylId', VINYL_POPULATE_FIELDS)
+            .lean();
     },
 
     deleteByIdForUser: async (id, userId) => {

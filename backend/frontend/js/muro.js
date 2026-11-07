@@ -1,5 +1,7 @@
 import { api } from './api.js';
 import { obtenerUsuarioActual } from './auth.js';
+import { createVinylPicker } from './vinylPicker.js';
+import { appendMiniVinyl } from './vinylPlayer.js';
 
 const REACTION_FALLBACK_LABELS = Object.freeze({
     profundo: 'Profundo',
@@ -166,6 +168,9 @@ function crearModalLectura() {
     const meta = document.createElement('p');
     meta.className = 'reading-meta';
 
+    const vinylSlot = document.createElement('div');
+    vinylSlot.className = 'qv-vinyl-slot reading-vinyl';
+
     const body = document.createElement('div');
     body.className = 'reading-body';
 
@@ -173,7 +178,7 @@ function crearModalLectura() {
     text.className = 'reading-text';
     body.appendChild(text);
 
-    dialog.append(close, eyebrow, title, meta, body);
+    dialog.append(close, eyebrow, title, meta, vinylSlot, body);
     overlay.append(backdrop, dialog);
     document.body.appendChild(overlay);
 
@@ -213,6 +218,7 @@ function crearModalLectura() {
         title.textContent = debate.title || 'Reflexión sin título';
         meta.textContent = `${obtenerAutorVisible(debate)} • ${formatearFecha(debate.createdAt)}`;
         text.textContent = typeof debate.content === 'string' ? debate.content : '';
+        appendMiniVinyl(vinylSlot, debate);
 
         overlay.hidden = false;
         document.documentElement.classList.add('reading-modal-open');
@@ -420,7 +426,7 @@ function crearTarjeta(debate, esAdmin) {
         });
 
         tarjeta.addEventListener('click', (event) => {
-            if (event.target.closest('.reactions-container, .debate-delete, .debate-read-more')) {
+            if (event.target.closest('.reactions-container, .debate-delete, .debate-read-more, .qv-mini-vinyl')) {
                 return;
             }
             modalLectura.abrir(debate);
@@ -434,7 +440,11 @@ function crearTarjeta(debate, esAdmin) {
     reacciones.className = 'reactions-container';
     renderizarReacciones(reacciones, debate);
 
-    tarjeta.append(portada, meta, titulo, cuerpo, reacciones);
+    const vinylSlot = document.createElement('div');
+    vinylSlot.className = 'qv-vinyl-slot debate-vinyl';
+    appendMiniVinyl(vinylSlot, debate);
+
+    tarjeta.append(portada, meta, titulo, cuerpo, vinylSlot, reacciones);
 
     if (esAdmin) {
         const borrar = document.createElement('button');
@@ -571,6 +581,17 @@ function crearModalAdmin() {
     contentInput.placeholder = 'Escribe la reflexión con calma...';
     contentLabel.append(contentText, contentInput);
 
+    const vinylField = document.createElement('div');
+    vinylField.className = 'admin-field';
+    const vinylPickerSlot = document.createElement('div');
+    vinylField.appendChild(vinylPickerSlot);
+
+    const vinylPicker = createVinylPicker({
+        container: vinylPickerSlot,
+        label: 'Vinilo de El Archivo (opcional)',
+        hint: 'Enlaza una escucha oficial a esta reflexión del Muro.'
+    });
+
     const anonymousWrapper = document.createElement('div');
     anonymousWrapper.className = 'admin-anonymous';
 
@@ -627,6 +648,7 @@ function crearModalAdmin() {
         titleLabel,
         coverLabel,
         contentLabel,
+        vinylField,
         anonymousWrapper,
         actions,
         feedback
@@ -666,6 +688,7 @@ function crearModalAdmin() {
 
     cancel.addEventListener('click', () => {
         form.reset();
+        vinylPicker.clear();
         mostrarFeedback('');
         cerrar();
     });
@@ -684,6 +707,7 @@ function crearModalAdmin() {
         const content = contentInput.value.trim();
         const coverImageUrl = coverInput.value.trim();
         const isAnonymous = anonymousInput.checked;
+        const vinylId = vinylPicker.getValue();
 
         if (!title || !content) {
             mostrarFeedback('El título y el contenido son obligatorios.', true);
@@ -696,8 +720,9 @@ function crearModalAdmin() {
         mostrarFeedback('');
 
         try {
-            await api.crearDebate(title, content, coverImageUrl, isAnonymous);
+            await api.crearDebate(title, content, coverImageUrl, isAnonymous, vinylId);
             form.reset();
+            vinylPicker.clear();
             cerrar();
 
             const actualizado = await cargarDebates();

@@ -1,3 +1,5 @@
+const { isValidObjectId } = require('./archivoUtils');
+
 const DEFAULT_MAX_TEXT_LENGTH = 5000;
 const MAX_TITLE_LENGTH = 50;
 
@@ -22,9 +24,29 @@ class DiaryEntryNotFoundError extends Error {
     }
 }
 
+const normalizeVinylId = async (vinylId, vinylRepository) => {
+    if (vinylId === undefined || vinylId === null || vinylId === '') {
+        return null;
+    }
+    if (typeof vinylId !== 'string' || !isValidObjectId(vinylId)) {
+        throw new DiaryValidationError('El vinilo seleccionado no es válido');
+    }
+
+    const normalizedVinylId = vinylId.trim();
+    if (vinylRepository) {
+        const vinyl = await vinylRepository.findById(normalizedVinylId);
+        if (!vinyl) {
+            throw new DiaryValidationError('El vinilo seleccionado no existe en El Archivo');
+        }
+    }
+
+    return normalizedVinylId;
+};
+
 const createDiaryService = ({
     diaryRepository,
     userRepository,
+    vinylRepository,
     maxTextLength = DEFAULT_MAX_TEXT_LENGTH
 }) => {
     if (!diaryRepository) {
@@ -47,7 +69,7 @@ const createDiaryService = ({
         return user._id;
     };
 
-    const createEntry = async ({ email, text, title } = {}) => {
+    const createEntry = async ({ email, text, title, vinylId } = {}) => {
         if (typeof text !== 'string') {
             throw new DiaryValidationError('El texto es obligatorio');
         }
@@ -68,12 +90,26 @@ const createDiaryService = ({
             throw new DiaryValidationError(`El título no puede superar los ${MAX_TITLE_LENGTH} caracteres`);
         }
 
+        const normalizedVinylId = await normalizeVinylId(vinylId, vinylRepository);
         const userId = await resolveUserId(email);
-        return diaryRepository.create({
+        const entry = await diaryRepository.create({
             text: normalizedText,
             title: normalizedTitle,
-            userId
+            userId,
+            ...(normalizedVinylId ? { vinylId: normalizedVinylId } : {})
         });
+
+        if (normalizedVinylId && vinylRepository && entry) {
+            const vinyl = await vinylRepository.findById(normalizedVinylId);
+            if (vinyl) {
+                const plainEntry = typeof entry.toObject === 'function'
+                    ? entry.toObject()
+                    : entry;
+                return { ...plainEntry, vinyl };
+            }
+        }
+
+        return entry;
     };
 
     const listEntries = async ({ email } = {}) => {
