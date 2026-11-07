@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400;1,500&amp;family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;display=swap" rel="stylesheet">
     
+    <link rel="stylesheet" href="css/vinilos.css">
     <style>
         :root {
             --bg-base: #060608;
@@ -548,6 +549,13 @@
         .velo-form {
             padding: 2rem;
             margin-bottom: 1.5rem;
+            overflow: visible;
+        }
+
+        .velo-form .velo-vinyl-picker {
+            grid-column: 1 / -1;
+            position: relative;
+            z-index: 5;
         }
 
         .velo-form .form-grid {
@@ -586,6 +594,19 @@
             border-color: rgba(234, 221, 179, 0.55);
             background: rgba(16, 16, 20, 0.95);
             box-shadow: 0 0 18px rgba(184, 147, 69, 0.12);
+        }
+
+        .velo-form input[readonly] {
+            color: var(--gold-light);
+            background: rgba(184, 147, 69, 0.08);
+            border-color: rgba(184, 147, 69, 0.28);
+            cursor: default;
+        }
+
+        .velo-form input[readonly]:focus {
+            border-color: rgba(184, 147, 69, 0.28);
+            background: rgba(184, 147, 69, 0.08);
+            box-shadow: none;
         }
 
         .velo-form input::placeholder {
@@ -860,6 +881,7 @@
                 <a href="muro.html" class="nav-link">Muro de Debates</a>
                 <a href="diario.html" class="nav-link">Diario Íntimo</a>
                 <a href="velo.html" class="nav-link">El Velo</a>
+                <a href="archivo.html" class="nav-link">El Archivo</a>
             </div>
 
             <div class="nav-actions" data-auth-header>
@@ -913,7 +935,6 @@
             
             <div class="table-footer">
                 <span id="tableStatusText" class="">Cargando oyentes desde el refugio...</span>
-                <span class="">Querencia © 2025</span>
             </div>
         </div>
 
@@ -949,6 +970,7 @@
                         URL de la portada (opcional)
                         <input type="url" id="veloCoverUrl" maxlength="2048" placeholder="https://.../portada.jpg" autocomplete="off">
                     </label>
+                    <div class="velo-vinyl-picker" id="veloVinylPicker"></div>
                 </div>
                 <div class="form-actions">
                     <button type="submit" id="veloSubmitBtn" class="btn-primary">Programar pista</button>
@@ -980,7 +1002,6 @@
 
                 <div class="table-footer">
                     <span id="veloQueueFooter">Sincronizando con la API...</span>
-                    <span>Querencia © 2026</span>
                 </div>
             </div>
         </section>

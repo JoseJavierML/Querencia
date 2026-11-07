@@ -26,6 +26,7 @@ describe('Esquema DiaryEntry', () => {
     test('referencia al modelo User y usa el nombre DiaryEntry', () => {
         expect(DiaryEntry.modelName).toBe('DiaryEntry');
         expect(DiaryEntry.schema.path('userId').options.ref).toBe('User');
+        expect(DiaryEntry.schema.path('vinylId').options.ref).toBe('Vinyl');
     });
 
     test('rechaza textos de más de 5000 caracteres', async () => {

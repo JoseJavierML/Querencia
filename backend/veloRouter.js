@@ -6,6 +6,7 @@ const {
     VeloAlreadyReflectedError,
     VeloDuplicateDateError
 } = require('./veloService');
+const { resolveVinylSummary } = require('./vinylResponse');
 
 const toReflectionResponse = (reflection, viewerId) => ({
     _id: reflection._id,
@@ -14,10 +15,17 @@ const toReflectionResponse = (reflection, viewerId) => ({
     isMine: String(reflection.userId) === String(viewerId)
 });
 
+const withVinyl = (base, track) => {
+    const vinyl = resolveVinylSummary(track);
+    return vinyl
+        ? { ...base, vinylId: vinyl._id, vinyl }
+        : base;
+};
+
 const toRevealedTrackResponse = (track, viewerId) => {
     const reflections = Array.isArray(track.reflections) ? track.reflections : [];
 
-    return {
+    return withVinyl({
         _id: track._id,
         releaseDate: track.releaseDate,
         audioUrl: track.audioUrl,
@@ -27,13 +35,13 @@ const toRevealedTrackResponse = (track, viewerId) => {
         participated: true,
         reflectionCount: reflections.length,
         reflections: reflections.map((reflection) => toReflectionResponse(reflection, viewerId))
-    };
+    }, track);
 };
 
 const toAdminTrackResponse = (track, status = track.status) => {
     const reflections = Array.isArray(track.reflections) ? track.reflections : [];
 
-    return {
+    return withVinyl({
         _id: track._id,
         releaseDate: track.releaseDate,
         audioUrl: track.audioUrl,
@@ -42,7 +50,7 @@ const toAdminTrackResponse = (track, status = track.status) => {
         coverUrl: track.coverUrl || null,
         reflectionCount: reflections.length,
         status
-    };
+    }, track);
 };
 
 const respondWithError = (res, error, fallbackMessage) => {
@@ -108,12 +116,14 @@ const createVeloRouter = ({ veloService, authMiddleware, adminMiddleware }) => {
 
     router.post('/tracks', authMiddleware, adminMiddleware, async (req, res) => {
         try {
+            const body = req.body || {};
             const { track, status } = await veloService.createTrack({
-                releaseDate: req.body ? req.body.releaseDate : undefined,
-                audioUrl: req.body ? req.body.audioUrl : undefined,
-                title: req.body ? req.body.title : undefined,
-                artist: req.body ? req.body.artist : undefined,
-                coverUrl: req.body ? req.body.coverUrl : undefined
+                releaseDate: body.releaseDate,
+                audioUrl: body.audioUrl,
+                title: body.title,
+                artist: body.artist,
+                coverUrl: body.coverUrl,
+                ...(body.vinylId !== undefined ? { vinylId: body.vinylId } : {})
             });
 
             return res.status(201).json(toAdminTrackResponse(track, status));
@@ -145,13 +155,15 @@ const createVeloRouter = ({ veloService, authMiddleware, adminMiddleware }) => {
 
     router.put('/tracks/:id', authMiddleware, adminMiddleware, async (req, res) => {
         try {
+            const body = req.body || {};
             const { track, status } = await veloService.updateTrack({
                 id: req.params.id,
-                releaseDate: req.body ? req.body.releaseDate : undefined,
-                audioUrl: req.body ? req.body.audioUrl : undefined,
-                title: req.body ? req.body.title : undefined,
-                artist: req.body ? req.body.artist : undefined,
-                coverUrl: req.body ? req.body.coverUrl : undefined
+                releaseDate: body.releaseDate,
+                audioUrl: body.audioUrl,
+                title: body.title,
+                artist: body.artist,
+                coverUrl: body.coverUrl,
+                ...(body.vinylId !== undefined ? { vinylId: body.vinylId } : {})
             });
 
             return res.status(200).json(toAdminTrackResponse(track, status));

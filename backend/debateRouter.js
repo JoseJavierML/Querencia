@@ -5,6 +5,7 @@ const {
     DebateUserNotFoundError,
     DebateNotFoundError
 } = require('./debateService');
+const { resolveVinylSummary } = require('./vinylResponse');
 
 const toReactionsResponse = (reactions = {}, viewerId = null) => {
     return REACTION_DEFINITIONS.reduce((response, { key, label }) => {
@@ -35,6 +36,7 @@ const getAuthorEmail = (debate, fallback = null) => {
 
 const toDebateResponse = (debate, viewerId = null, authorEmail = null) => {
     const isAnonymous = Boolean(debate.isAnonymous);
+    const vinyl = resolveVinylSummary(debate);
 
     return {
         _id: debate._id,
@@ -44,7 +46,8 @@ const toDebateResponse = (debate, viewerId = null, authorEmail = null) => {
         isAnonymous,
         createdAt: debate.createdAt,
         authorEmail: isAnonymous ? null : getAuthorEmail(debate, authorEmail),
-        reactions: toReactionsResponse(debate.reactions, viewerId)
+        reactions: toReactionsResponse(debate.reactions, viewerId),
+        ...(vinyl ? { vinylId: vinyl._id, vinyl } : {})
     };
 };
 
@@ -88,12 +91,14 @@ const createDebateRouter = ({ debateService, authMiddleware, adminMiddleware }) 
 
     router.post('/', authMiddleware, adminMiddleware, async (req, res) => {
         try {
+            const body = req.body || {};
             const debate = await debateService.createDebate({
                 email: req.user.email,
-                title: req.body ? req.body.title : undefined,
-                content: req.body ? req.body.content : undefined,
-                coverImageUrl: req.body ? req.body.coverImageUrl : undefined,
-                isAnonymous: req.body ? req.body.isAnonymous : undefined
+                title: body.title,
+                content: body.content,
+                coverImageUrl: body.coverImageUrl,
+                isAnonymous: body.isAnonymous,
+                ...(body.vinylId !== undefined ? { vinylId: body.vinylId } : {})
             });
 
             return res.status(201).json(toDebateResponse(debate, null, req.user.email));

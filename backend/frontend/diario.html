@@ -6,6 +6,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;1,400&amp;family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&amp;display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/vinilos.css">
     
     <style>
         :root {
@@ -350,6 +351,12 @@
             font-style: italic;
         }
 
+        .diary-vinyl-picker {
+            position: relative;
+            flex: 0 0 auto;
+            margin-bottom: 1.1rem;
+        }
+
         textarea {
             flex: 1 1 auto;
             min-height: 0;
@@ -608,6 +615,7 @@
             <a href="muro.html" class="nav-link">Muro de Debates</a>
             <a href="diario.html" class="nav-link active">Diario Íntimo</a>
             <a href="velo.html" class="nav-link">El Velo</a>
+            <a href="archivo.html" class="nav-link">El Archivo</a>
         </div>
 
         <div class="nav-actions" data-auth-header>
@@ -630,6 +638,7 @@
                 </div>
                 <form class="diary-form" id="diaryForm">
                     <input class="title-input" id="diaryTitle" type="text" maxlength="50" autocomplete="off" aria-label="Título de la entrada (opcional)" placeholder="Un título para este eco (opcional)">
+                    <div class="diary-vinyl-picker" id="diaryVinylPicker"></div>
                     <textarea id="diaryText" maxlength="5000" aria-label="Texto de la entrada del diario" placeholder="Deja que sangre el alma aquí... Nadie más leerá esto."></textarea>
                     <div class="editor-footer">
                         <button class="save-entry-btn" id="saveEntryBtn" type="submit">Guardar Eco</button>
@@ -654,6 +663,7 @@
                 </div>
                 <p class="reading-date" id="readingDate"></p>
                 <h1 class="reading-title" id="readingTitle"></h1>
+                <div class="reading-vinyl qv-vinyl-slot" id="readingVinyl"></div>
                 <div class="reading-content" id="readingContent"></div>
             </article>
 
@@ -712,6 +722,8 @@
     <script type="module" src="js/auth.js"></script>
     <script type="module">
         import { api } from './js/api.js';
+        import { createVinylPicker } from './js/vinylPicker.js';
+        import { appendMiniVinyl } from './js/vinylPlayer.js';
 
         const diaryForm = document.getElementById('diaryForm');
         const diaryTitle = document.getElementById('diaryTitle');
@@ -726,6 +738,14 @@
         const readingContent = document.getElementById('readingContent');
         const backToEditorBtn = document.getElementById('backToEditorBtn');
         const deleteReadingBtn = document.getElementById('deleteReadingBtn');
+        const readingVinyl = document.getElementById('readingVinyl');
+
+        const diaryVinylPicker = createVinylPicker({
+            container: document.getElementById('diaryVinylPicker'),
+            label: 'El vinilo de este eco (opcional)',
+            hint: 'Adjunta una escucha de El Archivo a tu pensamiento.',
+            emptyMessage: 'El Archivo aún está vacío. Busca discos en su sección para llenar los cajones.'
+        });
 
         const MAX_TITLE_LENGTH = 50;
         const EXCERPT_LENGTH = 40;
@@ -805,6 +825,7 @@
                 readingTitle.classList.add('is-untitled');
             }
             readingContent.textContent = entrada.text || '';
+            appendMiniVinyl(readingVinyl, entrada);
 
             editorView.hidden = true;
             readingView.hidden = false;
@@ -820,6 +841,7 @@
             entradaSeleccionada = null;
             readingView.hidden = true;
             editorView.hidden = false;
+            diaryVinylPicker.clear();
             marcarEntradaActiva();
 
             if (diaryTitle) diaryTitle.focus();
@@ -926,9 +948,11 @@
             mostrarEstado('Guardando tu eco...');
 
             try {
-                await api.crearEntradaDiario(texto, titulo);
+                const vinylId = diaryVinylPicker.getValue();
+                await api.crearEntradaDiario(texto, titulo, vinylId);
                 diaryText.value = '';
                 if (diaryTitle) diaryTitle.value = '';
+                diaryVinylPicker.clear();
                 mostrarEstado('Eco guardado.', 'success');
                 await cargarEntradas();
             } catch (error) {
@@ -1000,6 +1024,7 @@
             backToEditorBtn.addEventListener('click', () => {
                 if (diaryText) diaryText.value = '';
                 if (diaryTitle) diaryTitle.value = '';
+                diaryVinylPicker.clear();
                 mostrarEditor();
             });
         }

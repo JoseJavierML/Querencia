@@ -213,7 +213,7 @@ timestamp: 2026-11-06
 
 **Por qué:** ninguna de las dos fuentes cubre por sí sola la experiencia completa. Last.fm es una fuente cultural madura y con una API gratuita adecuada para un proyecto académico, pero no ofrece reproducción musical completa; YouTube permite escuchar la obra, pero sus metadatos no están pensados como catálogo. Separar ambas responsabilidades permite sustituir un proveedor sin rehacer el otro, mantener la ficha aunque el audio no se resuelva y proteger las cuotas gratuitas detrás de la autenticación. No se almacena audio ni se descargan vídeos: solo se persiste el identificador de once caracteres.
 
-**Estado:** vigente. La integración visual y la reproducción mediante YouTube Iframe API quedan pendientes.
+**Estado:** vigente. La integración visual se completó en [archivo.html](../backend/frontend/archivo.html) y [archivo.js](../backend/frontend/js/archivo.js): los cajones consumen `GET /api/archivo/cajones`, la ficha detallada consume `GET /api/archivo/disco/:id` y el tocadiscos reproduce el `youtubeVideoId` con YouTube Iframe API. Queda pendiente la verificación manual del flujo completo en navegador con una sesión real y audios disponibles.
 
 ## D-27 — MongoDB como caché persistente de El Archivo
 

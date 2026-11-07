@@ -7,6 +7,7 @@ const {
     MAX_CONTENT_LENGTH,
     MAX_COVER_URL_LENGTH
 } = require('./debateConstants');
+const { VINYL_POPULATE_FIELDS } = require('./vinylResponse');
 
 const validAuthorId = () => new mongoose.Types.ObjectId();
 
@@ -125,6 +126,7 @@ describe('Esquema Debate', () => {
     test('referencia al modelo User y usa el nombre Debate', () => {
         expect(Debate.modelName).toBe('Debate');
         expect(Debate.schema.path('authorId').options.ref).toBe('User');
+        expect(Debate.schema.path('vinylId').options.ref).toBe('Vinyl');
         REACTION_TYPES.forEach((reaction) => {
             expect(Debate.schema.path(`reactions.${reaction}`).embeddedSchemaType.options.ref).toBe('User');
         });
@@ -164,15 +166,17 @@ describe('Repositorio de debates', () => {
     test('lista los debates del más reciente al más antiguo con el autor', async () => {
         const debates = [{ _id: 'debate-1' }];
         const lean = jest.fn().mockResolvedValue(debates);
-        const populate = jest.fn().mockReturnValue({ lean });
-        const sort = jest.fn().mockReturnValue({ populate });
+        const populateVinyl = jest.fn().mockReturnValue({ lean });
+        const populateAuthor = jest.fn().mockReturnValue({ populate: populateVinyl });
+        const sort = jest.fn().mockReturnValue({ populate: populateAuthor });
         const find = jest.spyOn(Debate, 'find').mockReturnValue({ sort });
 
         const result = await DebateRepository.findAll();
 
         expect(find).toHaveBeenCalledWith({});
         expect(sort).toHaveBeenCalledWith({ createdAt: -1 });
-        expect(populate).toHaveBeenCalledWith('authorId', 'email');
+        expect(populateAuthor).toHaveBeenCalledWith('authorId', 'email');
+        expect(populateVinyl).toHaveBeenCalledWith('vinylId', VINYL_POPULATE_FIELDS);
         expect(lean).toHaveBeenCalled();
         expect(result).toBe(debates);
     });

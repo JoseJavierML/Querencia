@@ -5,6 +5,7 @@ const {
     MAX_CONTENT_LENGTH,
     MAX_COVER_URL_LENGTH
 } = require('./debateConstants');
+const { VINYL_POPULATE_FIELDS } = require('./vinylResponse');
 
 const reactionSchema = new mongoose.Schema(
     REACTION_TYPES.reduce((schema, reaction) => {
@@ -47,6 +48,12 @@ const debateSchema = new mongoose.Schema(
             required: true,
             index: true
         },
+        vinylId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Vinyl',
+            default: null,
+            index: true
+        },
         createdAt: {
             type: Date,
             default: Date.now,
@@ -63,8 +70,15 @@ const debateSchema = new mongoose.Schema(
 const Debate = mongoose.models.Debate || mongoose.model('Debate', debateSchema);
 
 const DebateRepository = {
-    create: async ({ title, content, coverImageUrl = null, isAnonymous = false, authorId }) => {
-        const debate = new Debate({ title, content, coverImageUrl, isAnonymous, authorId });
+    create: async ({
+        title,
+        content,
+        coverImageUrl = null,
+        isAnonymous = false,
+        authorId,
+        vinylId = null
+    }) => {
+        const debate = new Debate({ title, content, coverImageUrl, isAnonymous, authorId, vinylId });
         await debate.save();
         return debate;
     },
@@ -73,6 +87,7 @@ const DebateRepository = {
         return Debate.find({})
             .sort({ createdAt: -1 })
             .populate('authorId', 'email')
+            .populate('vinylId', VINYL_POPULATE_FIELDS)
             .lean();
     },
 

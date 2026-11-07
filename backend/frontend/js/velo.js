@@ -1,4 +1,5 @@
 import { api } from './api.js';
+import { appendMiniVinyl } from './vinylPlayer.js';
 
 const MAX_REFLECTION_LENGTH = 5000;
 
@@ -330,6 +331,7 @@ const initVeloPage = () => {
 
     const blindPlayer = document.getElementById('blindPlayer');
     const revealedPlayer = document.getElementById('revealedPlayer');
+    const revealedVinyl = document.getElementById('revealedVinyl');
     const reflectionText = document.getElementById('reflectionText');
     const blindCharCount = document.getElementById('blindCharCount');
     const reflectBtn = document.getElementById('reflectBtn');
@@ -442,6 +444,7 @@ const initVeloPage = () => {
         trackArtist.textContent = track.artist || 'Artista sin nombre';
         trackDate.textContent = formatReleaseDate(track.releaseDate);
         renderCover(track.coverUrl);
+        appendMiniVinyl(revealedVinyl, track);
         renderPlayer(revealedPlayer, track.audioUrl);
         renderReflections(track.reflections || []);
 

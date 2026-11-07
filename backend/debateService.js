@@ -4,6 +4,7 @@ const {
     MAX_CONTENT_LENGTH,
     MAX_COVER_URL_LENGTH
 } = require('./debateConstants');
+const { isValidObjectId } = require('./archivoUtils');
 
 class DebateValidationError extends Error {
     constructor(message) {
@@ -101,7 +102,26 @@ const normalizeIsAnonymous = (isAnonymous) => {
     return isAnonymous;
 };
 
-const createDebateService = ({ debateRepository, userRepository }) => {
+const normalizeVinylId = async (vinylId, vinylRepository) => {
+    if (vinylId === undefined || vinylId === null || vinylId === '') {
+        return null;
+    }
+    if (typeof vinylId !== 'string' || !isValidObjectId(vinylId)) {
+        throw new DebateValidationError('El vinilo seleccionado no es válido');
+    }
+
+    const normalizedVinylId = vinylId.trim();
+    if (vinylRepository) {
+        const vinyl = await vinylRepository.findById(normalizedVinylId);
+        if (!vinyl) {
+            throw new DebateValidationError('El vinilo seleccionado no existe en El Archivo');
+        }
+    }
+
+    return normalizedVinylId;
+};
+
+const createDebateService = ({ debateRepository, userRepository, vinylRepository }) => {
     if (!debateRepository) {
         throw new Error('debateRepository es obligatorio');
     }
@@ -117,20 +137,41 @@ const createDebateService = ({ debateRepository, userRepository }) => {
         return user._id;
     };
 
-    const createDebate = async ({ email, title, content, coverImageUrl, isAnonymous } = {}) => {
+    const createDebate = async ({
+        email,
+        title,
+        content,
+        coverImageUrl,
+        isAnonymous,
+        vinylId
+    } = {}) => {
         const normalizedTitle = normalizeTitle(title);
         const normalizedContent = normalizeContent(content);
         const normalizedCoverImageUrl = normalizeCoverImageUrl(coverImageUrl);
         const normalizedIsAnonymous = normalizeIsAnonymous(isAnonymous);
+        const normalizedVinylId = await normalizeVinylId(vinylId, vinylRepository);
         const authorId = await resolveUserId(email);
 
-        return debateRepository.create({
+        const debate = await debateRepository.create({
             title: normalizedTitle,
             content: normalizedContent,
             coverImageUrl: normalizedCoverImageUrl,
             isAnonymous: normalizedIsAnonymous,
-            authorId
+            authorId,
+            ...(normalizedVinylId ? { vinylId: normalizedVinylId } : {})
         });
+
+        if (normalizedVinylId && vinylRepository && debate) {
+            const vinyl = await vinylRepository.findById(normalizedVinylId);
+            if (vinyl) {
+                const plainDebate = typeof debate.toObject === 'function'
+                    ? debate.toObject()
+                    : debate;
+                return { ...plainDebate, vinyl };
+            }
+        }
+
+        return debate;
     };
 
     const listDebates = async ({ email } = {}) => {

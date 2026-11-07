@@ -7,6 +7,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;1,400;1,500&family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/vinilos.css">
     <style>
         :root {
             --bg-base: #060608;
@@ -562,7 +563,7 @@
             box-shadow: inset 0 2px 14px rgba(0, 0, 0, 0.38);
             transition: border-color 0.3s ease, box-shadow 0.3s ease, background 0.3s ease;
             scrollbar-width: thin;
-            scrollbar-color: var(--gold-dark) transparent;
+            scrollbar-color: rgba(184, 147, 69, 0.35) transparent;
         }
 
         textarea:focus {
@@ -579,7 +580,7 @@
         }
 
         textarea::-webkit-scrollbar {
-            width: 8px;
+            width: 4px;
         }
 
         textarea::-webkit-scrollbar-track {
@@ -587,8 +588,12 @@
         }
 
         textarea::-webkit-scrollbar-thumb {
-            background: linear-gradient(var(--gold-dark), rgba(184, 147, 69, 0.35));
+            background: rgba(184, 147, 69, 0.35);
             border-radius: 999px;
+        }
+
+        textarea::-webkit-scrollbar-thumb:hover {
+            background: rgba(184, 147, 69, 0.55);
         }
 
         .counter-row {
@@ -1234,6 +1239,7 @@
             <a class="nav-link" href="muro.html">Muro de Debates</a>
             <a class="nav-link" href="diario.html">Diario Íntimo</a>
             <a class="nav-link active" href="velo.html">El Velo</a>
+            <a class="nav-link" href="archivo.html">El Archivo</a>
         </div>
 
         <div class="nav-actions" data-auth-header></div>
@@ -1324,6 +1330,7 @@
                     <p id="trackDate" class="track-date"></p>
                     <h2 id="trackTitle"></h2>
                     <p id="trackArtist" class="track-artist"></p>
+                    <div id="revealedVinyl" class="track-vinyl qv-vinyl-slot"></div>
                     <div id="revealedPlayer" class="player-slot"></div>
                 </div>
             </article>

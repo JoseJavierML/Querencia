@@ -6,6 +6,7 @@ const {
     MAX_COVER_URL_LENGTH,
     MAX_REFLECTION_LENGTH
 } = require('./veloConstants');
+const { VINYL_POPULATE_FIELDS } = require('./vinylResponse');
 
 const veloReflectionSchema = new mongoose.Schema(
     {
@@ -61,6 +62,12 @@ const veloTrackSchema = new mongoose.Schema(
             maxlength: MAX_COVER_URL_LENGTH,
             default: null
         },
+        vinylId: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'Vinyl',
+            default: null,
+            index: true
+        },
         reflections: {
             type: [veloReflectionSchema],
             default: []
@@ -77,8 +84,8 @@ const veloTrackSchema = new mongoose.Schema(
 const VeloTrack = mongoose.models.VeloTrack || mongoose.model('VeloTrack', veloTrackSchema);
 
 const VeloRepository = {
-    create: async ({ releaseDate, audioUrl, title, artist, coverUrl = null }) => {
-        const track = new VeloTrack({ releaseDate, audioUrl, title, artist, coverUrl });
+    create: async ({ releaseDate, audioUrl, title, artist, coverUrl = null, vinylId = null }) => {
+        const track = new VeloTrack({ releaseDate, audioUrl, title, artist, coverUrl, vinylId });
         await track.save();
         return track;
     },
@@ -94,7 +101,9 @@ const VeloRepository = {
 
         return VeloTrack.findOne({
             releaseDate: { $gte: start, $lt: end }
-        }).lean();
+        })
+            .populate('vinylId', VINYL_POPULATE_FIELDS)
+            .lean();
     },
 
     findById: async (id) => {
@@ -102,12 +111,15 @@ const VeloRepository = {
             return null;
         }
 
-        return VeloTrack.findById(id).lean();
+        return VeloTrack.findById(id)
+            .populate('vinylId', VINYL_POPULATE_FIELDS)
+            .lean();
     },
 
     findAll: async () => {
         return VeloTrack.find({})
             .sort({ releaseDate: 1 })
+            .populate('vinylId', VINYL_POPULATE_FIELDS)
             .lean();
     },
 
@@ -131,7 +143,9 @@ const VeloRepository = {
             { _id: id, 'reflections.userId': { $ne: userId } },
             { $push: { reflections: { userId, text } } },
             { new: true }
-        ).lean();
+        )
+            .populate('vinylId', VINYL_POPULATE_FIELDS)
+            .lean();
 
         if (updatedTrack) {
             return { track: updatedTrack, alreadyReflected: false };

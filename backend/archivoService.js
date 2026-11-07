@@ -35,6 +35,7 @@ const {
     isValidObjectId
 } = require('./archivoUtils');
 const defaultLogger = require('./logger');
+const { toVinylSummary } = require('./vinylResponse');
 
 const DAY_IN_MILLISECONDS = 24 * 60 * 60 * 1000;
 
@@ -180,17 +181,6 @@ const toVinylResponse = (vinyl = {}) => {
         lastAccessedAt: vinyl.lastAccessedAt || null
     };
 };
-
-const toVinylSummary = (vinyl = {}) => ({
-    _id: vinyl._id ? String(vinyl._id) : null,
-    title: vinyl.title || '',
-    artist: vinyl.artist || '',
-    album: vinyl.album || null,
-    coverUrl: vinyl.coverUrl || null,
-    genre: vinyl.genre || UNCLASSIFIED_GENRE,
-    youtubeVideoId: vinyl.youtubeVideoId || null,
-    playable: Boolean(vinyl.youtubeVideoId)
-});
 
 const createArchivoService = ({
     vinylRepository,
