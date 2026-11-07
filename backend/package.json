@@ -6,7 +6,8 @@
   "scripts": {
     "start": "node server.js",
     "test": "jest",
-    "seed": "node seedDebate.js"
+    "seed": "node seedDebate.js",
+    "seed:vinilos": "node scripts/seedVinyls.js"
   },
   "keywords": [],
   "author": "",
