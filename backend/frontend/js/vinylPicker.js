@@ -76,7 +76,8 @@ const createVinylPicker = ({
     container,
     label = 'Vinilo de El Archivo (opcional)',
     hint = 'Busca un vinilo cacheado para enlazarlo a esta publicación.',
-    emptyMessage = 'No hay vinilos cacheados todavía. El Archivo se llenará con las primeras búsquedas.'
+    emptyMessage = 'No hay vinilos cacheados todavía. El Archivo se llenará con las primeras búsquedas.',
+    onChange = null
 } = {}) => {
     const root = typeof container === 'string'
         ? document.querySelector(container)
@@ -204,15 +205,24 @@ const createVinylPicker = ({
         selectedDisc.style.backgroundPosition = 'center';
     };
 
+    const notifyChange = () => {
+        if (typeof onChange !== 'function') {
+            return;
+        }
+        onChange(selected ? { ...selected } : null);
+    };
+
     const resolveSelectedFromCatalog = () => {
         if (!selected || !catalog) {
-            return;
+            return false;
         }
         const match = catalog.find((vinyl) => vinyl._id === selected._id);
         if (match) {
             selected = match;
             renderSelected();
+            return true;
         }
+        return false;
     };
 
     const selectVinyl = (vinyl) => {
@@ -226,6 +236,7 @@ const createVinylPicker = ({
         renderSelected();
         closeResults();
         setStatus(normalized.artist, false);
+        notifyChange();
     };
 
     const openResults = () => {
@@ -343,7 +354,9 @@ const createVinylPicker = ({
         try {
             catalog = await loadCatalog();
             setStatus(`${catalog.length} ${catalog.length === 1 ? 'vinilo cacheado' : 'vinilos cacheados'}`);
-            resolveSelectedFromCatalog();
+            if (resolveSelectedFromCatalog()) {
+                notifyChange();
+            }
         } catch (error) {
             catalogError = true;
             setStatus('El Archivo no está disponible ahora mismo.', true);
@@ -354,6 +367,7 @@ const createVinylPicker = ({
     };
 
     const clear = ({ focus = false } = {}) => {
+        const hadSelection = Boolean(selected);
         selected = null;
         input.value = '';
         renderSelected();
@@ -362,12 +376,16 @@ const createVinylPicker = ({
         if (focus) {
             input.focus();
         }
+        if (hadSelection) {
+            notifyChange();
+        }
     };
 
     const setValue = (value) => {
         if (value === null || value === undefined || value === '') {
             selected = null;
             renderSelected();
+            notifyChange();
             return;
         }
 
@@ -375,6 +393,7 @@ const createVinylPicker = ({
             selected = normalizeVinyl(value);
             renderSelected();
             resolveSelectedFromCatalog();
+            notifyChange();
             return;
         }
 
@@ -391,9 +410,11 @@ const createVinylPicker = ({
             coverUrl: '',
             genre: '',
             youtubeVideoId: null,
-            playable: false
+            playable: false,
+            isPlaceholder: true
         };
         renderSelected();
+        notifyChange();
     };
 
     input.addEventListener('focus', () => {

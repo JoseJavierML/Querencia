@@ -503,13 +503,35 @@
         .admin-dialog {
             position: relative;
             width: min(620px, 100%);
+            max-height: min(85vh, 820px);
+            overflow-y: auto;
+            overscroll-behavior: contain;
             padding: 2.2rem;
             border: 1px solid var(--border-color);
             border-top: 1px solid rgba(234, 221, 179, 0.4);
             border-radius: 8px;
             background: linear-gradient(145deg, rgba(18, 18, 22, 0.97), rgba(8, 8, 10, 0.99));
             box-shadow: 0 30px 80px rgba(0, 0, 0, 0.75);
+            scrollbar-width: thin;
+            scrollbar-color: rgba(184, 147, 69, 0.35) transparent;
             animation: adminDialogIn 0.35s ease;
+        }
+
+        .admin-dialog::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .admin-dialog::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .admin-dialog::-webkit-scrollbar-thumb {
+            border-radius: 999px;
+            background: rgba(184, 147, 69, 0.35);
+        }
+
+        .admin-dialog::-webkit-scrollbar-thumb:hover {
+            background: rgba(184, 147, 69, 0.55);
         }
 
         .admin-dialog::before {

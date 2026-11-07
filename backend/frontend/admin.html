@@ -596,6 +596,19 @@
             box-shadow: 0 0 18px rgba(184, 147, 69, 0.12);
         }
 
+        .velo-form input[readonly] {
+            color: var(--gold-light);
+            background: rgba(184, 147, 69, 0.08);
+            border-color: rgba(184, 147, 69, 0.28);
+            cursor: default;
+        }
+
+        .velo-form input[readonly]:focus {
+            border-color: rgba(184, 147, 69, 0.28);
+            background: rgba(184, 147, 69, 0.08);
+            box-shadow: none;
+        }
+
         .velo-form input::placeholder {
             color: rgba(255, 255, 255, 0.24);
             font-style: italic;

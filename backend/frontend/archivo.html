@@ -32,6 +32,32 @@
             padding: 0;
         }
 
+        /* Scrollbars globales: mismo acabado que el Diario Íntimo. */
+        html,
+        body,
+        * {
+            scrollbar-width: thin;
+            scrollbar-color: rgba(184, 147, 69, 0.35) transparent;
+        }
+
+        *::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+
+        *::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        *::-webkit-scrollbar-thumb {
+            border-radius: 999px;
+            background: rgba(184, 147, 69, 0.35);
+        }
+
+        *::-webkit-scrollbar-thumb:hover {
+            background: rgba(184, 147, 69, 0.55);
+        }
+
         [hidden] {
             display: none !important;
         }
@@ -403,42 +429,57 @@
         .drawer {
             position: relative;
             overflow: hidden;
-            border-radius: 18px;
-            border: 1px solid rgba(212, 175, 55, 0.16);
-            border-top-color: rgba(240, 226, 182, 0.24);
+            border-radius: 22px;
+            border: 1px solid rgba(212, 175, 55, 0.18);
+            border-top-color: rgba(240, 226, 182, 0.3);
             background:
-                linear-gradient(160deg, rgba(27, 23, 19, 0.78), rgba(9, 9, 12, 0.62) 58%, rgba(16, 11, 10, 0.7)),
-                radial-gradient(120% 90% at 88% 0%, rgba(212, 175, 55, 0.08), transparent 52%);
+                repeating-linear-gradient(92deg, rgba(255, 255, 255, 0.016) 0 1px, transparent 1px 9px),
+                radial-gradient(130% 80% at 50% -12%, rgba(240, 226, 182, 0.09), transparent 58%),
+                linear-gradient(165deg, rgba(37, 27, 18, 0.94), rgba(12, 10, 9, 0.9) 42%, rgba(18, 12, 8, 0.97));
             box-shadow:
-                0 28px 64px rgba(0, 0, 0, 0.48),
-                inset 0 1px 0 rgba(255, 255, 255, 0.045),
-                inset 0 -1px 0 rgba(0, 0, 0, 0.55);
-            backdrop-filter: blur(13px) saturate(115%);
-            -webkit-backdrop-filter: blur(13px) saturate(115%);
+                0 34px 78px rgba(0, 0, 0, 0.6),
+                0 2px 8px rgba(0, 0, 0, 0.35),
+                inset 0 1px 0 rgba(255, 255, 255, 0.07),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.65);
+            backdrop-filter: blur(20px) saturate(125%);
+            -webkit-backdrop-filter: blur(20px) saturate(125%);
             isolation: isolate;
             animation: drawer-in 0.8s cubic-bezier(0.22, 0.8, 0.28, 1) both;
             animation-delay: var(--drawer-delay, 0ms);
+            transition: border-color 0.45s ease, box-shadow 0.45s ease;
+        }
+
+        .drawer:hover {
+            border-color: rgba(240, 226, 182, 0.24);
+            box-shadow:
+                0 38px 88px rgba(0, 0, 0, 0.64),
+                0 2px 8px rgba(0, 0, 0, 0.35),
+                0 0 42px rgba(212, 175, 55, 0.08),
+                inset 0 1px 0 rgba(255, 255, 255, 0.09),
+                inset 0 -1px 0 rgba(0, 0, 0, 0.65);
         }
 
         .drawer::before {
             content: '';
             position: absolute;
-            top: 0;
-            left: 12%;
-            right: 12%;
-            height: 1px;
-            background: linear-gradient(90deg, transparent, rgba(240, 226, 182, 0.62), transparent);
-            opacity: 0.42;
+            inset: 0;
+            z-index: 65;
+            background:
+                linear-gradient(112deg, rgba(255, 255, 255, 0.075) 0%, rgba(255, 255, 255, 0.015) 16%, transparent 36%, transparent 64%, rgba(255, 255, 255, 0.03) 76%, transparent 88%),
+                linear-gradient(180deg, rgba(240, 226, 182, 0.055), transparent 13%);
             pointer-events: none;
-            z-index: 70;
         }
 
         .drawer-head {
+            position: relative;
+            z-index: 66;
             display: flex;
             align-items: flex-end;
             justify-content: space-between;
             gap: 1rem;
-            padding: 1.35rem 1.5rem 0.35rem;
+            margin: 0 1.55rem 0.35rem;
+            padding: 1.4rem 0 0.65rem;
+            border-bottom: 1px solid rgba(240, 226, 182, 0.08);
         }
 
         .drawer-kicker {
@@ -471,7 +512,19 @@
 
         .drawer-stage {
             position: relative;
-            padding: 0 1.3rem 0.8rem;
+            z-index: 1;
+            margin: 0.35rem 1rem 1.05rem;
+            padding: 0 0.55rem 0.55rem;
+            border-radius: 14px;
+            border: 1px solid rgba(240, 226, 182, 0.07);
+            background:
+                linear-gradient(180deg, rgba(3, 3, 5, 0.62), rgba(8, 7, 7, 0.25) 34%, rgba(0, 0, 0, 0.58)),
+                radial-gradient(110% 100% at 50% 0%, rgba(240, 226, 182, 0.055), transparent 62%);
+            box-shadow:
+                inset 0 1px 0 rgba(255, 255, 255, 0.045),
+                inset 0 22px 44px rgba(0, 0, 0, 0.42),
+                0 1px 0 rgba(240, 226, 182, 0.055);
+            overflow: hidden;
         }
 
         .drawer-sleeves {
@@ -479,14 +532,30 @@
             align-items: flex-end;
             overflow-x: auto;
             overflow-y: hidden;
-            padding: 2.1rem 0.15rem 2.4rem;
+            padding: 2.35rem 0.3rem 2.9rem;
             scrollbar-width: thin;
-            scrollbar-color: rgba(184, 147, 69, 0.42) transparent;
+            scrollbar-color: rgba(184, 147, 69, 0.35) transparent;
             scroll-behavior: smooth;
         }
 
+        .drawer-stage::after {
+            content: '';
+            position: absolute;
+            left: 0.85rem;
+            right: 0.85rem;
+            bottom: 48px;
+            height: 9px;
+            z-index: 59;
+            border-radius: 4px;
+            background: linear-gradient(180deg, rgba(86, 60, 37, 0.9), rgba(25, 17, 11, 0.96));
+            box-shadow:
+                0 10px 22px rgba(0, 0, 0, 0.45),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08);
+            pointer-events: none;
+        }
+
         .drawer-sleeves::-webkit-scrollbar {
-            height: 5px;
+            height: 4px;
         }
 
         .drawer-sleeves::-webkit-scrollbar-track {
@@ -494,8 +563,12 @@
         }
 
         .drawer-sleeves::-webkit-scrollbar-thumb {
-            background: rgba(184, 147, 69, 0.42);
+            background: rgba(184, 147, 69, 0.35);
             border-radius: 999px;
+        }
+
+        .drawer-sleeves::-webkit-scrollbar-thumb:hover {
+            background: rgba(184, 147, 69, 0.55);
         }
 
         .vinyl-card {
@@ -655,35 +728,36 @@
 
         .drawer-front {
             position: absolute;
-            left: 1rem;
-            right: 1rem;
+            left: 0.7rem;
+            right: 0.7rem;
             bottom: 0;
-            height: 48px;
+            height: 52px;
             z-index: 60;
-            border-radius: 7px 7px 11px 11px;
-            border: 1px solid rgba(240, 226, 182, 0.14);
-            border-bottom-color: rgba(0, 0, 0, 0.62);
+            border-radius: 8px 8px 13px 13px;
+            border: 1px solid rgba(240, 226, 182, 0.16);
+            border-top-color: rgba(240, 226, 182, 0.28);
+            border-bottom-color: rgba(0, 0, 0, 0.72);
             background:
-                linear-gradient(180deg, rgba(52, 42, 31, 0.98), rgba(19, 15, 12, 0.99)),
-                repeating-linear-gradient(90deg, transparent 0 18px, rgba(255, 255, 255, 0.015) 18px 19px);
+                repeating-linear-gradient(92deg, rgba(255, 255, 255, 0.025) 0 1px, transparent 1px 11px),
+                linear-gradient(180deg, rgba(71, 50, 32, 0.98), rgba(31, 21, 14, 0.99) 52%, rgba(12, 8, 6, 0.99));
             box-shadow:
-                0 -10px 24px rgba(0, 0, 0, 0.32),
-                inset 0 1px 0 rgba(255, 255, 255, 0.07),
-                inset 0 -8px 16px rgba(0, 0, 0, 0.35);
+                0 -14px 30px rgba(0, 0, 0, 0.42),
+                inset 0 1px 0 rgba(255, 255, 255, 0.08),
+                inset 0 -10px 18px rgba(0, 0, 0, 0.42);
             pointer-events: none;
         }
 
         .drawer-front::before {
             content: '';
             position: absolute;
-            top: 10px;
+            top: 50%;
             left: 50%;
-            width: 78px;
-            height: 5px;
+            width: 92px;
+            height: 6px;
             border-radius: 999px;
-            transform: translateX(-50%);
-            background: linear-gradient(90deg, rgba(0, 0, 0, 0.7), rgba(212, 175, 55, 0.42), rgba(0, 0, 0, 0.7));
-            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.72);
+            transform: translate(-50%, -50%);
+            background: linear-gradient(90deg, transparent, rgba(212, 175, 55, 0.38), transparent);
+            box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.8), 0 1px 0 rgba(255, 255, 255, 0.04);
         }
 
         .drawer-front::after {
@@ -1157,12 +1231,12 @@
             padding: 2.2rem;
             border-radius: 20px;
             scrollbar-width: thin;
-            scrollbar-color: rgba(184, 147, 69, 0.52) transparent;
+            scrollbar-color: rgba(184, 147, 69, 0.35) transparent;
             animation: dialog-in 0.42s cubic-bezier(0.22, 0.8, 0.28, 1) both;
         }
 
         .disco-dialog::-webkit-scrollbar {
-            width: 6px;
+            width: 4px;
         }
 
         .disco-dialog::-webkit-scrollbar-track {
@@ -1170,8 +1244,12 @@
         }
 
         .disco-dialog::-webkit-scrollbar-thumb {
-            background: rgba(184, 147, 69, 0.52);
+            background: rgba(184, 147, 69, 0.35);
             border-radius: 999px;
+        }
+
+        .disco-dialog::-webkit-scrollbar-thumb:hover {
+            background: rgba(184, 147, 69, 0.55);
         }
 
         .disco-close {
@@ -1545,7 +1623,8 @@
             }
 
             .drawer-head {
-                padding: 1.2rem 1.15rem 0.25rem;
+                margin: 0 1.15rem 0.3rem;
+                padding: 1.2rem 0 0.55rem;
             }
 
             .drawer-title {
@@ -1553,7 +1632,14 @@
             }
 
             .drawer-stage {
-                padding: 0 1rem 0.8rem;
+                margin: 0.3rem 0.7rem 0.9rem;
+                padding: 0 0.45rem 0.45rem;
+            }
+
+            .drawer-front {
+                left: 0.55rem;
+                right: 0.55rem;
+                height: 46px;
             }
 
             .vinyl-card {
@@ -1562,7 +1648,7 @@
             }
 
             .drawer-sleeves {
-                padding-top: 1.9rem;
+                padding-top: 2.1rem;
             }
 
             .turntable-dock {

@@ -372,15 +372,30 @@ const renderMiniVinyl = (source) => {
 
     const disc = document.createElement('span');
     disc.className = 'qv-mini-vinyl__disc';
+    disc.setAttribute('aria-hidden', 'true');
 
     const label = document.createElement('span');
     label.className = 'qv-mini-vinyl__label';
-    if (vinyl.coverUrl) {
-        label.style.backgroundImage = `url("${vinyl.coverUrl.replace(/"/g, '\\"')}")`;
-    } else {
-        label.style.backgroundImage = 'linear-gradient(135deg, #eaddb3, #b89345)';
+
+    if (!vinyl.coverUrl) {
+        label.classList.add('is-fallback');
     }
     disc.appendChild(label);
+
+    if (vinyl.coverUrl) {
+        const cover = document.createElement('img');
+        cover.className = 'qv-mini-vinyl__cover';
+        cover.src = vinyl.coverUrl;
+        cover.alt = '';
+        cover.loading = 'lazy';
+        cover.decoding = 'async';
+        cover.draggable = false;
+        cover.addEventListener('error', () => {
+            cover.remove();
+            label.classList.add('is-fallback');
+        });
+        disc.appendChild(cover);
+    }
 
     const play = document.createElement('span');
     play.className = 'qv-mini-vinyl__play';

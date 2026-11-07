@@ -2,6 +2,15 @@ import { fetchAutenticado } from './auth.js';
 import { api } from './api.js';
 import { createVinylPicker } from './vinylPicker.js';
 
+const YOUTUBE_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
+
+const buildYouTubeUrl = (videoId) => {
+    const id = String(videoId || '').trim();
+    return YOUTUBE_ID_PATTERN.test(id)
+        ? `https://www.youtube.com/watch?v=${id}`
+        : '';
+};
+
 const getTodayKey = () => {
     const parts = new Intl.DateTimeFormat('en-US', {
         timeZone: 'Europe/Madrid',
@@ -127,11 +136,49 @@ document.addEventListener('DOMContentLoaded', () => {
 
     veloReleaseDate.min = getTodayKey();
 
+    const veloVinylFields = [veloTitle, veloArtist, veloAudioUrl, veloCoverUrl];
+
+    const setVeloVinylFieldsLocked = (locked) => {
+        veloVinylFields.forEach((field) => {
+            field.readOnly = locked;
+            field.setAttribute('aria-readonly', String(locked));
+            field.classList.toggle('is-locked', locked);
+        });
+    };
+
+    const clearVeloVinylFields = () => {
+        veloVinylFields.forEach((field) => {
+            field.value = '';
+        });
+    };
+
+    const applyVinylToVeloForm = (vinyl) => {
+        if (!vinyl) {
+            clearVeloVinylFields();
+            setVeloVinylFieldsLocked(false);
+            return;
+        }
+
+        // El catálogo aún no ha resuelto el ID: conservamos lo que haya escrito
+        // el administrador y esperamos a que lleguen los datos oficiales.
+        if (vinyl.isPlaceholder) {
+            setVeloVinylFieldsLocked(false);
+            return;
+        }
+
+        veloTitle.value = vinyl.title || '';
+        veloArtist.value = vinyl.artist || '';
+        veloCoverUrl.value = vinyl.coverUrl || '';
+        veloAudioUrl.value = buildYouTubeUrl(vinyl.youtubeVideoId);
+        setVeloVinylFieldsLocked(true);
+    };
+
     const veloVinylPicker = createVinylPicker({
         container: document.getElementById('veloVinylPicker'),
         label: 'Vinilo de El Archivo (opcional)',
         hint: 'Enlaza la pista velada con su ficha oficial de El Archivo.',
-        emptyMessage: 'El Archivo aún está vacío. Busca discos en su sección para enlazarlos aquí.'
+        emptyMessage: 'El Archivo aún está vacío. Busca discos en su sección para enlazarlos aquí.',
+        onChange: applyVinylToVeloForm
     });
 
     const setVeloMessage = (message, type = '') => {
@@ -145,6 +192,7 @@ document.addEventListener('DOMContentLoaded', () => {
         veloTrackId.value = '';
         veloReleaseDate.min = getTodayKey();
         if (veloVinylPicker) veloVinylPicker.clear();
+        setVeloVinylFieldsLocked(false);
         veloSubmitBtn.textContent = 'Programar pista';
         veloSubmitBtn.disabled = false;
         veloCancelEditBtn.hidden = true;
@@ -439,11 +487,27 @@ document.addEventListener('DOMContentLoaded', () => {
     const startEditingTrack = (track) => {
         veloTrackId.value = track._id;
         veloReleaseDate.value = String(track.releaseDate).slice(0, 10);
-        veloTitle.value = track.title || '';
-        veloArtist.value = track.artist || '';
-        veloAudioUrl.value = track.audioUrl || '';
-        veloCoverUrl.value = track.coverUrl || '';
-        veloVinylPicker.setValue(track.vinyl || track.vinylId);
+
+        const vinylReference = track.vinyl || track.vinylId || null;
+        if (vinylReference) {
+            veloVinylPicker.setValue(vinylReference);
+        } else {
+            veloVinylPicker.clear();
+        }
+
+        const selectedVinyl = veloVinylPicker.getVinyl();
+        const hasResolvedVinyl = Boolean(selectedVinyl && !selectedVinyl.isPlaceholder);
+
+        if (!hasResolvedVinyl) {
+            // Sin vinilo resuelto todavía mostramos los datos reales de la pista.
+            // Si el catálogo resuelve el ID después, el picker autocompletará.
+            veloTitle.value = track.title || '';
+            veloArtist.value = track.artist || '';
+            veloAudioUrl.value = track.audioUrl || '';
+            veloCoverUrl.value = track.coverUrl || '';
+            setVeloVinylFieldsLocked(false);
+        }
+
         veloSubmitBtn.textContent = 'Guardar cambios';
         veloCancelEditBtn.hidden = false;
         setVeloMessage(`Editando la pista del ${formatTrackDate(track.releaseDate)}.`, 'success');

@@ -422,19 +422,25 @@ const setTurntableMessage = (message, tone = 'idle') => {
 };
 
 const setPlaybackState = (mode) => {
-    const spinning = mode === 'playing' || mode === 'paused';
+    const playing = mode === 'playing';
+    const spinning = playing || mode === 'paused';
     const canPlay = Boolean(getVideoId(currentVinyl));
 
     record.classList.toggle('is-spinning', spinning);
     record.classList.toggle('is-paused', mode === 'paused');
-    turntable.classList.toggle('is-playing', mode === 'playing');
-    playToggle.classList.toggle('is-playing', mode === 'playing');
+    turntable.classList.toggle('is-playing', playing);
+    playToggle.classList.toggle('is-playing', playing);
 
-    playIcon.hidden = mode === 'playing';
-    pauseIcon.hidden = mode !== 'playing';
+    // Los SVG no reflejan la propiedad .hidden como los elementos HTML.
+    // Hay que alternar el atributo para que el CSS [hidden] los oculte.
+    playIcon.toggleAttribute('hidden', playing);
+    pauseIcon.toggleAttribute('hidden', !playing);
+
+    playToggle.dataset.state = mode;
+    playToggle.setAttribute('aria-pressed', String(playing));
     playToggle.disabled = !canPlay;
 
-    const label = mode === 'playing' ? 'Pausar el vinilo' : 'Reproducir el vinilo';
+    const label = playing ? 'Pausar el vinilo' : 'Reproducir el vinilo';
     playToggle.setAttribute('aria-label', label);
     playToggle.title = label;
 };
@@ -697,9 +703,15 @@ const cleanSummary = (summary) => {
         .trim();
 };
 
-const formatDuration = (seconds) => {
-    const total = Math.max(0, Math.round(Number(seconds)));
-    if (!Number.isFinite(total)) return '';
+const formatDuration = (rawDuration) => {
+    const numeric = Number(rawDuration);
+    if (!Number.isFinite(numeric) || numeric <= 0) return '';
+
+    // Last.fm entrega la duración en milisegundos (p. ej. 275000 para 04:35).
+    // Algunos orígenes ya la entregan en segundos; un valor superior a cuatro
+    // horas en segundos es imposible para una pista, así que delata milisegundos.
+    const seconds = numeric > 14400 ? numeric / 1000 : numeric;
+    const total = Math.max(0, Math.round(seconds));
 
     const hours = Math.floor(total / 3600);
     const minutes = Math.floor((total % 3600) / 60);
@@ -709,7 +721,7 @@ const formatDuration = (seconds) => {
         return `${hours}:${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
     }
 
-    return `${minutes}:${String(remainingSeconds).padStart(2, '0')}`;
+    return `${String(minutes).padStart(2, '0')}:${String(remainingSeconds).padStart(2, '0')}`;
 };
 
 const updateDiscoCover = (coverUrl, title) => {
