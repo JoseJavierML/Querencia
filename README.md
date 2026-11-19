@@ -10,6 +10,7 @@ SaaS de reflexión y debate musical diseñado para ir más allá de la escucha s
 El Sprint 2 sigue en curso. Los cuatro módulos del MVP cuentan con backend, modelo y pruebas, y los cuatro están integrados en el frontend: Diario, Muro, El Velo y El Archivo. El Archivo incorpora ya su vista de cajones, la ficha detallada con Last.fm y un tocadiscos con arrastre nativo. Queda pendiente la verificación manual del flujo completo en navegador con una sesión real. La suite automatizada de Jest cubre modelos, servicios y routers. La documentación de progreso, requisitos, arquitectura y decisiones vive en [docs/index.md](docs/index.md).
 
 Desarrollado para la asignatura Procesos de Ingeniería del Software (Curso 2026-2027).
+https://querencia-511207.ew.r.appspot.com
 
 ## Tecnologías Elegidas (Justificación)
 - **Backend (Node.js & Express):** Proporciona un entorno ligero y rápido para construir la API REST requerida, permitiendo mantener un ecosistema unificado en JavaScript.
