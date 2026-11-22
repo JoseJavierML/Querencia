@@ -1,7 +1,8 @@
 import { api } from './api.js';
+import { loadYouTubeApi } from './youtubeApi.js';
+import { VINYL_MIME } from './constants.js';
+import { handleFocusTrap } from './modal.js';
 
-const YOUTUBE_API_URL = 'https://www.youtube.com/iframe_api';
-const VINYL_MIME = 'application/x-querencia-vinilo';
 const YOUTUBE_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
 
 const cajonesGrid = document.getElementById('cajonesGrid');
@@ -57,7 +58,6 @@ const state = {
 };
 
 let loadRequestId = 0;
-let youtubeApiPromise = null;
 let youtubePlayer = null;
 let youtubePlayerPromise = null;
 let youtubeReady = false;
@@ -464,42 +464,6 @@ const updateTurntableRecord = (vinyl) => {
         recordCover.removeAttribute('src');
         record.classList.remove('has-cover');
     }
-};
-
-const loadYouTubeApi = () => {
-    if (window.YT && typeof window.YT.Player === 'function') {
-        return Promise.resolve(window.YT);
-    }
-    if (youtubeApiPromise) {
-        return youtubeApiPromise;
-    }
-
-    youtubeApiPromise = new Promise((resolve, reject) => {
-        const previousReady = window.onYouTubeIframeAPIReady;
-        window.onYouTubeIframeAPIReady = () => {
-            if (typeof previousReady === 'function') {
-                previousReady();
-            }
-            if (window.YT && typeof window.YT.Player === 'function') {
-                resolve(window.YT);
-            } else {
-                reject(new Error('La API de YouTube no está disponible'));
-            }
-        };
-
-        const script = document.createElement('script');
-        script.src = YOUTUBE_API_URL;
-        script.async = true;
-        script.addEventListener('error', () => {
-            reject(new Error('No se pudo cargar la API de YouTube'));
-        });
-        document.head.appendChild(script);
-    }).catch((error) => {
-        youtubeApiPromise = null;
-        throw error;
-    });
-
-    return youtubeApiPromise;
 };
 
 const ensureYouTubePlayer = () => {
@@ -925,13 +889,6 @@ const closeDetail = ({ focusPlay = false } = {}) => {
     }
 };
 
-const getFocusableElements = (container) => {
-    const selector = 'button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
-    return Array.from(container.querySelectorAll(selector)).filter((element) => (
-        !element.hidden && element.offsetParent !== null
-    ));
-};
-
 const handleModalKeydown = (event) => {
     if (discoModal.hidden) return;
 
@@ -941,24 +898,7 @@ const handleModalKeydown = (event) => {
         return;
     }
 
-    if (event.key !== 'Tab') return;
-
-    const focusable = getFocusableElements(discoDialog);
-    if (focusable.length === 0) {
-        event.preventDefault();
-        return;
-    }
-
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-
-    if (event.shiftKey && document.activeElement === first) {
-        event.preventDefault();
-        last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-        event.preventDefault();
-        first.focus();
-    }
+    handleFocusTrap(event, discoDialog);
 };
 
 const initArchivoPage = () => {

@@ -1,15 +1,17 @@
 ---
 type: Sprint
 title: Sprint 2
-description: Progreso de ejecución del Sprint 2, con los PBIs del MVP y la épica de El Archivo cerrada.
-timestamp: 2026-11-06
+description: Progreso de ejecución del Sprint 2, con los PBIs del MVP, la épica de El Archivo cerrada y el traspaso al refactor del Sprint 3.
+timestamp: 2026-11-22
 ---
 
 # Sprint 2
 
+> **Cierre y traspaso.** El Sprint 2 queda funcionalmente cerrado. El Sprint 3 ([sprint-3.md](sprint-3.md)) aplica un refactor interno sin funcionalidades nuevas: validaciones compartidas, descomposición de El Archivo, endurecimiento de la API y modularización del frontend. La suite actual es de 16 suites y 222 tests.
+
 ## Estado general
 
-El Sprint 2 sigue en curso, pero la épica **La Discoteca Interactiva (El Archivo)** queda cerrada funcionalmente. Esta página recoge el estado tras completar sus siete tareas: los PBIs de Diario, Muro, El Velo y El Archivo están implementados e integrados en la rama de trabajo `feature/archivo-frontend`, y la Tarea 7 conecta los vinilos cacheados con el Muro, el Diario y El Velo mediante un selector compartido y un tocadiscos global. El Archivo incorpora su backend, el modelo, la caché, el contrato HTTP, el frontend de cajones, la ficha detallada, el tocadiscos propio y la reproducción transversal. Queda pendiente la verificación manual del flujo completo en navegador con una sesión real. El sprint no está cerrado y quedan abiertos los requisitos heredados del Sprint 1 y las verificaciones de correo, despliegue y proceso.
+El Sprint 2 queda funcionalmente cerrado y la épica **La Discoteca Interactiva (El Archivo)** está terminada. Esta página recoge el estado tras completar sus siete tareas: los PBIs de Diario, Muro, El Velo y El Archivo están implementados e integrados, y la Tarea 7 conecta los vinilos cacheados con el Muro, el Diario y El Velo mediante un selector compartido y un tocadiscos global. El Archivo incorpora su backend, el modelo, la caché, el contrato HTTP, el frontend de cajones, la ficha detallada, el tocadiscos propio y la reproducción transversal. Queda pendiente la verificación manual del flujo completo en navegador con una sesión real. Siguen abiertos los requisitos heredados del Sprint 1 y las verificaciones de correo, despliegue y proceso.
 
 ## Objetivo
 
@@ -52,7 +54,7 @@ Consolidar el MVP funcional de Querencia: un diario íntimo privado, un muro de 
 
 ## Verificación
 
-- Suite automatizada: las suites de Diario, Muro, El Velo y El Archivo usan dobles de repositorio, autenticación y red. La última ejecución registrada antes de El Archivo fue de **11 suites y 169 tests pasados** con `npm test -- --runInBand`; la ejecución de las nuevas suites y de los ajustes de la Tarea 7 queda pendiente de confirmación local. La Tarea 7 no añade suites nuevas de interfaz.
+- Suite automatizada: las suites de Diario, Muro, El Velo, El Archivo y del refactor del Sprint 3 usan dobles de repositorio, autenticación y red. La ejecución actual es de **16 suites y 222 tests pasados** con `cd backend && npm test`. La Tarea 7 no añade suites nuevas de interfaz y el refactor tampoco.
 - Sin pruebas automatizadas nuevas de interfaz: la verificación del frontend de El Archivo y de los vinilos transversales se apoya en la revisión manual del DOM, de los eventos de arrastre y de la reproducción en un navegador real.
 - Revisión manual pendiente: flujo completo en navegador con MongoDB y una sesión real, cajones y ficha de El Archivo, arrastre al tocadiscos, reproducción de YouTube, selector y mini-vinilos en Muro, Diario y El Velo, y verificación de la URL pública.
 
@@ -64,7 +66,7 @@ Consolidar el MVP funcional de Querencia: un diario íntimo privado, un muro de 
 - **RNF-05:** comprobar el despliegue cloud y la URL pública.
 - **PRO-01:** revisar Pull requests de GitHub para confirmar el flujo GitHub Flow.
 - **PRO-03:** comprobar ejecuciones reales del despliegue continuo.
-- Conciliar la sesión en memoria de `authMiddleware.js` con el despliegue multiinstancia o completar la decisión JWT.
+- Conciliar la sesión en memoria de `authMiddleware.js` con el despliegue multiinstancia o completar la decisión JWT. El Sprint 3 mantiene la sesión en memoria y deja el debate abierto en D-05.
 - Resolver la discrepancia documental pendiente sobre el destino de despliegue.
 
 ## Próximos pasos
@@ -72,3 +74,4 @@ Consolidar el MVP funcional de Querencia: un diario íntimo privado, un muro de 
 1. Completar las verificaciones manuales del MVP en un entorno con MongoDB.
 2. Cerrar los requisitos heredados del Sprint 1.
 3. Revisar la retrospectiva del sprint y consolidar la documentación de cierre.
+4. Abordar el debate JWT y la verificación multiinstancia en una historia específica.

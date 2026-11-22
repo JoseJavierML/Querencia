@@ -4,7 +4,11 @@ const {
     MAX_CONTENT_LENGTH,
     MAX_COVER_URL_LENGTH
 } = require('./debateConstants');
-const { isValidObjectId } = require('./archivoUtils');
+const {
+    normalizeVinylId: normalizeVinylIdShared,
+    resolveUserId: resolveUserIdShared,
+    normalizeHttpUrl
+} = require('./validation');
 
 class DebateValidationError extends Error {
     constructor(message) {
@@ -59,37 +63,12 @@ const normalizeContent = (content) => {
     return normalizedContent;
 };
 
-const normalizeCoverImageUrl = (coverImageUrl) => {
-    if (coverImageUrl === undefined || coverImageUrl === null) {
-        return null;
-    }
-    if (typeof coverImageUrl !== 'string') {
-        throw new DebateValidationError('La URL de la portada no es válida');
-    }
-
-    const normalizedUrl = coverImageUrl.trim();
-    if (normalizedUrl.length === 0) {
-        return null;
-    }
-    if (normalizedUrl.length > MAX_COVER_URL_LENGTH) {
-        throw new DebateValidationError(
-            `La URL de la portada no puede superar los ${MAX_COVER_URL_LENGTH} caracteres`
-        );
-    }
-
-    let parsedUrl;
-    try {
-        parsedUrl = new URL(normalizedUrl);
-    } catch (error) {
-        throw new DebateValidationError('La URL de la portada no es válida');
-    }
-
-    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-        throw new DebateValidationError('La URL de la portada debe empezar por http o https');
-    }
-
-    return normalizedUrl;
-};
+const normalizeCoverImageUrl = (coverImageUrl) => normalizeHttpUrl(coverImageUrl, {
+    field: 'La URL de la portada',
+    maxLength: MAX_COVER_URL_LENGTH,
+    required: false,
+    ValidationError: DebateValidationError
+});
 
 const normalizeIsAnonymous = (isAnonymous) => {
     if (isAnonymous === undefined || isAnonymous === null) {
@@ -102,24 +81,11 @@ const normalizeIsAnonymous = (isAnonymous) => {
     return isAnonymous;
 };
 
-const normalizeVinylId = async (vinylId, vinylRepository) => {
-    if (vinylId === undefined || vinylId === null || vinylId === '') {
-        return null;
-    }
-    if (typeof vinylId !== 'string' || !isValidObjectId(vinylId)) {
-        throw new DebateValidationError('El vinilo seleccionado no es válido');
-    }
-
-    const normalizedVinylId = vinylId.trim();
-    if (vinylRepository) {
-        const vinyl = await vinylRepository.findById(normalizedVinylId);
-        if (!vinyl) {
-            throw new DebateValidationError('El vinilo seleccionado no existe en El Archivo');
-        }
-    }
-
-    return normalizedVinylId;
-};
+const normalizeVinylId = (vinylId, vinylRepository) => normalizeVinylIdShared(
+    vinylId,
+    vinylRepository,
+    DebateValidationError
+);
 
 const createDebateService = ({ debateRepository, userRepository, vinylRepository }) => {
     if (!debateRepository) {
@@ -129,13 +95,11 @@ const createDebateService = ({ debateRepository, userRepository, vinylRepository
         throw new Error('userRepository es obligatorio');
     }
 
-    const resolveUserId = async (email) => {
-        const user = await userRepository.findByEmail(email);
-        if (!user) {
-            throw new DebateUserNotFoundError();
-        }
-        return user._id;
-    };
+    const resolveUserId = (email) => resolveUserIdShared(
+        email,
+        userRepository,
+        DebateUserNotFoundError
+    );
 
     const createDebate = async ({
         email,

@@ -7,7 +7,7 @@ SaaS de reflexión y debate musical diseñado para ir más allá de la escucha s
 - **El Velo:** una escucha ciega diaria. El usuario recibe solo el audio de la pista del día y, hasta que envía su reflexión, no ve título, artista ni portada. Después se revela la ficha completa y el muro de voces de la comunidad. Los administradores programan la cola desde el panel.
 - **El Archivo:** una discoteca interactiva organizada en cajones de vinilos. El usuario busca una obra, el backend enriquece los metadatos con Last.fm, resuelve el audio con YouTube y conserva el resultado en MongoDB para que las siguientes consultas no vuelvan a consultar Last.fm y reaprovechen el audio ya resuelto.
 
-El Sprint 2 sigue en curso. Los cuatro módulos del MVP cuentan con backend, modelo y pruebas, y los cuatro están integrados en el frontend: Diario, Muro, El Velo y El Archivo. El Archivo incorpora ya su vista de cajones, la ficha detallada con Last.fm y un tocadiscos con arrastre nativo. Queda pendiente la verificación manual del flujo completo en navegador con una sesión real. La suite automatizada de Jest cubre modelos, servicios y routers. La documentación de progreso, requisitos, arquitectura y decisiones vive en [docs/index.md](docs/index.md).
+El Sprint 2 queda funcionalmente cerrado y el Sprint 3 aplica un refactor interno sin funcionalidades nuevas: validaciones compartidas, descomposición de El Archivo, endurecimiento de la API y modularización del frontend. Los cuatro módulos del MVP cuentan con backend, modelo y pruebas, y están integrados en el frontend: Diario, Muro, El Velo y El Archivo. La suite automatizada de Jest cubre modelos, servicios, routers y utilidades; la última ejecución es de **16 suites y 222 tests**. Queda pendiente la verificación manual del flujo completo en navegador con una sesión real y la revalidación del despliegue. La documentación de progreso, requisitos, arquitectura y decisiones vive en [docs/index.md](docs/index.md); el detalle del refactor está en [docs/sprint-3.md](docs/sprint-3.md).
 
 Desarrollado para la asignatura Procesos de Ingeniería del Software (Curso 2026-2027).
 https://querencia-511207.ew.r.appspot.com
@@ -21,7 +21,27 @@ https://querencia-511207.ew.r.appspot.com
 
 ## Instrucciones de Ejecución
 
-### 1. Ejecutar el proyecto en local
+### 1. Configurar el entorno
+
+Copia `backend/.env.example` a `backend/.env` y completa los valores. `BACKEND_URL` debe apuntar al origen del backend (`http://localhost:3000` en local) porque `mailer.js` construye con ella el enlace de verificación.
+
+| Variable | Obligatoria | Uso |
+|---|---|---|
+| `MONGO_URI` | Sí | Cadena de conexión de MongoDB. |
+| `BACKEND_URL` | Sí para el correo | Origen público o local del backend; se usa en el enlace de verificación. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Sí para OAuth | Credenciales de Google. Sin ellas, las rutas de OAuth responden `503`. |
+| `EMAIL_USER`, `EMAIL_PASS` | Sí para el correo | Cuenta de Gmail que envía la verificación. |
+| `ALLOWED_DOMAINS` | Sí | Dominios admitidos en el registro, separados por comas. |
+| `PORT` | No | Puerto local; por defecto `3000`. App Engine lo inyecta. |
+| `DIARY_MAX_TEXT_LENGTH` | No | Reduce el límite de 5000 caracteres del diario. |
+| `LASTFM_API_KEY` | Sí para búsquedas externas | Sin ella solo se sirven fichas ya cacheadas. |
+| `YOUTUBE_API_KEY` | No | Activa YouTube Data API; si falta, se usa el scraping. |
+| `LASTFM_API_URL`, `YOUTUBE_API_URL`, `YOUTUBE_SEARCH_URL` | No | Endpoints alternativos para pruebas o proxies. |
+| `YOUTUBE_SCRAPING_ENABLED` | No | `true` por defecto; permite desactivar el fallback. |
+| `ARCHIVO_CACHE_TTL_DAYS`, `ARCHIVO_HTTP_TIMEOUT_MS` | No | TTL de la caché y timeout de las llamadas externas. |
+
+### 2. Ejecutar el proyecto en local
+
 Para levantar el servidor y servir el frontend en tu máquina, ejecuta:
 ```bash
 cd backend
@@ -30,12 +50,15 @@ npm start
 ```
 La aplicación estará disponible en `http://localhost:3000`.
 
-### 2. Ejecutar las pruebas automatizadas
+### 3. Ejecutar las pruebas automatizadas
+
 Para ejecutar las pruebas unitarias de la capa lógica (que incluyen comprobaciones de error, no solo el "camino feliz"), utiliza el siguiente comando:
 ```bash
 cd backend
 npm test
 ```
+
+La suite actual tiene 16 suites y 222 tests. No necesita MongoDB ni llamadas reales a Last.fm o YouTube: los repositorios, la autenticación y la red se sustituyen por dobles.
 
 ## API del Diario Íntimo
 
@@ -244,15 +267,40 @@ La primera llamada consulta Last.fm y YouTube y guarda la ficha. Una segunda lla
 - Los metadatos culturales se guardan normalizados y con el resumen de Last.fm sin HTML; el frontend los renderiza con `textContent` para no introducir contenido no confiable.
 - La subida física de carátulas no forma parte de esta iteración. Igual que en el Muro y en El Velo, la portada se referencia mediante URL externa.
 
+## Refactor del Sprint 3
+
+El Sprint 3 no añade funcionalidades: reorganiza el MVP para reducir duplicación y separar responsabilidades. El detalle completo está en [docs/sprint-3.md](docs/sprint-3.md).
+
+| Tarea | Cambio principal |
+|---|---|
+| T1 | `backend/validation.js` y `backend/timeConstants.js` centralizan las validaciones y constantes que compartían Diario, Muro, El Velo y El Archivo. |
+| T2 | `archivoService.js` queda como orquestador; errores, transporte HTTP, Last.fm, YouTube, caché y mapeo se separan en módulos con una responsabilidad cada uno. |
+| T3 | `userModel.js` usa errores codificados y proyección pública; `server.js` revierte registros si falla el correo, separa `401` de `500`, escapa HTML, responde JSON en los `404` y exporta `{ app, start }`. |
+| T4 | `youtubeApi.js`, `constants.js`, `modal.js`, `apiError.js` y `diario.js` eliminan duplicaciones; la tabla de usuarios y la cabecera se renderizan con `textContent`. |
+| T5 | Documentación actualizada y verificación de la suite. |
+
+Verificación:
+
+```bash
+cd backend
+npm test
+```
+
+Resultado: 16 suites, 222 tests, 0 fallos. `node -e "require('./server')"` importa la app sin conectar a MongoDB ni abrir un puerto. La verificación manual del arrastre, los modales y el Diario extraído sigue pendiente, y App Engine no se ha vuelto a desplegar.
+
+### Debate abierto: sesión en memoria y JWT
+
+`authMiddleware.js` mantiene las sesiones en un `Map` del proceso. Es la opción conservadora para no invalidar sesiones existentes ni cambiar el despliegue actual, pero las sesiones se pierden al reiniciar el servidor o al cambiar de instancia. La migración a JWT stateless queda como debate abierto para el equipo; ver D-05 en [docs/decisiones.md](docs/decisiones.md).
+
 ## Estado Actual (Sprint 1)
 - [x] **Hito 1:** Esqueleto, backend (lógica en memoria), API, pruebas automatizadas, pipeline de Integración Continua (CI) y Despliegue Continuo (CD).
 - [x] **Hito 2:** Interfaz frontend, registro e inicio de sesión, mantenimiento de sesión.
 - [X] **Hito 3:** Persistencia real en base de datos y validación de roles.
 - [X] **Hito 4:** Autenticación OAuth externa y confirmación por correo.
 
-## Estado Actual (Sprint 2)
+## Estado Actual (Sprint 2 — cerrado funcionalmente)
 
-El Sprint 2 sigue en curso. Esta lista refleja los PBIs ya completados e integrados, no el cierre del sprint.
+Esta lista refleja los PBIs completados e integrados. El Sprint 3 se ejecuta después como refactor interno.
 
 - [x] **RF-MVP-Diario:** backend del diario íntimo con esquema `DiaryEntry`, endpoints protegidos, aislamiento por usuario y pruebas unitarias con dobles.
 - [x] **RF-MVP-Diario-Frontend:** guardado, historial “Ecos”, título opcional, lectura completa y borrado de ecos propios.
@@ -274,3 +322,12 @@ El Sprint 2 sigue en curso. Esta lista refleja los PBIs ya completados e integra
 - [x] **RF-MVP-Archivo-Detalle-Frontend:** modal de ficha con carátula, sinopsis, etiquetas y métricas de Last.fm, estados de carga y error, cierre con `Escape` y retorno del foco.
 - [x] **RF-MVP-Archivo-Reproduccion:** tocadiscos fijo con arrastre nativo, reproductor oculto de YouTube Iframe API, animación de giro, pausa y reanudación.
 - [ ] **Pendiente de cierre:** verificación manual del flujo completo en navegador con una sesión real, correo real, URL pública y requisitos heredados del Sprint 1.
+
+## Estado Actual (Sprint 3)
+
+- [x] **T1 — Validaciones compartidas:** `validation.js`, `timeConstants.js` y pruebas de los casos límite.
+- [x] **T2 — El Archivo por adaptadores:** errores, HTTP, Last.fm, YouTube, caché y mapeo separados; contrato sin cambios.
+- [x] **T3 — API endurecida:** errores codificados, proyección pública, registro reversible, HTML escapado y arranque separado.
+- [x] **T4 — Frontend modular:** YouTube, constantes, modales, `ApiError` y Diario extraído; DOM seguro.
+- [x] **T5 — Documentación y verificación:** `docs/sprint-3.md`, documentación actualizada y 16 suites / 222 tests.
+- [ ] **Pendiente:** verificación manual en navegador del arrastre, los modales y el Diario, y revalidación del despliegue en App Engine.

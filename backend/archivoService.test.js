@@ -2,6 +2,8 @@ const {
     createArchivoService,
     ArchivoValidationError,
     ArchivoNotFoundError,
+    ArchivoUpstreamError,
+    ArchivoTimeoutError,
     ArchivoConfigurationError
 } = require('./archivoService');
 const { buildCatalogKey } = require('./archivoUtils');
@@ -441,6 +443,53 @@ describe('Servicio de El Archivo', () => {
 
         await expect(service.getDrawers({ groupBy: 'album' }))
             .rejects.toBeInstanceOf(ArchivoValidationError);
+    });
+
+    test('traduce un error HTTP de Last.fm a ArchivoUpstreamError', async () => {
+        const fetchImpl = jest.fn().mockResolvedValue({
+            ok: false,
+            status: 500,
+            json: jest.fn()
+        });
+        const { service } = buildService({ fetchImpl });
+
+        await expect(service.searchVinyl({
+            artist: 'Camarón de la Isla',
+            title: 'La leyenda del tiempo'
+        })).rejects.toBeInstanceOf(ArchivoUpstreamError);
+    });
+
+    test('traduce una respuesta JSON malformada a ArchivoUpstreamError', async () => {
+        const fetchImpl = jest.fn().mockResolvedValue({
+            ok: true,
+            status: 200,
+            json: jest.fn().mockRejectedValue(new SyntaxError('JSON inválido'))
+        });
+        const { service } = buildService({ fetchImpl });
+
+        await expect(service.searchVinyl({
+            artist: 'Camarón de la Isla',
+            title: 'La leyenda del tiempo'
+        })).rejects.toBeInstanceOf(ArchivoUpstreamError);
+    });
+
+    test('cancela una llamada externa que supera el timeout', async () => {
+        const fetchImpl = jest.fn((url, options = {}) => new Promise((resolve, reject) => {
+            options.signal.addEventListener('abort', () => {
+                const error = new Error('abortado');
+                error.name = 'AbortError';
+                reject(error);
+            });
+        }));
+        const { service } = buildService({
+            fetchImpl,
+            options: { httpTimeoutMs: 5 }
+        });
+
+        await expect(service.searchVinyl({
+            artist: 'Camarón de la Isla',
+            title: 'La leyenda del tiempo'
+        })).rejects.toBeInstanceOf(ArchivoTimeoutError);
     });
 
     test('valida el identificador y devuelve el detalle del disco', async () => {

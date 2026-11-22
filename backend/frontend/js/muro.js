@@ -2,6 +2,7 @@ import { api } from './api.js';
 import { obtenerUsuarioActual } from './auth.js';
 import { createVinylPicker } from './vinylPicker.js';
 import { appendMiniVinyl } from './vinylPlayer.js';
+import { handleFocusTrap } from './modal.js';
 
 const REACTION_FALLBACK_LABELS = Object.freeze({
     profundo: 'Profundo',
@@ -243,23 +244,7 @@ function crearModalLectura() {
             return;
         }
 
-        if (event.key !== 'Tab') return;
-
-        const focusables = dialog.querySelectorAll(
-            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-        );
-        if (focusables.length === 0) return;
-
-        const primero = focusables[0];
-        const ultimo = focusables[focusables.length - 1];
-
-        if (event.shiftKey && document.activeElement === primero) {
-            event.preventDefault();
-            ultimo.focus();
-        } else if (!event.shiftKey && document.activeElement === ultimo) {
-            event.preventDefault();
-            primero.focus();
-        }
+        handleFocusTrap(event, dialog);
     });
 
     return { abrir };

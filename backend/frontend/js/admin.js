@@ -1,6 +1,7 @@
 import { fetchAutenticado } from './auth.js';
 import { api } from './api.js';
 import { createVinylPicker } from './vinylPicker.js';
+import { TIME_ZONE } from './constants.js';
 
 const YOUTUBE_ID_PATTERN = /^[A-Za-z0-9_-]{11}$/;
 
@@ -13,7 +14,7 @@ const buildYouTubeUrl = (videoId) => {
 
 const getTodayKey = () => {
     const parts = new Intl.DateTimeFormat('en-US', {
-        timeZone: 'Europe/Madrid',
+        timeZone: TIME_ZONE,
         year: 'numeric',
         month: '2-digit',
         day: '2-digit'
@@ -78,22 +79,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function renderUsersTable(users) {
-        tableBody.innerHTML = '';
+        tableBody.replaceChildren();
 
         users.forEach((user) => {
+            const email = user.email || '';
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${user.email}</td>
-                <td>${user.role || 'user'}</td>
-                <td>
-                    <button class="delete-btn" data-email="${user.email}">Eliminar</button>
-                </td>
-            `;
-            tableBody.appendChild(tr);
-        });
 
-        document.querySelectorAll('.delete-btn').forEach((button) => {
-            button.addEventListener('click', () => deleteUser(button.getAttribute('data-email')));
+            const emailCell = document.createElement('td');
+            emailCell.textContent = email;
+
+            const roleCell = document.createElement('td');
+            roleCell.textContent = user.role || 'user';
+
+            const actionsCell = document.createElement('td');
+            const deleteButton = document.createElement('button');
+            deleteButton.className = 'delete-btn';
+            deleteButton.textContent = 'Eliminar';
+            deleteButton.addEventListener('click', () => deleteUser(email));
+            actionsCell.appendChild(deleteButton);
+
+            tr.append(emailCell, roleCell, actionsCell);
+            tableBody.appendChild(tr);
         });
     }
 
@@ -101,7 +107,7 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!confirm(`¿Seguro que deseas eliminar al usuario ${email}?`)) return;
 
         try {
-            const response = await fetchAutenticado(`/api/users/${email}`, {
+            const response = await fetchAutenticado(`/api/users/${encodeURIComponent(email)}`, {
                 method: 'DELETE',
                 headers: { 'Content-Type': 'application/json' }
             });

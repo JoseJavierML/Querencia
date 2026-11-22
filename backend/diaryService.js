@@ -1,4 +1,7 @@
-const { isValidObjectId } = require('./archivoUtils');
+const {
+    normalizeVinylId: normalizeVinylIdShared,
+    resolveUserId: resolveUserIdShared
+} = require('./validation');
 
 const DEFAULT_MAX_TEXT_LENGTH = 5000;
 const MAX_TITLE_LENGTH = 50;
@@ -24,24 +27,11 @@ class DiaryEntryNotFoundError extends Error {
     }
 }
 
-const normalizeVinylId = async (vinylId, vinylRepository) => {
-    if (vinylId === undefined || vinylId === null || vinylId === '') {
-        return null;
-    }
-    if (typeof vinylId !== 'string' || !isValidObjectId(vinylId)) {
-        throw new DiaryValidationError('El vinilo seleccionado no es válido');
-    }
-
-    const normalizedVinylId = vinylId.trim();
-    if (vinylRepository) {
-        const vinyl = await vinylRepository.findById(normalizedVinylId);
-        if (!vinyl) {
-            throw new DiaryValidationError('El vinilo seleccionado no existe en El Archivo');
-        }
-    }
-
-    return normalizedVinylId;
-};
+const normalizeVinylId = (vinylId, vinylRepository) => normalizeVinylIdShared(
+    vinylId,
+    vinylRepository,
+    DiaryValidationError
+);
 
 const createDiaryService = ({
     diaryRepository,
@@ -61,13 +51,11 @@ const createDiaryService = ({
         ? Math.min(parsedLimit, DEFAULT_MAX_TEXT_LENGTH)
         : DEFAULT_MAX_TEXT_LENGTH;
 
-    const resolveUserId = async (email) => {
-        const user = await userRepository.findByEmail(email);
-        if (!user) {
-            throw new DiaryUserNotFoundError();
-        }
-        return user._id;
-    };
+    const resolveUserId = (email) => resolveUserIdShared(
+        email,
+        userRepository,
+        DiaryUserNotFoundError
+    );
 
     const createEntry = async ({ email, text, title, vinylId } = {}) => {
         if (typeof text !== 'string') {

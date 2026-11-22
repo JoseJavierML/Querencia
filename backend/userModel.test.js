@@ -44,6 +44,19 @@ describe('Gestión de Usuarios (Persistencia en MongoDB con Bcrypt)', () => {
         expect(users.length).toBeGreaterThan(0);
     });
 
+    test('3b. getAll no expone el hash de contraseña ni el token de verificación', async () => {
+        await UserModel.create('seguro@correo.com', 'clave123', 'tokenSecreto');
+
+        const users = await UserModel.getAll();
+        const user = users.find((item) => item.email === 'seguro@correo.com');
+
+        expect(user).toBeDefined();
+        expect(user.password).toBeUndefined();
+        expect(user.verificationToken).toBeUndefined();
+        expect(user.role).toBe('usuario');
+        expect(user.status).toBe('pendiente');
+    });
+
     test('4. Comprueba correctamente si un usuario está activo', async () => {
         await UserModel.create('activo@correo.com', 'clave123', 'tokenActivo');
         await UserModel.verifyUser('tokenActivo'); 

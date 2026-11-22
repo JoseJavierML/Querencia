@@ -1,15 +1,14 @@
 import { api } from './api.js';
+import { loadYouTubeApi } from './youtubeApi.js';
 import { appendMiniVinyl } from './vinylPlayer.js';
 
 const MAX_REFLECTION_LENGTH = 5000;
 
 window.ejecutarLogout = () => api.logout();
 
-const YOUTUBE_API_URL = 'https://www.youtube.com/iframe_api';
 const PLAY_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.3v13.4L19 12z"></path></svg>';
 const PAUSE_ICON = '<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="7" y="5" width="3.4" height="14" rx="1"></rect><rect x="13.6" y="5" width="3.4" height="14" rx="1"></rect></svg>';
 
-let youtubeApiPromise = null;
 let playerRenderId = 0;
 const activeYouTubePlayers = new Set();
 
@@ -92,42 +91,6 @@ const destroyYouTubePlayers = () => {
         }
     });
     activeYouTubePlayers.clear();
-};
-
-const loadYouTubeApi = () => {
-    if (window.YT && typeof window.YT.Player === 'function') {
-        return Promise.resolve(window.YT);
-    }
-    if (youtubeApiPromise) {
-        return youtubeApiPromise;
-    }
-
-    youtubeApiPromise = new Promise((resolve, reject) => {
-        const previousReady = window.onYouTubeIframeAPIReady;
-        window.onYouTubeIframeAPIReady = () => {
-            if (typeof previousReady === 'function') {
-                previousReady();
-            }
-            if (window.YT && typeof window.YT.Player === 'function') {
-                resolve(window.YT);
-            } else {
-                reject(new Error('La API de YouTube no está disponible'));
-            }
-        };
-
-        const script = document.createElement('script');
-        script.src = YOUTUBE_API_URL;
-        script.async = true;
-        script.addEventListener('error', () => {
-            reject(new Error('No se pudo cargar la API de YouTube'));
-        });
-        document.head.appendChild(script);
-    }).catch((error) => {
-        youtubeApiPromise = null;
-        throw error;
-    });
-
-    return youtubeApiPromise;
 };
 
 const showPlayerFallback = (container, audioUrl, renderId, allowDirectLink = false) => {

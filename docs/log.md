@@ -1,5 +1,15 @@
 # Cronología
 
+## 2026-11-22 — Sprint 3: refactor de validaciones, El Archivo y endurecimiento de la API
+
+Rama `refactor/sprint-3`. Se completa el refactor interno del MVP sin añadir funcionalidades nuevas. T1 crea `backend/validation.js` y `backend/timeConstants.js` y sustituye las copias de `normalizeVinylId`, `resolveUserId`, `normalizeHttpUrl` e `isValidObjectId` en Diario, Muro, El Velo y El Archivo. T2 descompone `archivoService.js` en `archivoErrors.js`, `httpJsonClient.js`, `lastfmClient.js`, `youtubeClient.js`, `archivoCache.js` y `vinylMapper.js`; el servicio queda como orquestador y conserva el contrato `{ disco, cached, created, stale }`.
+
+T3 endurece la autenticación y los errores: `userModel.js` usa errores codificados y `getAll()` proyecta solo `email role status createdAt`; `server.js` revierte el registro si falla el correo, separa `401` de `500`, escapa el HTML de verificación, serializa el callback OAuth, responde `404` y errores JSON bajo `/api`, y exporta `{ app, start }` sin efectos secundarios al importar. `database.js` propaga el fallo de conexión, `mailer.js` exige `BACKEND_URL` y `httpErrors.js`/`htmlUtils.js` concentran utilidades. En el frontend, `apiError.js` tipa los errores y `api.js` lee JSON o texto sin asumir el cuerpo.
+
+T4 modulariza el frontend: `youtubeApi.js` unifica la carga de YouTube, `constants.js` comparte `VINYL_MIME` y la zona horaria, `modal.js` concentra la trampa de foco, `diario.js` sale del script inline de `diario.html`, y `admin.js`/`auth.js` construyen sus nodos con `textContent`. El MIME de arrastre queda unificado en `application/x-querencia-vinilo`.
+
+T5 actualiza `README.md`, `docs/index.md`, `docs/arquitectura.md`, `docs/procesos.md`, `docs/decisiones.md`, `docs/requisitos.md`, `docs/sprint-2.md` y crea `docs/sprint-3.md`. La suite queda en **16 suites y 222 tests pasados** con `cd backend && npm test`. No se ejecutan comandos Git en la sesión. Queda pendiente la verificación manual en navegador del arrastre, los modales y el Diario extraído, y el despliegue en App Engine no se ha vuelto a probar.
+
 ## 2026-11-06 — El Archivo: vinilos transversales y tocadiscos global (Tarea 7)
 
 Rama `feature/archivo-frontend`. Se cierra la épica **La Discoteca Interactiva (El Archivo)** con la Tarea 7: los vinilos cacheados dejan de vivir solo en su sección y se enlazan con el Muro, el Diario y El Velo. `Debate`, `DiaryEntry` y `VeloTrack` incorporan un `vinylId` opcional con `ref: 'Vinyl'`; los servicios validan que el disco exista, los repositorios pueblan la ficha pública y los routers añaden `vinyl` y `vinylId` solo cuando hay vínculo. `backend/vinylResponse.js` centraliza los campos de `populate` y el resumen público del vinilo, y `server.js` inyecta `VinylRepository` en los tres servicios.
