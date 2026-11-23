@@ -1,3 +1,5 @@
+import { ApiError } from './apiError.js';
+
 const TOKEN_KEYS = ['token', 'querencia_token'];
 
 function obtenerToken() {
@@ -64,7 +66,7 @@ export async function fetchAutenticado(url, options = {}) {
 
     if (response.status === 401 && !skipAuthRedirect) {
         cerrarSesion();
-        throw new Error('La sesión ha caducado. Inicia sesión de nuevo.');
+        throw new ApiError(401, 'La sesión ha caducado. Inicia sesión de nuevo.', 'SESSION_EXPIRED');
     }
 
     return response;
@@ -94,14 +96,22 @@ export function renderHeader() {
 
     container.innerHTML = `
         <div id="userProfileBadge" style="display: inline-flex; align-items: center; gap: 0.65rem; padding: 0.3rem 0.85rem 0.3rem 0.4rem; border-radius: 9999px; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(184, 147, 69, 0.2); backdrop-filter: blur(8px);">
-            <div style="width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg, rgba(184, 147, 69, 0.25), rgba(58, 10, 10, 0.6)); border: 1px solid rgba(234, 221, 179, 0.4); display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 0.8rem; font-weight: 600; color: var(--gold-light); text-shadow: 0 0 8px rgba(234, 221, 179, 0.4);">${inicial}</div>
+            <div data-user-initial style="width: 26px; height: 26px; border-radius: 50%; background: linear-gradient(135deg, rgba(184, 147, 69, 0.25), rgba(58, 10, 10, 0.6)); border: 1px solid rgba(234, 221, 179, 0.4); display: flex; align-items: center; justify-content: center; font-family: 'Playfair Display', serif; font-size: 0.8rem; font-weight: 600; color: var(--gold-light); text-shadow: 0 0 8px rgba(234, 221, 179, 0.4);"></div>
             <div style="display: flex; flex-direction: column; text-align: left; line-height: 1.15;">
-                <span style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: var(--gold-dark); font-family: -apple-system, sans-serif;">${isAdmin ? 'Admin' : 'Oyente'}</span>
-                <span id="currentUserEmail" style="font-family: 'Lora', serif; font-size: 0.82rem; color: var(--gold-light); font-style: italic; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">${emailStr}</span>
+                <span data-user-role style="font-size: 0.65rem; text-transform: uppercase; letter-spacing: 1px; color: var(--gold-dark); font-family: -apple-system, sans-serif;"></span>
+                <span id="currentUserEmail" style="font-family: 'Lora', serif; font-size: 0.82rem; color: var(--gold-light); font-style: italic; max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;"></span>
             </div>
         </div>
         <button class="logout-btn" id="logoutBtn" type="button">Cerrar sesión</button>
     `;
+
+    const initialElement = container.querySelector('[data-user-initial]');
+    const roleElement = container.querySelector('[data-user-role]');
+    const emailElement = container.querySelector('#currentUserEmail');
+
+    if (initialElement) initialElement.textContent = inicial;
+    if (roleElement) roleElement.textContent = isAdmin ? 'Admin' : 'Oyente';
+    if (emailElement) emailElement.textContent = emailStr;
 
     const btnLogout = container.querySelector('#logoutBtn');
     if (btnLogout) {

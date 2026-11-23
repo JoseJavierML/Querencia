@@ -6,7 +6,12 @@ const {
     MAX_REFLECTION_LENGTH,
     VELO_TIME_ZONE
 } = require('./veloConstants');
-const { isValidObjectId } = require('./archivoUtils');
+const {
+    normalizeVinylId: normalizeVinylIdShared,
+    resolveUserId: resolveUserIdShared,
+    normalizeHttpUrl
+} = require('./validation');
+const { DAY_IN_MILLISECONDS } = require('./timeConstants');
 const { toVinylSummary } = require('./vinylResponse');
 
 class VeloValidationError extends Error {
@@ -132,41 +137,10 @@ const normalizeText = (value, { field, maxLength }) => {
     return normalized;
 };
 
-const normalizeUrl = (value, { field, maxLength, required }) => {
-    if (value === undefined || value === null) {
-        if (required) {
-            throw new VeloValidationError(`${field} es obligatorio`);
-        }
-        return null;
-    }
-    if (typeof value !== 'string') {
-        throw new VeloValidationError(`${field} no es válido`);
-    }
-
-    const normalized = value.trim();
-    if (normalized.length === 0) {
-        if (required) {
-            throw new VeloValidationError(`${field} es obligatorio`);
-        }
-        return null;
-    }
-    if (normalized.length > maxLength) {
-        throw new VeloValidationError(`${field} no puede superar los ${maxLength} caracteres`);
-    }
-
-    let parsedUrl;
-    try {
-        parsedUrl = new URL(normalized);
-    } catch (error) {
-        throw new VeloValidationError(`${field} no es válido`);
-    }
-
-    if (parsedUrl.protocol !== 'http:' && parsedUrl.protocol !== 'https:') {
-        throw new VeloValidationError(`${field} debe empezar por http o https`);
-    }
-
-    return normalized;
-};
+const normalizeUrl = (value, options) => normalizeHttpUrl(value, {
+    ...options,
+    ValidationError: VeloValidationError
+});
 
 const normalizeTitle = (title) => normalizeText(title, {
     field: 'El título',
@@ -195,24 +169,11 @@ const normalizeReflection = (text) => normalizeText(text, {
     maxLength: MAX_REFLECTION_LENGTH
 });
 
-const normalizeVinylId = async (vinylId, vinylRepository) => {
-    if (vinylId === undefined || vinylId === null || vinylId === '') {
-        return null;
-    }
-    if (typeof vinylId !== 'string' || !isValidObjectId(vinylId)) {
-        throw new VeloValidationError('El vinilo seleccionado no es válido');
-    }
-
-    const normalizedVinylId = vinylId.trim();
-    if (vinylRepository) {
-        const vinyl = await vinylRepository.findById(normalizedVinylId);
-        if (!vinyl) {
-            throw new VeloValidationError('El vinilo seleccionado no existe en El Archivo');
-        }
-    }
-
-    return normalizedVinylId;
-};
+const normalizeVinylId = (vinylId, vinylRepository) => normalizeVinylIdShared(
+    vinylId,
+    vinylRepository,
+    VeloValidationError
+);
 
 const createVeloService = ({
     veloRepository,
@@ -251,13 +212,11 @@ const createVeloService = ({
         return trackStart.getTime() < todayStart.getTime() ? 'past' : 'future';
     };
 
-    const resolveUserId = async (email) => {
-        const user = await userRepository.findByEmail(email);
-        if (!user) {
-            throw new VeloUserNotFoundError();
-        }
-        return user._id;
-    };
+    const resolveUserId = (email) => resolveUserIdShared(
+        email,
+        userRepository,
+        VeloUserNotFoundError
+    );
 
     const getToday = async ({ email } = {}) => {
         const viewerId = await resolveUserId(email);
@@ -489,7 +448,7 @@ const createVeloService = ({
 
         const targetDates = futureTracks.map((track) => new Date(track.releaseDate));
         const originalDates = orderedTracks.map((track) => new Date(track.releaseDate));
-        const dayInMilliseconds = 24 * 60 * 60 * 1000;
+        const dayInMilliseconds = DAY_IN_MILLISECONDS;
 
         // La fecha es única: se pasa primero por un rango temporal libre para
         // poder intercambiar dos fechas sin chocar con el índice único.

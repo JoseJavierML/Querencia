@@ -1,8 +1,8 @@
 ---
 type: Decisiones
 title: Decisiones técnicas detectadas
-description: Decisiones observables en el código, el README y el historial, con las incorporaciones del Sprint 2.
-timestamp: 2026-11-06
+description: Decisiones observables en el código, el README y el historial, con las incorporaciones del Sprint 2 y del refactor del Sprint 3.
+timestamp: 2026-11-22
 ---
 
 # Decisiones
@@ -39,13 +39,17 @@ timestamp: 2026-11-06
 
 **Estado:** vigente. La especificación indicaba que el cambio debía conservar la capa lógica; la equivalencia completa queda por verificar.
 
-## D-05 — Sesiones mediante tokens JWT stateless
+## D-05 — Sesión en memoria conservada y debate JWT abierto
 
-**Qué se decidió:** utilizar tokens JWT stateless validados criptográficamente en el backend y almacenados en el `localStorage` del cliente (`querencia_user` y `querencia_token`), abandonando cualquier gestión de sesión en la memoria de Node.js.
+**Qué se decidió:** mantener durante el Sprint 3 el mecanismo actual de sesiones en memoria de `authMiddleware.js` (`Map` de tokens, `generateToken` y `deleteToken`) y no migrar todavía a JWT stateless. La alternativa JWT queda documentada como debate abierto.
 
-**Por qué:** Google App Engine utiliza un entorno efímero y autoescalable. Si almacenamos la sesión en la memoria de un proceso de Node.js, las sesiones de los usuarios se perderían cada vez que el servidor se reinicia, se suspende por inactividad o levanta una instancia nueva. Un JWT permite que cualquier instancia valide al usuario sin depender de una memoria local.
+**Por qué:** el Sprint 3 es un refactor sin funcionalidades nuevas y la prioridad es no romper las sesiones existentes ni el despliegue actual en Google App Engine. Cambiar el formato del token, la validación y el almacenamiento en el cliente exigiría una migración coordinada y una prueba de despliegue multiinstancia que no forman parte de este alcance. La opción conservadora mantiene el comportamiento observable del MVP.
 
-**Estado:** decisión vigente, pendiente de conciliar con la implementación. `authMiddleware.js` todavía guarda las sesiones en un `Map` en memoria del proceso mediante `generateToken` y `deleteToken`; la validación JWT stateless descrita aquí queda como deuda técnica registrada en el Sprint 2.
+**Limitación:** el `Map` vive en el proceso de Node.js. Las sesiones se pierden al reiniciar el servidor, al suspender la instancia o al atender una petición en otra instancia. App Engine standard puede escalar horizontalmente, por lo que la limitación es real y no solo teórica.
+
+**Debate abierto:** migrar a un JWT firmado con `jsonwebtoken` (ya declarado en `package.json`) permitiría validar al usuario en cualquier instancia sin memoria compartida. Habría que decidir el secreto, la expiración, la revocación, la compatibilidad con los tokens actuales y el almacenamiento en `localStorage`. La decisión se deja para una historia específica y se plantea en el Pull Request del Sprint 3.
+
+**Estado:** limitación documentada y aplazada; el código sigue usando sesiones en memoria.
 
 ## D-06 — CI y despliegue desde GitHub Actions
 
@@ -230,3 +234,43 @@ timestamp: 2026-11-06
 **Por qué:** la API oficial devuelve una estructura estable y verificable, pero consume cuota y exige una clave. El scraping no consume cuota, pero depende de un HTML cambiante y puede romperse sin aviso. Usar la API como vía principal y el scraping como respaldo ofrece continuidad operativa sin convertir una página no documentada en la única dependencia. Mantener `youtubeVideoId` opcional preserva el valor principal de El Archivo, que es el catálogo, y permite que un fallo temporal de audio se resuelva en una consulta posterior. El fallback se puede desactivar por configuración para cumplir con entornos que no permitan scraping.
 
 **Estado:** vigente. `YOUTUBE_SCRAPING_ENABLED` vale `true` por defecto y puede desactivarse sin cambios de código.
+
+## D-29 — Validaciones de dominio compartidas
+
+**Qué se decidió:** concentrar `isValidObjectId`, `normalizeVinylId`, `resolveUserId` y `normalizeHttpUrl` en `validation.js`, y `DAY_IN_MILLISECONDS` en `timeConstants.js`. Cada servicio pasa su propia clase de error para conservar los mensajes y el estado HTTP.
+
+**Por qué:** Diario, Muro, El Velo y El Archivo habían copiado las mismas comprobaciones. La duplicación ya había producido diferencias de mensajes y riesgo de divergencia. La inyección de la clase de error mantiene la traducción de cada router sin acoplar la validación a un dominio concreto.
+
+**Estado:** vigente. Cubierto por `validation.test.js`.
+
+## D-30 — El Archivo por adaptadores, caché y mapeador
+
+**Qué se decidió:** dejar `archivoService.js` como orquestador y separar errores (`archivoErrors.js`), transporte HTTP con timeout (`httpJsonClient.js`), Last.fm (`lastfmClient.js`), YouTube (`youtubeClient.js`), política de caché (`archivoCache.js`) y respuesta pública (`vinylMapper.js`).
+
+**Por qué:** el servicio mezclaba construcción de URLs, fetch, normalización, TTL, refresco y mapeo. La separación permite probar cada pieza con dobles, sustituir un proveedor sin tocar la caché y mantener el contrato HTTP sin cambios. `archivoService.js` sigue exportando las clases de error para no romper routers ni pruebas.
+
+**Estado:** vigente. La suite de El Archivo cubre caché, refresco, `upsert`, errores HTTP, JSON malformado y timeout.
+
+## D-31 — Errores codificados, proyección pública y arranque separado
+
+**Qué se decidió:** `userModel.js` lanza errores con `code` y `getAll()` devuelve solo `email role status createdAt`; `server.js` traduce los códigos a `401`, `404`, `409` o `503`, revierte el registro si falla el correo, escapa el HTML de verificación, serializa los valores del callback OAuth y exporta `{ app, start }`. `database.js` propaga el fallo de conexión y `mailer.js` exige `BACKEND_URL`.
+
+**Por qué:** los mensajes de error genéricos impedían distinguir credenciales inválidas de fallos internos y la lista de usuarios exponía el hash de contraseña y el token de verificación. El arranque separado permite importar la app en pruebas y comprobaciones sin abrir un puerto. La reversión del registro evita usuarios huérfanos cuando el correo no se puede enviar.
+
+**Estado:** vigente. `npm start` conserva el entrypoint de App Engine y `node -e "require('./server')"` no tiene efectos secundarios.
+
+## D-32 — Módulos compartidos del frontend y DOM seguro
+
+**Qué se decidió:** extraer `youtubeApi.js` (carga única de la Iframe API), `constants.js` (`VINYL_MIME` y `TIME_ZONE`), `modal.js` (trampa de foco), `apiError.js` (`ApiError`) y `diario.js` (módulo que vivía inline). `admin.js` y `auth.js` construyen sus nodos con `createElement`/`textContent` y codifican el correo en la URL de borrado. El MIME de arrastre se unifica en `application/x-querencia-vinilo`.
+
+**Por qué:** había tres copias del cargador de YouTube y dos MIME distintos para el mismo arrastre, lo que podía romper el dock global según el módulo que iniciara el evento. La interpolación de correos en `innerHTML` permitía inyección de HTML desde un dato de usuario. La extracción del Diario reduce el HTML y permite revisar el módulo como una unidad.
+
+**Estado:** vigente. Los trece módulos pasan la comprobación de sintaxis; la verificación manual de arrastre, modales y Diario sigue pendiente.
+
+## D-33 — Estrategia conservadora de sesión durante el refactor
+
+**Qué se decidió:** no cambiar la estrategia de sesión en el Sprint 3. Se mantiene el `Map` en memoria y se documenta la limitación y la alternativa JWT en D-05 y en el Pull Request.
+
+**Por qué:** el refactor debía preservar el comportamiento del MVP y no invalidar sesiones existentes. La migración a JWT requiere una historia propia, una prueba de despliegue multiinstancia y una decisión sobre revocación y expiración. Forzarla dentro del refactor habría mezclado un cambio funcional con la reorganización interna.
+
+**Estado:** vigente durante el Sprint 3; el debate queda abierto para el siguiente sprint.

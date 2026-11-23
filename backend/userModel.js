@@ -1,6 +1,15 @@
 const mongoose = require('mongoose');
 const bcrypt = require('bcrypt');
 
+const SALT_ROUNDS = 10;
+const USER_PUBLIC_FIELDS = 'email role status createdAt';
+
+const createCodedError = (message, code) => {
+    const error = new Error(message);
+    error.code = code;
+    return error;
+};
+
 const userSchema = new mongoose.Schema({
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
@@ -15,25 +24,33 @@ const UserModel = {
     create: async (email, password, verificationToken) => {
         const existe = await User.findOne({ email });
         if (existe) {
-            throw new Error('El email ya está registrado');
+            throw createCodedError('El email ya está registrado', 'EMAIL_ALREADY_REGISTERED');
         }
 
-        const saltRounds = 10;
-        const hashedPassword = await bcrypt.hash(password, saltRounds);
+        const hashedPassword = await bcrypt.hash(password, SALT_ROUNDS);
 
         const newUser = new User({ 
             email, 
             password: hashedPassword, 
             verificationToken 
         });
-        
-        await newUser.save(); 
+
+        try {
+            await newUser.save();
+        } catch (error) {
+            if (error && error.code === 11000) {
+                throw createCodedError('El email ya está registrado', 'EMAIL_ALREADY_REGISTERED');
+            }
+            throw error;
+        }
         return newUser;
     },
 
     verifyUser: async (token) => { 
         const user = await User.findOne({ verificationToken: token });
-        if (!user) throw new Error('Token inválido o cuenta ya verificada');
+        if (!user) {
+            throw createCodedError('Token inválido o cuenta ya verificada', 'INVALID_VERIFICATION_TOKEN');
+        }
         
         user.status = 'activo';
         user.verificationToken = undefined; 
@@ -46,8 +63,7 @@ const UserModel = {
         
         if (!user) {
             const randomPassword = Math.random().toString(36).slice(-10);
-            const saltRounds = 10;
-            const hashedPassword = await bcrypt.hash(randomPassword, saltRounds);
+            const hashedPassword = await bcrypt.hash(randomPassword, SALT_ROUNDS);
 
             user = new User({ 
                 email, 
@@ -65,7 +81,7 @@ const UserModel = {
     },
 
     getAll: async () => {
-        return await User.find({});
+        return await User.find({}, USER_PUBLIC_FIELDS);
     },
 
     isActive: async (email) => {
@@ -76,7 +92,7 @@ const UserModel = {
     delete: async (email) => {
         const result = await User.deleteOne({ email });
         if (result.deletedCount === 0) {
-            throw new Error('Usuario no encontrado');
+            throw createCodedError('Usuario no encontrado', 'USER_NOT_FOUND');
         }
         return true;
     },
@@ -84,16 +100,19 @@ const UserModel = {
     login: async (email, plainPassword) => {
         const user = await User.findOne({ email });
         if (!user) {
-            throw new Error('Credenciales incorrectas');
+            throw createCodedError('Credenciales incorrectas', 'INVALID_CREDENTIALS');
         }
 
         if (user.status === 'pendiente') {
-            throw new Error('Debes verificar tu correo antes de entrar. Revisa tu bandeja de entrada.');
+            throw createCodedError(
+                'Debes verificar tu correo antes de entrar. Revisa tu bandeja de entrada.',
+                'EMAIL_NOT_VERIFIED'
+            );
         }
 
         const isMatch = await bcrypt.compare(plainPassword, user.password);
         if (!isMatch) {
-            throw new Error('Credenciales incorrectas');
+            throw createCodedError('Credenciales incorrectas', 'INVALID_CREDENTIALS');
         }
 
         return user;

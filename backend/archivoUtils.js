@@ -1,8 +1,8 @@
+const { isValidObjectId } = require('./validation');
 const {
     MAX_COVER_URL_LENGTH,
     MAX_TAG_LENGTH,
     MAX_TAGS,
-    OBJECT_ID_PATTERN,
     LASTFM_PLACEHOLDER_IMAGE_HASH,
     GENRE_DEFINITIONS,
     IGNORED_TAGS,
@@ -263,10 +263,6 @@ const extractYouTubeVideoId = (value) => {
         return null;
     }
 };
-
-const isValidObjectId = (value) => (
-    typeof value === 'string' && OBJECT_ID_PATTERN.test(value.trim())
-);
 
 module.exports = {
     asArray,

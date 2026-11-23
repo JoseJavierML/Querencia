@@ -1,8 +1,8 @@
 ---
 type: Requisitos
-title: Requisitos del MVP (Sprint 2 en curso)
-description: Evaluación de los requisitos frente a la especificación y al repositorio, con el progreso del Sprint 2.
-timestamp: 2026-11-06
+title: Requisitos del MVP (Sprint 3)
+description: Evaluación de los requisitos frente a la especificación y al repositorio, con el cierre funcional del Sprint 2 y el refactor del Sprint 3.
+timestamp: 2026-11-22
 ---
 
 # Requisitos
@@ -46,13 +46,18 @@ timestamp: 2026-11-06
 | RF-MVP-Archivo-Vinculacion | Vincular vinilos cacheados con Muro, Diario y El Velo | hecho | `Debate`, `DiaryEntry` y `VeloTrack` incorporan `vinylId` opcional con `ref: 'Vinyl'`; los servicios validan su existencia, los repositorios pueblan la ficha y los routers añaden `vinyl` y `vinylId` solo cuando hay vínculo. En Muro y Velo el enlace lo controla un administrador; en Diario el usuario adjunta un vinilo a su propio eco. |
 | RF-MVP-Archivo-Selector | Buscar y seleccionar vinilos cacheados desde las publicaciones | hecho | `js/vinylPicker.js` reutiliza `GET /api/archivo/cajones?agrupar=artista` mediante `api.listarVinilosArchivo()` y filtra en cliente por título, artista, álbum o género. Se monta en el diálogo administrativo del Muro, en la cola del Velo y en el formulario del Diario, con estados de carga, error, vacío y limpieza del vínculo. |
 | RF-MVP-Archivo-Reproductor-Global | Mini-vinilo y tocadiscos global reutilizables | hecho | `js/vinylPlayer.js` pinta un mini-vinilo en tarjetas y modal del Muro, lectura del Diario y estado revelado de El Velo. El clic o el arrastre abren un dock fijo que carga la YouTube Iframe API bajo demanda, reproduce el `youtubeVideoId`, permite pausar, reanudar y cerrar, y avisa cuando el vinilo no tiene escucha. `js/vinilos.css` centraliza los estilos compartidos. |
+| RF-MVP-Refactor-Validaciones | Una única implementación de las validaciones compartidas | hecho | `backend/validation.js` concentra `isValidObjectId`, `normalizeVinylId`, `resolveUserId` y `normalizeHttpUrl`; `backend/timeConstants.js` expone `DAY_IN_MILLISECONDS`. Diario, Muro, El Velo y El Archivo conservan sus errores y mensajes. `validation.test.js` cubre los casos límite. |
+| RF-MVP-Refactor-Archivo | El Archivo separado en errores, transporte, adaptadores, caché y mapeo | hecho | `archivoService.js` queda como orquestador; `archivoErrors.js`, `httpJsonClient.js`, `lastfmClient.js`, `youtubeClient.js`, `archivoCache.js` y `vinylMapper.js` asumen cada responsabilidad. El contrato `{ disco, cached, created, stale }` no cambia y las pruebas cubren errores HTTP, JSON malformado y timeout. |
+| RF-MVP-Refactor-Auth | API endurecida: errores codificados, proyección segura, registro reversible y arranque separado | hecho | `userModel.js` usa códigos y `getAll()` proyecta solo campos públicos; `server.js` revierte el registro si falla el correo, separa `401` de `500`, escapa HTML, serializa OAuth, responde JSON en `404` y exporta `{ app, start }`; `mailer.js` exige `BACKEND_URL`. |
+| RF-MVP-Refactor-Frontend | Módulos compartidos y renderizado DOM seguro | hecho | `youtubeApi.js`, `constants.js`, `modal.js`, `apiError.js` y `diario.js` eliminan duplicaciones; `admin.js` y `auth.js` usan `textContent`; el MIME de arrastre se unifica en `application/x-querencia-vinilo`. Los trece módulos pasan la comprobación de sintaxis. |
+| RF-MVP-Refactor-Docs | Documentación y verificación del refactor | hecho | `docs/sprint-3.md` registra alcance, tareas, criterios, evidencia, riesgos y retrospectiva; `README.md`, `index.md`, `arquitectura.md`, `procesos.md`, `log.md`, `decisiones.md`, `requisitos.md` y `sprint-2.md` se actualizan. La suite queda en 16 suites y 222 tests. |
 | RNF-01 | Persistencia en una base de datos real | hecho | Mongoose conecta con MongoDB y `User` persiste los usuarios. |
 | RNF-02 | Secretos fuera del código y .env.example | hecho | `.env.example` declara los nombres y el workflow usa secretos de GitHub. |
 | RNF-03 | Hash seguro de contraseñas | hecho | `bcrypt.hash` y `bcrypt.compare` en `userModel.js`. |
 | RNF-04 | Rutas protegidas por sesión y rol | hecho | `authMiddleware` e `isAdminMiddleware` protegen las rutas privadas. |
 | RNF-05 | Despliegue en cloud con URL pública | parcial | Hay workflow y configuración de App Engine; la URL pública operativa queda por verificar. |
-| RNF-06 | Pruebas unitarias de la lógica (5 o más) | hecho | Suites de Jest para Diario, Muro, El Velo y El Archivo, con dobles de repositorio, autenticación y red. La Tarea 7 ajusta las pruebas de modelo para las nuevas referencias a `Vinyl`; la ejecución completa posterior a la incorporación de El Archivo y de los vinilos transversales queda pendiente de verificación local. |
-| RNF-07 | Manejo de errores con feedback al usuario | hecho | Las rutas devuelven mensajes y `api.js` propaga errores al frontend. |
+| RNF-06 | Pruebas unitarias de la lógica (5 o más) | hecho | 16 suites y 222 tests pasados con `cd backend && npm test`. Cubren Diario, Muro, El Velo, El Archivo, validaciones compartidas, utilidades HTML y proyección pública de usuarios, con dobles de repositorio, autenticación y red. |
+| RNF-07 | Manejo de errores con feedback al usuario | hecho | Las rutas devuelven mensajes y `api.js` propaga errores al frontend. El Sprint 3 añade errores codificados en `userModel.js`, manejadores globales JSON de `404` y error en `server.js`, y `ApiError` con estado y código en el cliente. |
 | RNF-08 | Registro de actividad (log) | hecho | Winston y Morgan se configuran en `logger.js` y `server.js`. |
 | RNF-09 | Proteger las cuotas de Last.fm y YouTube y no exponer secretos | hecho | Las tres rutas de El Archivo exigen `authMiddleware`; las claves `LASTFM_API_KEY` y `YOUTUBE_API_KEY` solo se leen en el servidor; la caché persistente reduce el consumo; `.env.example` declara las variables sin valores reales. |
 | RNF-10 | Tolerancia a fallos de proveedores externos | hecho | Los errores de dominio distinguen validación (`400`), no encontrado (`404`), configuración (`503`), timeout (`504`) y fallo de proveedor (`502`); una ficha caducada se sirve como `stale` si Last.fm no responde; un fallo de YouTube no impide guardar los metadatos culturales. |

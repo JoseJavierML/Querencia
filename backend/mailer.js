@@ -1,4 +1,5 @@
 const nodemailer = require('nodemailer');
+const logger = require('./logger');
 
 const transporter = nodemailer.createTransport({
     host: 'smtp.gmail.com',
@@ -11,11 +12,17 @@ const transporter = nodemailer.createTransport({
 });
 
 const sendVerificationEmail = async (email, token) => {
+    const baseUrl = typeof process.env.BACKEND_URL === 'string'
+        ? process.env.BACKEND_URL.trim().replace(/\/+$/, '')
+        : '';
+
+    if (!baseUrl) {
+        throw new Error('BACKEND_URL no está configurada: no se puede construir el enlace de verificación');
+    }
+
     try {
-        // En producción usará la URL de Render, en local localhost
-        const baseUrl = process.env.BACKEND_URL || 'https://habitquest-t309.onrender.com';
         const urlConfirmacion = `${baseUrl}/api/auth/verify/${token}`;
-        
+
         const mailOptions = {
             from: `"Querencia" <${process.env.EMAIL_USER}>`,
             to: email,
@@ -31,11 +38,11 @@ const sendVerificationEmail = async (email, token) => {
         };
 
         const info = await transporter.sendMail(mailOptions);
-        console.log('Correo de verificación enviado correctamente a:', email);
+        logger.info(`Correo de verificación enviado correctamente a: ${email}`);
         return info;
 
     } catch (error) {
-        console.error('CRÍTICO: Nodemailer falló al enviar el correo:', error);
+        logger.error(`Nodemailer falló al enviar el correo a ${email}: ${error.message}`);
         throw new Error('Fallo en el servidor de correo. Inténtalo de nuevo más tarde.');
     }
 };

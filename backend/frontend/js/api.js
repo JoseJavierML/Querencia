@@ -1,6 +1,25 @@
 import { cerrarSesion, fetchAutenticado } from './auth.js';
+import { ApiError } from './apiError.js';
 
 const BASE_URL = '/api';
+
+async function readResponseBody(response) {
+    const contentType = response.headers.get('content-type') || '';
+
+    if (contentType.includes('application/json')) {
+        try {
+            return await response.json();
+        } catch (error) {
+            throw new ApiError(response.status, 'La respuesta del servidor no es válida.', 'INVALID_RESPONSE');
+        }
+    }
+
+    const text = await response.text();
+    if (!response.ok) {
+        return { message: 'Error en la petición al servidor.' };
+    }
+    return text ? { message: text } : {};
+}
 
 async function fetchAPI(endpoint, options = {}) {
     try {
@@ -12,11 +31,12 @@ async function fetchAPI(endpoint, options = {}) {
             }
         });
 
-        const data = await response.json();
+        const data = await readResponseBody(response);
         if (!response.ok) {
-            const error = new Error(data.message || 'Error en la petición al servidor');
-            error.status = response.status;
-            throw error;
+            const message = data && (data.message || data.error)
+                ? (data.message || data.error)
+                : 'Error en la petición al servidor.';
+            throw new ApiError(response.status, message);
         }
 
         return data;
@@ -126,7 +146,7 @@ export const api = {
             await fetchAPI('/session', { method: 'GET' });
             return true;
         } catch (error) {
-            if (error.message.startsWith('La sesión ha caducado')) return false;
+            if (error.status === 401) return false;
             throw error;
         }
     },
