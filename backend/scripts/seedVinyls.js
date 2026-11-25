@@ -1,7 +1,8 @@
 /**
  * Poblado inicial de El Archivo.
  *
- * Inserta una selección de discos clave del flamenco y la fusión usando el
+ * Inserta una selección de discos clave del flamenco y la fusión (con especial
+ * atención a La Plazuela e Israel Fernández) usando el
  * servicio real de El Archivo: Last.fm para metadatos, carátula y géneros, y
  * YouTube Data API v3 (con fallback de scraping) para resolver el audio.
  *
@@ -53,6 +54,122 @@ const SEED_VINYLS = [
         artist: 'Estrella Morente',
         title: 'Volver',
         query: 'Volver Estrella Morente'
+    },
+
+    // La Plazuela: flamenco, funk y electrónica desde Granada (Roneo Funk Club, 2023).
+    {
+        artist: 'La Plazuela',
+        title: 'Realejo Beach',
+        query: 'Realejo Beach La Plazuela'
+    },
+    {
+        artist: 'La Plazuela',
+        title: 'Péiname Juana',
+        query: 'Péiname Juana La Plazuela'
+    },
+    {
+        artist: 'La Plazuela',
+        title: 'El Lao de la Pena',
+        query: 'El Lao de la Pena La Plazuela'
+    },
+    {
+        artist: 'La Plazuela',
+        title: 'Perico el de la Tomasa',
+        query: 'Perico el de la Tomasa La Plazuela Ángeles Toledano'
+    },
+    {
+        artist: 'La Plazuela',
+        title: 'La Primerica Helá',
+        query: 'La Primerica Helá La Plazuela'
+    },
+    {
+        artist: 'La Plazuela',
+        title: 'Soulseek',
+        query: 'Soulseek La Plazuela'
+    },
+    {
+        artist: 'La Plazuela',
+        title: 'Tu Palabra',
+        query: 'Tu Palabra La Plazuela'
+    },
+    {
+        artist: 'La Plazuela',
+        title: 'Mira la Niña',
+        query: 'Mira la Niña La Plazuela Juanito Makandé'
+    },
+    {
+        artist: 'La Plazuela',
+        title: 'Camino de Cristales',
+        query: 'Camino de Cristales La Plazuela'
+    },
+    {
+        artist: 'La Plazuela',
+        title: 'La Vuelta',
+        query: 'La Vuelta La Plazuela Roneo Funk Club'
+    },
+
+    // Israel Fernández: cante jondo de hoy (La Inocencia, 2021; Pura Sangre, 2023).
+    {
+        artist: 'Israel Fernández',
+        title: 'Al Tercer Mundo',
+        query: 'Al Tercer Mundo Israel Fernández Pional'
+    },
+    {
+        artist: 'Israel Fernández',
+        title: 'La Inocencia',
+        query: 'La Inocencia Israel Fernández'
+    },
+    {
+        artist: 'Israel Fernández',
+        title: 'Pucheros y Sartenes',
+        query: 'Pucheros y Sartenes Israel Fernández'
+    },
+    {
+        artist: 'Israel Fernández',
+        title: 'Soleá de Mi Casa',
+        query: 'Soleá de Mi Casa Israel Fernández Diego del Morao'
+    },
+    {
+        artist: 'Israel Fernández',
+        title: 'Caminos y Vereas',
+        query: 'Caminos y Vereas Israel Fernández'
+    },
+    {
+        artist: 'Israel Fernández',
+        title: 'Me Encuentro Solo',
+        query: 'Me Encuentro Solo Israel Fernández'
+    },
+    {
+        artist: 'Israel Fernández',
+        title: 'Ni Príncipe Ni Rey',
+        query: 'Ni Príncipe Ni Rey Israel Fernández'
+    },
+    {
+        artist: 'Israel Fernández',
+        title: 'Seré Silencio',
+        query: 'Seré Silencio Israel Fernández'
+    },
+    {
+        artist: 'Israel Fernández',
+        title: 'Despierta',
+        query: 'Despierta Israel Fernández Diego del Morao'
+    },
+    {
+        artist: 'Israel Fernández',
+        title: 'La Tuya y la Mía',
+        query: 'La Tuya y la Mía Israel Fernández'
+    },
+
+    // Flamenco actual que dialoga con los anteriores.
+    {
+        artist: 'Rosalía',
+        title: 'Pienso en tu mirá',
+        query: 'Pienso en tu mirá Rosalía'
+    },
+    {
+        artist: 'Rosalía',
+        title: 'Malamente',
+        query: 'Malamente Rosalía'
     }
 ];
 
