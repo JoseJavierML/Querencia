@@ -89,9 +89,11 @@ const parseSearchHtml = (html) => {
         const id = segment.match(/"videoId":"([A-Za-z0-9_-]{11})"/);
         const title = segment.match(/"title":\{"runs":\[\{"text":"((?:[^"\\]|\\.)*)"/);
         const length = segment.match(/"lengthText":[\s\S]{0,400}?"simpleText":"(\d{1,2}(?::\d{2}){1,2})"/);
+        let decodedTitle = title ? title[1] : '';
+        try { if (decodedTitle) decodedTitle = JSON.parse(`"${decodedTitle}"`); } catch {}
         return {
             videoId: id ? id[1] : null,
-            title: title ? title[1] : '',
+            title: decodedTitle,
             durationSeconds: length ? parseClockDuration(length[1]) : null
         };
     });
