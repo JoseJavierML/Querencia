@@ -240,7 +240,12 @@ describe('Servicio de El Archivo', () => {
                 summary: 'Una escucha fundamental'
             })
         }));
-        expect(fetchImpl).toHaveBeenCalledTimes(3);
+        // track.search + track.getInfo + YouTube search + YouTube videos (duraciones).
+        expect(fetchImpl).toHaveBeenCalledTimes(4);
+        const youtubeSearch = fetchImpl.mock.calls
+            .map(([url]) => new URL(url))
+            .find((url) => url.pathname.endsWith('/youtube/v3/search'));
+        expect(youtubeSearch.searchParams.get('q')).toBe('Camarón de la Isla La leyenda del tiempo');
     });
 
     test('resuelve una búsqueda libre y reutiliza la caché por artista y título', async () => {
@@ -297,7 +302,8 @@ describe('Servicio de El Archivo', () => {
                 youtubeVideoId: VIDEO_ID
             })
         );
-        expect(fetchImpl).toHaveBeenCalledTimes(2);
+        // track.getInfo + YouTube search + YouTube videos (duraciones).
+        expect(fetchImpl).toHaveBeenCalledTimes(3);
     });
 
     test('conserva la copia caducada si Last.fm no responde', async () => {

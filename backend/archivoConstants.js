@@ -24,6 +24,18 @@ const UNCLASSIFIED_GENRE = 'Sin clasificar';
 const LASTFM_API_URL = 'https://ws.audioscrobbler.com/2.0/';
 const YOUTUBE_API_URL = 'https://www.googleapis.com/youtube/v3/search';
 const YOUTUBE_SEARCH_URL = 'https://www.youtube.com/results';
+// Candidatos que se piden a YouTube por búsqueda; la cuota de `search` no depende de este valor.
+const YOUTUBE_MAX_CANDIDATES = 5;
+// Un vídeo más largo que esto se trata como disco completo o directo, no como una canción.
+const YOUTUBE_MAX_TRACK_SECONDS = 15 * 60;
+// Títulos típicos de vídeos que contienen un disco entero (comparados sin tildes ni mayúsculas).
+const YOUTUBE_FULL_ALBUM_MARKERS = Object.freeze([
+    'full album',
+    'album completo',
+    'disco completo',
+    'full ep',
+    'ep completo'
+]);
 const LASTFM_PLACEHOLDER_IMAGE_HASH = '2a96cbd8b46e442fc41c2b86b821562f';
 
 const GROUPING_ALIASES = Object.freeze({
@@ -236,6 +248,9 @@ module.exports = {
     LASTFM_API_URL,
     YOUTUBE_API_URL,
     YOUTUBE_SEARCH_URL,
+    YOUTUBE_MAX_CANDIDATES,
+    YOUTUBE_MAX_TRACK_SECONDS,
+    YOUTUBE_FULL_ALBUM_MARKERS,
     LASTFM_PLACEHOLDER_IMAGE_HASH,
     GROUPING_ALIASES,
     GENRE_DEFINITIONS,

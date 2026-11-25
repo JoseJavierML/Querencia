@@ -136,11 +136,15 @@ El inicio de sesión desde `index.html` redirige a `muro.html`, igual que el cal
 
 ### Datos de prueba
 
-El script `backend/seedDebate.js` crea una reflexión inicial sobre el duende, Camarón de la Isla y el consumo musical inmediato, con una portada de Camarón y Paco de Lucía. Es idempotente: si el título ya existe, no crea un duplicado y completa la portada si faltaba.
+El poblado se hace en dos pasos y en este orden, porque las reflexiones del Muro se enlazan con vinilos de El Archivo:
 
 ```bash
-node backend/seedDebate.js
+cd backend
+npm run seed:vinilos   # El Archivo: flamenco clásico, La Plazuela, Israel Fernández y Rosalía
+npm run seed           # El Muro: reflexiones iniciales
 ```
+
+`backend/scripts/seedVinyls.js` resuelve cada disco con el servicio real de El Archivo (Last.fm y YouTube) y reutiliza la caché si ya existe. `backend/seedDebate.js` crea tres reflexiones: la del duende y Camarón de la Isla, una sobre *Realejo Beach* de La Plazuela y otra sobre *Al tercer mundo* de Israel Fernández. Es idempotente por título: si una reflexión ya existe, no crea un duplicado y solo completa la portada o el vinilo si faltaban. Si el vinilo enlazado no está en El Archivo, la reflexión se crea sin vínculo; si no tiene portada propia, reutiliza la carátula del vinilo.
 
 También puede ejecutarse con `cd backend && npm run seed`. El script requiere `MONGO_URI` en `backend/.env`. Para elegir el autor, usa `SEED_AUTHOR_EMAIL`; si no se define, reutiliza el primer usuario con rol `admin`. Si no hay ningún administrador, crea un autor técnico `seed@querencia.local` con rol `admin`, estado activo y una contraseña aleatoria que no se imprime. Ese autor es solo para datos de desarrollo y no está pensado para iniciar sesión.
 
