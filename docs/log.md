@@ -1,5 +1,11 @@
 # Cronología
 
+## 2026-11-28 — Buscador de El Archivo
+
+Rama `feat/buscador-archivo`. El Archivo deja de depender solo de los cajones para encontrar un disco. `api.buscarArchivo` envía `POST /api/archivo/buscar` con una consulta libre, o con artista y título cuando llegan los dos juntos, y reutiliza la sesión del resto de la API. `archivo.html` añade el formulario encima del conmutador «Por género» / «Por artista», con estados de carga, resultado, vacío y error, y un reintento que repite la última consulta.
+
+El disco devuelto se registra en el mapa de vinilos y se muestra con la misma portada que un disco de cajón: el clic abre la ficha existente y el arrastre lo coloca en el tocadiscos. Si la respuesta indica `created` o `cached`, los cajones se refrescan sin tapar la estantería con el estado de carga. Los mensajes usan el `message` del servidor cuando existe. No se modifica el contrato HTTP ni el backend. La interfaz se comprobó en el navegador con respuestas simuladas de la API: consulta vacía, resultado con ficha y tocadiscos, ausencia de resultados, fallo de Last.fm y el conmutador de cajones, también en un ancho móvil. La búsqueda real contra Last.fm, con sesión y claves, queda para la prueba manual de la pull request.
+
 ## 2026-11-22 — Sprint 3: refactor de validaciones, El Archivo y endurecimiento de la API
 
 Rama `refactor/sprint-3`. Se completa el refactor interno del MVP sin añadir funcionalidades nuevas. T1 crea `backend/validation.js` y `backend/timeConstants.js` y sustituye las copias de `normalizeVinylId`, `resolveUserId`, `normalizeHttpUrl` e `isValidObjectId` en Diario, Muro, El Velo y El Archivo. T2 descompone `archivoService.js` en `archivoErrors.js`, `httpJsonClient.js`, `lastfmClient.js`, `youtubeClient.js`, `archivoCache.js` y `vinylMapper.js`; el servicio queda como orquestador y conserva el contrato `{ disco, cached, created, stale }`.

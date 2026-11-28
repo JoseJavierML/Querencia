@@ -13,6 +13,18 @@ const loadError = document.getElementById('loadError');
 const retryBtn = document.getElementById('retryBtn');
 const archiveSummary = document.getElementById('archiveSummary');
 const groupingButtons = Array.from(document.querySelectorAll('[data-grouping]'));
+const archiveSearchForm = document.getElementById('archiveSearchForm');
+const archiveSearchInput = document.getElementById('archiveSearchInput');
+const archiveSearchSubmit = document.getElementById('archiveSearchSubmit');
+const archiveSearchLive = document.getElementById('archiveSearchLive');
+const archiveSearchLoading = document.getElementById('archiveSearchLoading');
+const archiveSearchOutcome = document.getElementById('archiveSearchOutcome');
+const archiveSearchKicker = document.getElementById('archiveSearchKicker');
+const archiveSearchHeading = document.getElementById('archiveSearchHeading');
+const archiveSearchMessage = document.getElementById('archiveSearchMessage');
+const archiveSearchStage = document.getElementById('archiveSearchStage');
+const archiveSearchNote = document.getElementById('archiveSearchNote');
+const archiveSearchRetry = document.getElementById('archiveSearchRetry');
 
 const turntableDock = document.getElementById('turntableDock');
 const turntable = document.getElementById('turntable');
@@ -48,6 +60,7 @@ const state = {
     grouping: 'genero',
     cajones: [],
     vinyls: new Map(),
+    searchVinyl: null,
     dragging: false,
     suppressClickUntil: 0,
     modalOpener: null,
@@ -58,6 +71,8 @@ const state = {
 };
 
 let loadRequestId = 0;
+let searchRequestId = 0;
+let lastSearchQuery = '';
 let youtubePlayer = null;
 let youtubePlayerPromise = null;
 let youtubeReady = false;
@@ -119,14 +134,14 @@ const showContentView = () => {
     cajonesGrid.hidden = false;
 };
 
-const createVinylCard = (vinyl, index) => {
+const createVinylCard = (vinyl, index, options = {}) => {
     const title = vinyl.title || 'Disco sin título';
     const artist = vinyl.artist || 'Artista desconocido';
     const playable = Boolean(vinyl.playable && getVideoId(vinyl));
 
     const card = document.createElement('button');
     card.type = 'button';
-    card.className = 'vinyl-card';
+    card.className = options.prominent ? 'vinyl-card vinyl-card--result' : 'vinyl-card';
     card.draggable = true;
     card.dataset.vinylId = vinyl._id || '';
     card.dataset.playable = playable ? 'true' : 'false';
@@ -247,13 +262,22 @@ const renderDrawers = () => {
     cajonesGrid.replaceChildren(fragment);
 };
 
-const loadDrawers = async () => {
+const rememberSearchVinyl = () => {
+    const vinyl = state.searchVinyl;
+    if (vinyl && vinyl._id) {
+        state.vinyls.set(vinyl._id, vinyl);
+    }
+};
+
+const loadDrawers = async ({ silent = false } = {}) => {
     const requestId = ++loadRequestId;
 
     setGroupButtonsDisabled(true);
     cajonesGrid.setAttribute('aria-busy', 'true');
-    showLoadingView();
-    archiveSummary.textContent = 'Abriendo los cajones del archivo...';
+    if (!silent) {
+        showLoadingView();
+        archiveSummary.textContent = 'Abriendo los cajones del archivo...';
+    }
 
     try {
         const data = await api.listarCajonesArchivo(state.grouping);
@@ -272,6 +296,8 @@ const loadDrawers = async () => {
             });
         });
 
+        rememberSearchVinyl();
+
         if (cajones.length === 0) {
             showEmptyView();
             archiveSummary.textContent = 'El archivo todavía está vacío.';
@@ -288,6 +314,7 @@ const loadDrawers = async () => {
         archiveSummary.textContent = `El archivo reúne ${pluralize(total, 'disco', 'discos')} en ${pluralize(cajones.length, 'cajón', 'cajones')}.`;
     } catch (error) {
         if (requestId !== loadRequestId) return;
+        if (silent) return;
         showErrorView(error.message || 'No se pudieron abrir los cajones del archivo.');
         archiveSummary.textContent = 'No se pudo abrir el archivo.';
     } finally {
@@ -303,7 +330,7 @@ const resetDragState = (suppressClick = false) => {
     document.body.classList.remove('dragging-vinyl');
     turntableDock.classList.remove('is-drag-over');
 
-    cajonesGrid.querySelectorAll('.vinyl-card.is-dragging').forEach((card) => {
+    document.querySelectorAll('.vinyl-card.is-dragging').forEach((card) => {
         card.classList.remove('is-dragging');
     });
 
@@ -312,12 +339,12 @@ const resetDragState = (suppressClick = false) => {
     }
 };
 
-const handleGridClick = (event) => {
+const handleVinylClick = (root) => (event) => {
     if (Date.now() < state.suppressClickUntil) return;
     if (!(event.target instanceof Element)) return;
 
     const card = event.target.closest('.vinyl-card');
-    if (!card || !cajonesGrid.contains(card)) return;
+    if (!card || !root.contains(card)) return;
 
     const vinyl = state.vinyls.get(card.dataset.vinylId);
     if (vinyl) {
@@ -901,6 +928,208 @@ const handleModalKeydown = (event) => {
     handleFocusTrap(event, discoDialog);
 };
 
+const MAX_SEARCH_LENGTH = 200;
+
+const SEARCH_FAILURES = {
+    400: {
+        kicker: 'Revisa la consulta',
+        heading: 'La búsqueda no es válida',
+        fallback: 'Revisa el texto e inténtalo de nuevo.'
+    },
+    404: {
+        kicker: 'Sin coincidencias',
+        heading: 'No se encontró ese vinilo',
+        fallback: 'Prueba con otro título o con el nombre del artista.'
+    },
+    502: {
+        kicker: 'La búsqueda se detuvo',
+        heading: 'Last.fm no respondió',
+        fallback: 'El archivo no pudo consultar la ficha. Puedes intentarlo de nuevo.'
+    },
+    503: {
+        kicker: 'La búsqueda se detuvo',
+        heading: 'El archivo no puede consultar ahora',
+        fallback: 'La búsqueda externa no está disponible. Puedes intentarlo más tarde.'
+    },
+    504: {
+        kicker: 'La búsqueda se detuvo',
+        heading: 'La consulta tardó demasiado',
+        fallback: 'Last.fm no respondió a tiempo. Puedes intentarlo de nuevo.'
+    }
+};
+
+const describeSearchOrigin = ({ created, cached, stale }) => {
+    if (stale) {
+        return 'Se conserva la ficha guardada: Last.fm no pudo actualizarla.';
+    }
+    if (created) {
+        return 'El disco entra en el archivo y queda en los cajones.';
+    }
+    if (cached) {
+        return 'Este vinilo ya formaba parte del archivo.';
+    }
+    return 'El disco queda listo para consultarse en el archivo.';
+};
+
+const setSearchBusy = (busy) => {
+    archiveSearchForm.setAttribute('aria-busy', String(busy));
+    archiveSearchSubmit.disabled = busy;
+    archiveSearchSubmit.textContent = busy ? 'Buscando...' : 'Buscar';
+};
+
+const showSearchLoading = () => {
+    archiveSearchLive.hidden = false;
+    archiveSearchLoading.hidden = false;
+    archiveSearchOutcome.hidden = true;
+    archiveSearchStage.hidden = true;
+    archiveSearchStage.replaceChildren();
+    archiveSearchNote.hidden = true;
+    archiveSearchRetry.hidden = true;
+    setSearchBusy(true);
+};
+
+const showSearchOutcome = ({
+    kicker,
+    heading,
+    message,
+    note = '',
+    vinyl = null,
+    showRetry = false,
+    tone = 'idle'
+}) => {
+    archiveSearchLive.hidden = false;
+    archiveSearchLoading.hidden = true;
+    archiveSearchOutcome.hidden = false;
+    archiveSearchKicker.textContent = kicker;
+    archiveSearchHeading.textContent = heading;
+    archiveSearchMessage.textContent = message;
+    archiveSearchMessage.classList.toggle('is-alert', tone === 'alert');
+    setSearchBusy(false);
+
+    if (note) {
+        archiveSearchNote.hidden = false;
+        archiveSearchNote.textContent = note;
+    } else {
+        archiveSearchNote.hidden = true;
+        archiveSearchNote.textContent = '';
+    }
+
+    archiveSearchRetry.hidden = !showRetry;
+
+    if (!vinyl) {
+        archiveSearchStage.replaceChildren();
+        archiveSearchStage.hidden = true;
+        return null;
+    }
+
+    const card = createVinylCard(vinyl, 0, { prominent: true });
+    archiveSearchStage.replaceChildren(card);
+    archiveSearchStage.hidden = false;
+    return card;
+};
+
+const showSearchFailure = (error) => {
+    const status = Number(error && error.status);
+    const known = SEARCH_FAILURES[status] || {
+        kicker: 'La búsqueda se detuvo',
+        heading: 'No se pudo completar la búsqueda',
+        fallback: 'Ha ocurrido un error al consultar el archivo.'
+    };
+    const backendMessage = error && typeof error.message === 'string'
+        ? error.message.trim()
+        : '';
+    const isNetworkFailure = !status && /failed to fetch|networkerror|load failed/i.test(backendMessage);
+    const message = isNetworkFailure
+        ? 'No se pudo contactar con el archivo. Comprueba la conexión e inténtalo de nuevo.'
+        : (backendMessage && backendMessage !== known.heading ? backendMessage : known.fallback);
+
+    showSearchOutcome({
+        kicker: known.kicker,
+        heading: known.heading,
+        message,
+        showRetry: true,
+        tone: 'alert'
+    });
+    archiveSearchRetry.focus();
+};
+
+const runSearch = async (rawQuery) => {
+    const query = typeof rawQuery === 'string' ? rawQuery.trim() : '';
+
+    if (!query) {
+        searchRequestId += 1;
+        archiveSearchInput.setAttribute('aria-invalid', 'true');
+        showSearchOutcome({
+            kicker: 'La búsqueda espera un texto',
+            heading: 'Escribe qué disco quieres encontrar',
+            message: 'Indica un título, un artista o una frase.',
+            tone: 'alert'
+        });
+        archiveSearchInput.focus();
+        return;
+    }
+
+    if (query.length > MAX_SEARCH_LENGTH) {
+        searchRequestId += 1;
+        archiveSearchInput.setAttribute('aria-invalid', 'true');
+        showSearchOutcome({
+            kicker: 'Revisa la consulta',
+            heading: 'La búsqueda no es válida',
+            message: `La búsqueda no puede superar los ${MAX_SEARCH_LENGTH} caracteres.`,
+            tone: 'alert'
+        });
+        archiveSearchInput.focus();
+        return;
+    }
+
+    archiveSearchInput.removeAttribute('aria-invalid');
+    lastSearchQuery = query;
+
+    const requestId = ++searchRequestId;
+    showSearchLoading();
+
+    try {
+        const data = await api.buscarArchivo({ query });
+        if (requestId !== searchRequestId) return;
+
+        const disco = data && data.disco;
+        if (!disco || !disco._id) {
+            showSearchFailure({
+                status: 502,
+                message: 'La búsqueda no devolvió un disco utilizable.'
+            });
+            return;
+        }
+
+        disco._id = String(disco._id);
+        state.searchVinyl = disco;
+        state.vinyls.set(disco._id, disco);
+
+        const card = showSearchOutcome({
+            kicker: 'Resultado de la búsqueda',
+            heading: disco.title || 'Disco sin título',
+            message: disco.artist || 'Artista desconocido',
+            note: `${describeSearchOrigin(data)} Un clic abre la ficha; arrástralo hasta el plato para escucharlo.`,
+            vinyl: disco
+        });
+
+        if (card) {
+            card.focus();
+        }
+
+        if (data.created || data.cached) {
+            loadDrawers({ silent: true });
+        }
+    } catch (error) {
+        if (requestId !== searchRequestId) return;
+        showSearchFailure(error);
+    } finally {
+        if (requestId === searchRequestId) {
+            setSearchBusy(false);
+        }
+    }
+};
+
 const initArchivoPage = () => {
     window.ejecutarLogout = () => api.logout();
 
@@ -920,10 +1149,32 @@ const initArchivoPage = () => {
         });
     });
 
-    retryBtn.addEventListener('click', loadDrawers);
+    retryBtn.addEventListener('click', () => loadDrawers());
 
-    cajonesGrid.addEventListener('click', handleGridClick);
+    archiveSearchForm.addEventListener('submit', (event) => {
+        event.preventDefault();
+        runSearch(archiveSearchInput.value);
+    });
+
+    archiveSearchRetry.addEventListener('click', () => {
+        if (!lastSearchQuery) {
+            archiveSearchInput.focus();
+            return;
+        }
+        archiveSearchInput.value = lastSearchQuery;
+        runSearch(lastSearchQuery);
+    });
+
+    archiveSearchInput.addEventListener('input', () => {
+        if (archiveSearchInput.value.trim()) {
+            archiveSearchInput.removeAttribute('aria-invalid');
+        }
+    });
+
+    cajonesGrid.addEventListener('click', handleVinylClick(cajonesGrid));
     cajonesGrid.addEventListener('dragstart', handleDragStart);
+    archiveSearchStage.addEventListener('click', handleVinylClick(archiveSearchStage));
+    archiveSearchStage.addEventListener('dragstart', handleDragStart);
     document.addEventListener('dragend', handleDragEnd);
 
     turntableDock.addEventListener('dragenter', handleTurntableDragOver);
