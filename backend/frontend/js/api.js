@@ -137,6 +137,25 @@ export const api = {
         { method: 'GET' }
     ),
 
+    buscarArchivo: ({ query, artist, title } = {}) => {
+        const body = {};
+
+        if (query !== undefined && query !== null) {
+            body.query = query;
+        }
+        if (artist !== undefined && artist !== null) {
+            body.artist = artist;
+        }
+        if (title !== undefined && title !== null) {
+            body.title = title;
+        }
+
+        return fetchAPI('/archivo/buscar', {
+            method: 'POST',
+            body: JSON.stringify(body)
+        });
+    },
+
     checkSession: async () => {
         if (!localStorage.getItem('token') && !localStorage.getItem('querencia_token')) {
             return false;

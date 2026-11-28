@@ -278,6 +278,134 @@
             border-radius: 999px;
         }
 
+        .archive-search {
+            padding: 1.05rem 1.2rem 1.15rem;
+            margin-bottom: 1.15rem;
+            border-radius: 22px;
+        }
+
+        .archive-search-form {
+            display: flex;
+            flex-direction: column;
+            gap: 0.55rem;
+        }
+
+        .archive-search-label {
+            font-family: -apple-system, BlinkMacSystemFont, sans-serif;
+            font-size: 0.64rem;
+            letter-spacing: 2.4px;
+            text-transform: uppercase;
+            color: var(--gold-dark);
+        }
+
+        .archive-search-row {
+            display: flex;
+            align-items: center;
+            gap: 0.7rem;
+        }
+
+        .archive-search-input {
+            flex: 1 1 auto;
+            min-width: 0;
+            width: 100%;
+            border: 1px solid rgba(212, 175, 55, 0.24);
+            border-radius: 999px;
+            padding: 0.72rem 1.15rem;
+            background: rgba(5, 5, 8, 0.55);
+            color: var(--text-main);
+            font-family: 'Lora', serif;
+            font-size: 0.95rem;
+            letter-spacing: 0.1px;
+        }
+
+        .archive-search-input::placeholder {
+            color: var(--text-subtle);
+            font-style: italic;
+        }
+
+        .archive-search-input:focus-visible {
+            outline: 1px solid var(--gold-light);
+            outline-offset: 3px;
+            border-color: rgba(240, 226, 182, 0.55);
+        }
+
+        .archive-search-input[aria-invalid="true"] {
+            border-color: rgba(255, 155, 155, 0.55);
+        }
+
+        .archive-search-row .primary-btn {
+            flex: 0 0 auto;
+        }
+
+        .archive-search-hint {
+            font-family: 'Lora', serif;
+            font-size: 0.8rem;
+            font-style: italic;
+            color: var(--text-subtle);
+            line-height: 1.5;
+        }
+
+        .archive-search-live {
+            margin-top: 1rem;
+        }
+
+        .archive-search-loading {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+        }
+
+        .archive-search-loading .loading-mark {
+            width: 22px;
+            height: 22px;
+            margin: 0;
+            flex: 0 0 auto;
+        }
+
+        .archive-search-loading p,
+        .archive-search-message,
+        .search-result-note {
+            font-family: 'Lora', serif;
+            font-style: italic;
+            color: var(--text-muted);
+            line-height: 1.65;
+            font-size: 0.92rem;
+        }
+
+        .archive-search-heading {
+            font-family: 'Playfair Display', serif;
+            font-size: 1.7rem;
+            font-weight: 400;
+            color: var(--gold-light);
+            line-height: 1.15;
+            margin-bottom: 0.35rem;
+        }
+
+        .archive-search-message.is-alert {
+            color: var(--danger);
+        }
+
+        .search-result-layout {
+            display: flex;
+            align-items: center;
+            gap: 1.15rem;
+            margin-top: 0.35rem;
+        }
+
+        .search-result-copy {
+            min-width: 0;
+        }
+
+        .search-result-note {
+            margin-top: 0.75rem;
+            font-size: 0.84rem;
+            color: var(--gold-dark);
+        }
+
+        .archive-search-outcome .disco-retry {
+            margin-top: 0.85rem;
+        }
+
         .archive-summary {
             font-family: 'Lora', serif;
             font-size: 0.86rem;
@@ -593,6 +721,17 @@
 
         .vinyl-card:first-child {
             margin-left: 0;
+        }
+
+        .vinyl-card--result {
+            width: 132px;
+            margin-left: 0;
+            transform: none;
+        }
+
+        .vinyl-card--result .vinyl-caption {
+            opacity: 1;
+            transform: none;
         }
 
         .vinyl-card:hover,
@@ -1622,6 +1761,23 @@
                 justify-content: center;
             }
 
+            .archive-search-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .archive-search-row .primary-btn {
+                width: 100%;
+            }
+
+            .archive-search-heading {
+                font-size: 1.45rem;
+            }
+
+            .search-result-layout {
+                align-items: flex-start;
+            }
+
             .drawer-head {
                 margin: 0 1.15rem 0.3rem;
                 padding: 1.2rem 0 0.55rem;
@@ -1645,6 +1801,11 @@
             .vinyl-card {
                 width: 122px;
                 margin-left: -70px;
+            }
+
+            .vinyl-card--result {
+                width: 122px;
+                margin-left: 0;
             }
 
             .drawer-sleeves {
@@ -1715,6 +1876,10 @@
                 font-size: 0.98rem;
             }
 
+            .search-result-layout {
+                flex-direction: column;
+            }
+
             .archive-instructions {
                 font-size: 0.76rem;
             }
@@ -1771,8 +1936,50 @@
             <p class="eyebrow">La discoteca de Querencia</p>
             <h1>El Archivo</h1>
             <p class="lede">Un fondo de vinilos ordenado en cajones. Cada portada guarda una ficha, una historia y un audio; el plato espera al disco que decidas escuchar.</p>
-            <p class="archive-instructions">Un clic abre la ficha del disco. Arrastra una portada hasta el plato para escucharla.</p>
+            <p class="archive-instructions">Un clic abre la ficha del disco. Arrastra una portada hasta el plato para escucharla. Si no está a la vista, búscalo por título o artista.</p>
         </header>
+
+        <section class="archive-search glass" aria-label="Buscar en El Archivo">
+            <form class="archive-search-form" id="archiveSearchForm" role="search">
+                <label class="archive-search-label" for="archiveSearchInput">Buscar un vinilo</label>
+                <div class="archive-search-row">
+                    <input
+                        class="archive-search-input"
+                        id="archiveSearchInput"
+                        name="query"
+                        type="search"
+                        maxlength="200"
+                        autocomplete="off"
+                        spellcheck="false"
+                        enterkeyhint="search"
+                        placeholder="Título, artista o una frase"
+                        aria-describedby="archiveSearchHint"
+                    >
+                    <button class="primary-btn" id="archiveSearchSubmit" type="submit">Buscar</button>
+                </div>
+                <p class="archive-search-hint" id="archiveSearchHint">Escribe un título, un artista o ambos.</p>
+            </form>
+
+            <div class="archive-search-live" id="archiveSearchLive" aria-live="polite" aria-atomic="true" hidden>
+                <div class="archive-search-loading" id="archiveSearchLoading" hidden>
+                    <div class="loading-mark" aria-hidden="true"></div>
+                    <p>Buscando en el archivo...</p>
+                </div>
+
+                <div class="archive-search-outcome" id="archiveSearchOutcome" hidden>
+                    <p class="kicker" id="archiveSearchKicker"></p>
+                    <div class="search-result-layout">
+                        <div id="archiveSearchStage" role="group" aria-label="Vinilo encontrado" hidden></div>
+                        <div class="search-result-copy">
+                            <h2 class="archive-search-heading" id="archiveSearchHeading"></h2>
+                            <p class="archive-search-message" id="archiveSearchMessage"></p>
+                            <p class="search-result-note" id="archiveSearchNote" hidden></p>
+                            <button class="disco-retry" id="archiveSearchRetry" type="button" hidden>Volver a intentar</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
 
         <section class="archive-toolbar glass" aria-label="Organización de la discoteca">
             <p class="archive-summary" id="archiveSummary" aria-live="polite">Abriendo los cajones del archivo...</p>
